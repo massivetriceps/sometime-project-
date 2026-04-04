@@ -22,7 +22,7 @@ export default function Stats() {
                 <div className="mb-1 text-3xl font-bold text-white md:text-4xl">
                   {stat.value}
                 </div>
-                <div className="text-sm font-medium text-white/70">
+                <div className="text-sm font-medium text-white
                   {stat.label}
                 </div>
               </div>

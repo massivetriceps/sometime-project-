@@ -58,7 +58,7 @@ export default function Blog() {
                 style={{ backgroundColor: `${article.color}15` }}
               >
                 <div
-                  className="absolute inset-0 opacity-20"
+                  className="absolute inset-0 "
                   style={{
                     background: `linear-gradient(135deg, ${article.color}40 0%, transparent 50%)`,
                   }}

@@ -1,0 +1,18 @@
+const stats = [
+  {
+    value: "500+",
+    label: "회원",
+  },
+  {
+    value: "가천대학교",
+    label: "중점",
+  },
+  {
+    value: "1000+",
+    label: "시간표 생성",
+  },
+  {
+    value: "98%",
+    label: "만족도",
+  },
+]

@@ -1,4 +1,4 @@
-import Navbar from "../../components/landing/Navbar";
+﻿import Navbar from "../../components/landing/Navbar";
 import Hero from "../../components/landing/Hero";
 import PainPoints from "../../components/landing/PainPoints";
 import Features from "../../components/landing/Features";

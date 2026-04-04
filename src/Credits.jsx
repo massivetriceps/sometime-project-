@@ -18,11 +18,11 @@ export default function Credits() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-white">졸업 학점 현황</p>
-                    <p className="text-sm text-white/70">2025년 1학기 기준</p>
+                    <p className="text-sm text-white
                   </div>
                   <div className="text-right">
                     <p className="text-3xl font-bold text-white">75</p>
-                    <p className="text-sm text-white/70">/ 130 학점</p>
+                    <p className="text-sm text-white
                   </div>
                 </div>
               </div>

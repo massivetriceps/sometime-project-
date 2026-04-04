@@ -7,7 +7,11 @@
     "lib": "lib"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-toast": "^1.2.15",
     "caniuse-lite": "^1.0.30001784",
+    "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
     "clsx": "^2.1.1",
     "csstype": "^3.2.3",
@@ -26,6 +30,7 @@
     "picomatch": "^4.0.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.0",
     "rolldown": "^1.0.0-rc.12",
     "scheduler": "^0.27.0",
     "semver": "^7.7.4",

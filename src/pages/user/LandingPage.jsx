@@ -1,26 +1,28 @@
-import Navbar from '../../Navbar'
-import Hero from '../../Hero'
-import Features from '../../Features'
-import PainPoints from '../../PainPoints'
-import Stats from '../../Stats'
-import CTA from '../../CTA'
-import Blog from '../../Blog'
-import Credits from '../../Credits'
-import Footer from '../../Footer'
+﻿import Navbar from "@/components/landing/Navbar"
+import Hero from "@/components/landing/Hero"
+import PainPoints from "@/components/landing/PainPoints"
+import Features from "@/components/landing/Features"
+import Stats from "@/components/landing/Stats"
+import Credits from "@/components/landing/Credits"
+import Blog from "@/components/landing/Blog"
+import CTA from "@/components/landing/CTA"
+import Footer from "@/components/landing/Footer"
 
 function LandingPage() {
   return (
-    <>
+    <div className="min-h-screen bg-background text-dark">
       <Navbar />
-      <Hero />
-      <Features />
-      <PainPoints />
-      <Stats />
-      <CTA />
-      <Blog />
-      <Credits />
+      <main className="pt-16 overflow-x-hidden">
+        <Hero />
+        <PainPoints />
+        <Features />
+        <Stats />
+        <Credits />
+        <Blog />
+        <CTA />
+      </main>
       <Footer />
-    </>
+    </div>
   )
 }
 
