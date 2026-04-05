@@ -1,0 +1,17 @@
+﻿import { AuthLayout } from "@/components/user/auth/auth-layout"
+import { FindIdForm } from "@/components/user/auth/find-id-form"
+
+export default function FindIdPage() {
+  return (
+    <AuthLayout
+      title="Find your email"
+      subtitle="Enter your information to recover your registered email"
+    >
+      <FindIdForm />
+    </AuthLayout>
+  )
+}
+
+
+
+

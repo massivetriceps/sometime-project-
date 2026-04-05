@@ -1,17 +1,17 @@
 ﻿import { Routes, Route } from "react-router-dom"
-import HomePage from "@/pages/HomePage"
+import UserEntryPage from "@/pages/user/auth/UserEntryPage"
 import LandingPage from "@/pages/user/LandingPage"
-import LoginPage from "@/pages/auth/LoginPage"
-import SignupPage from "@/pages/auth/SignupPage"
-import FindIdPage from "@/pages/auth/FindIdPage"
-import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage"
-import ResetPasswordPage from "@/pages/auth/ResetPasswordPage"
-import LogoutPage from "@/pages/auth/LogoutPage"
+import LoginPage from "@/pages/user/auth/LoginPage"
+import SignupPage from "@/pages/user/auth/SignupPage"
+import FindIdPage from "@/pages/user/auth/FindIdPage"
+import ForgotPasswordPage from "@/pages/user/auth/ForgotPasswordPage"
+import ResetPasswordPage from "@/pages/user/auth/ResetPasswordPage"
+import LogoutPage from "@/pages/user/auth/LogoutPage"
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<UserEntryPage />} />
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
@@ -24,3 +24,7 @@ function App() {
 }
 
 export default App
+
+
+
+

@@ -1,18 +1,18 @@
-﻿import Navbar from "@/components/landing/Navbar"
-import Hero from "@/components/landing/Hero"
-import PainPoints from "@/components/landing/PainPoints"
-import Features from "@/components/landing/Features"
-import Stats from "@/components/landing/Stats"
-import Credits from "@/components/landing/Credits"
-import Blog from "@/components/landing/Blog"
-import CTA from "@/components/landing/CTA"
-import Footer from "@/components/landing/Footer"
+﻿import Navbar from "@/components/user/landing/Navbar"
+import Hero from "@/components/user/landing/Hero"
+import PainPoints from "@/components/user/landing/PainPoints"
+import Features from "@/components/user/landing/Features"
+import Stats from "@/components/user/landing/Stats"
+import Credits from "@/components/user/landing/Credits"
+import Blog from "@/components/user/landing/Blog"
+import CTA from "@/components/user/landing/CTA"
+import Footer from "@/components/user/landing/Footer"
 
-function LandingPage() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-dark">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <main className="pt-16 overflow-x-hidden">
+      <main>
         <Hero />
         <PainPoints />
         <Features />
@@ -26,4 +26,4 @@ function LandingPage() {
   )
 }
 
-export default LandingPage
+
