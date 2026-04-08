@@ -4,6 +4,7 @@ require('dotenv').config(); // .env 파일의 환경 변수를 불러옵니다.
 
 // 방금 만든 인증 라우터 불러오기
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8080; // 기본 포트는 8080으로 설정
@@ -16,8 +17,8 @@ app.use(cors());
 app.use(express.json()); 
 
 // --- 라우터 연결 ---
-// 클라이언트가 '/api/auth'로 시작하는 주소로 요청을 보내면 authRoutes로 보냅니다.
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes); // 인증 관련 주소
+app.use('/api/users', userRoutes); // 계정 관리 관련 주소
 
 // 기본 접속 테스트용 라우트
 app.get('/', (req, res) => {
