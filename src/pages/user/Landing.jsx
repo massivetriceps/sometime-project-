@@ -1,854 +1,753 @@
-import React from 'react';
+// src/pages/user/Landing.jsx
+// 가천대학교 시간표 생성 서비스 "알잘딱깔센" 랜딩페이지
+import '../../styles/global.css';
+import React, { useState, Fragment } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Menu,
+  X,
+  ArrowRight,
+  Sparkles,
+  Calendar,
+  Users,
+  Clock,
+  Star,
+  Smartphone,
+  RefreshCw,
+  Share2,
+  Download,
+  CheckCircle2,
+  Quote,
+  TrendingUp,
+  Heart,
+  Mail,
+  MessageSquare,  // Instagram 대신
+  Video,          // Youtube 대신
+  Code,           // Github 대신
+} from 'lucide-react';
 
-const Landing = () => {
-  return (
-    <div style={{ width: '100%', minHeight: '100vh', background: 'white' }}>
-<div style={{width: '100%', height: '100%', position: 'relative', background: 'white', overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 3, display: 'inline-flex'}}>
-    <div style={{alignSelf: 'stretch', height: 843, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 13.35, display: 'flex'}}>
-        <div style={{alignSelf: 'stretch', height: 843, paddingLeft: 48.08, paddingRight: 48.08, paddingTop: 32.05, paddingBottom: 32.05, position: 'relative', background: '#F5F7FA', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 34.72, display: 'flex'}}>
-            <div style={{width: 293.85, position: 'relative', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.68, display: 'flex'}}>
-                <div style={{width: 293.85, left: -0.08, top: 1.64, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                    <div style={{width: 237, left: 28, top: 100, position: 'absolute', color: '#4D4D4D', fontSize: 21.37, fontFamily: 'Inter', fontWeight: '600', lineHeight: 25.37, wordWrap: 'break-word'}}>     당신이 원하는 시간표 <br/>  알잘딱깔센이 해결합니다</div>
-                </div>
-            </div>
-            <div style={{width: 162, left: 119, top: 238.97, position: 'absolute', color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}> 조건만 선택한다면 고민은 대신해드리고 개꿀시간표를 추천해드립니다</div>
-            <div data-icon="No" data-size="Medium" data-state="Default" data-type="Primary" style={{width: 88, height: 37, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 4.67, paddingBottom: 4.67, left: 155, top: 669, position: 'absolute', background: '#4CAF4F', borderRadius: 1.34, justifyContent: 'center', alignItems: 'center', gap: 3.34, display: 'inline-flex'}}>
-                <div style={{textAlign: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: 'white', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>지금 시작하기</div>
-            </div>
-            <div style={{width: 390, height: 288, left: 0, top: 295, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'flex'}}>
-                <div style={{alignSelf: 'stretch', height: 122, position: 'relative', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                    <div style={{width: 390, left: 1, top: 5, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                        <div style={{width: 180.96, textAlign: 'center', color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>더 이상 고민은 그만 </div>
-                        <div style={{alignSelf: 'stretch', textAlign: 'center', color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>여러분들이 원하는 조건  모두 반영하여 시간표를 짜드립니다</div>
-                    </div>
-                    <div style={{width: 388, height: 126, paddingLeft: 48.08, paddingRight: 48.08, left: 0, top: 32, position: 'absolute', justifyContent: 'space-between', alignItems: 'center', display: 'inline-flex'}}>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 48, top: 18, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 89.14, left: 4, top: 19.97, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 16.02, height: 9.02, left: 0, top: 3.34, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{alignSelf: 'stretch', textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>금요일 공강은 <br/>필수 아닌가</div>
-                            </div>
-                            <div style={{left: 6.67, top: 71.68, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 83.80, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>왕복 4시간 통학러인데 매일 학교는 힘들지</div>
-                            </div>
-                        </div>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 145, top: 18, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 89.14, left: 4, top: 19.97, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 11.88, height: 10.09, left: 2, top: 3, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{alignSelf: 'stretch', textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>월요일 오전9시 수업은 <br/>피하고 싶은데</div>
-                            </div>
-                            <div style={{left: 8.51, top: 71.68, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 80.13, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>전날 12시까지 알바했는데</div>
-                            </div>
-                        </div>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 242, top: 18, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 89.14, left: 4, top: 19.97, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 4.19, height: 5.69, left: 5.73, top: 3, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 5.12, height: 4.51, left: 2.66, top: 8.51, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 5.12, height: 4.51, left: 8.35, top: 8.51, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{width: 89, textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>수요일은 <br/>싸강 듣고 싶다</div>
-                            </div>
-                            <div style={{left: 6.67, top: 71.68, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 83.80, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>수요일 하루는 오전에 싸강 듣고 <br/>오후에 학원가야겠어</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div style={{width: 390, height: 65, left: -5, top: 223, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                    <div style={{width: 390, paddingLeft: 48.08, paddingRight: 48.08, left: 6, top: 0, position: 'absolute', justifyContent: 'space-between', alignItems: 'center', display: 'flex'}}>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 47, top: -64, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 89.14, left: 4, top: 21, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 16.02, height: 9.02, left: 0, top: 3.34, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{alignSelf: 'stretch', textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>연강인데 에공에서 <br/>비타까지...?</div>
-                            </div>
-                            <div style={{left: 6.67, top: 72.71, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 83.80, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>이건 말이 안되잖아</div>
-                            </div>
-                        </div>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 144, top: -64, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 82, height: 37, left: 8, top: 21, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 5.65, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 6.96, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 8.27, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 9.59, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8.80, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 8, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 0.38, height: 0.70, left: 7.21, top: 10.90, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 11.88, height: 10.09, left: 2, top: 3, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{width: 85, textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>오르막길은 <br/>피하고 싶다</div>
-                            </div>
-                            <div style={{left: 6, top: 72, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 80.13, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>여름에 오르막 길은 땀나고 힘든데 </div>
-                            </div>
-                        </div>
-                        <div style={{width: 97, height: 108, paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 8.01, paddingBottom: 8.01, left: 241, top: -64, position: 'absolute', background: 'white', boxShadow: '0px 0.6677330732345581px 1.3354661464691162px rgba(171, 190, 209, 0.20)', borderRadius: 2.67, outline: '0.33px #040404 solid', outlineOffset: '-0.33px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                            <div style={{width: 89.14, left: 4, top: 17, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                                <div style={{width: 21.70, height: 18.70, position: 'relative'}}>
-                                    <div style={{width: 16.69, height: 16.36, left: 21.70, top: 18.70, position: 'absolute', transform: 'rotate(-180deg)', transformOrigin: 'top left', background: '#E8F5E9', borderTopLeftRadius: 6.01, borderTopRightRadius: 1.67, borderBottomRightRadius: 3.34, borderBottomLeftRadius: 1.67}} />
-                                    <div style={{width: 16.03, height: 16.03, left: 0, top: 0, position: 'absolute'}}>
-                                        <div style={{width: 4.19, height: 5.69, left: 5.73, top: 3, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 5.12, height: 4.51, left: 2.66, top: 8.51, position: 'absolute', background: '#103E13'}} />
-                                        <div style={{width: 5.12, height: 4.51, left: 8.35, top: 8.51, position: 'absolute', background: '#103E13'}} />
-                                    </div>
-                                </div>
-                                <div style={{width: 89, textAlign: 'center', color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>졸업까지 <br/>몇 학점 들어야지?</div>
-                            </div>
-                            <div style={{left: 6.67, top: 68.71, position: 'absolute', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                                <div style={{width: 83.80, textAlign: 'center', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>전선, 전필 몇학점?<br/>필수교양은 뭐들어야지?</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', height: 236.57, paddingLeft: 48.08, paddingRight: 48.08}} />
-    </div>
-    <div style={{alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 16.03, display: 'flex'}}>
-        <div style={{alignSelf: 'stretch', paddingLeft: 48.08, paddingRight: 48.08, position: 'relative', justifyContent: 'space-between', alignItems: 'center', display: 'inline-flex'}}>
-            <div style={{width: 147.57, height: 144.56, left: 0, top: -0.62, position: 'absolute'}}>
-                <div style={{width: 147.41, height: 0.07, left: 0, top: 113.89, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 9.76, height: 0.07, left: 27.04, top: 118.35, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 5.66, height: 0.07, left: 18.29, top: 118.35, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 5.66, height: 0.07, left: 56.42, top: 119.43, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 12.73, height: 0.07, left: 78.84, top: 121.08, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 1.87, height: 0.07, left: 74.35, top: 121.08, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 27.62, height: 0.07, left: 106.04, top: 119.43, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 60.29, height: 83.38, left: 11.27, top: 17.36, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 60.29, height: 83.38, left: 75.03, top: 17.36, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 6.48, height: 25.72, left: 72.35, top: 88.70, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 2.52, height: 3.50, left: 76.31, top: 110.92, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 6.48, height: 25.72, left: 43.94, top: 88.70, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 29.48, height: 23.57, left: 49.35, top: 88.70, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 27.57, height: 6.46, left: 50.31, top: 89.75, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 2.52, height: 3.50, left: 49.35, top: 110.92, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 1.30, height: 1.30, left: 63.44, top: 92.33, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 27.57, height: 6.46, left: 50.31, top: 97.26, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 1.30, height: 1.30, left: 63.44, top: 99.85, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 27.57, height: 6.47, left: 50.31, top: 104.76, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 1.30, height: 1.30, left: 63.44, top: 107.34, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 6.48, height: 40.66, left: 39.98, top: 73.77, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 2.52, height: 3.50, left: 43.95, top: 110.92, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 6.48, height: 40.66, left: 15.76, top: 73.77, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 25.30, height: 38.51, left: 21.16, top: 73.77, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 23.40, height: 8.98, left: 22.11, top: 74.72, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 11.28, height: 23.39, left: 34.23, top: 84.50, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 11.29, height: 23.39, left: 22.11, top: 84.50, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 2.52, height: 3.50, left: 21.16, top: 110.92, position: 'absolute', background: '#FAFAFA'}} />
-                <div style={{width: 1.31, height: 1.31, left: 33.16, top: 78.56, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 1.31, height: 1.31, left: 35.50, top: 94.99, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 1.30, height: 1.30, left: 30.83, top: 94.99, position: 'absolute', background: '#E6E6E6'}} />
-                <div style={{width: 3.19, height: 11.34, left: 27.12, top: 62.43, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 8.93, height: 5.35, left: 19.69, top: 68.41, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 12.81, height: 3.75, left: 57.69, top: 84.95, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 21.23, height: 64.16, left: 107.31, top: 45.71, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 10.64, height: 9.06, left: 111.66, top: 105.36, position: 'absolute', background: '#F0F0F0'}} />
-                <div style={{width: 12.70, height: 3.06, left: 110.63, top: 103.36, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 16.53, height: 18.15, left: 20.11, top: 23.40, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 17.07, height: 18.15, left: 21.35, top: 23.40, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 29.01, height: 14.21, left: 36.99, top: 24.83, position: 'absolute', transform: 'rotate(90deg)', transformOrigin: 'top left', background: 'white'}} />
-                <div style={{width: 14.51, height: 7.32, left: 33.55, top: 28.54, position: 'absolute', transform: 'rotate(90deg)', transformOrigin: 'top left', background: '#F5F5F5'}} />
-                <div style={{width: 15.35, height: 16.86, left: 105.54, top: 25.52, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 15.86, height: 16.86, left: 106.70, top: 25.52, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 8.24, height: 8.24, left: 110.51, top: 29.83, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 12.26, height: 13.46, left: 41.54, top: 34.23, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 12.66, height: 13.46, left: 42.47, top: 34.23, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 5.77, height: 4.99, left: 45.92, top: 38.09, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 86.36, height: 66.56, left: 31.17, top: 25.12, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 86.36, height: 66.56, left: 31.17, top: 25.12, position: 'absolute', opacity: 0.90, background: 'white'}} />
-                <div style={{width: 114.33, height: 6.67, left: 16.54, top: 120.53, position: 'absolute', background: '#F5F5F5'}} />
-                <div style={{width: 14.98, height: 11.30, left: 87.99, top: 48.15, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 6.35, height: 7.69, left: 97.59, top: 46.10, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 6.35, height: 7.69, left: 97.59, top: 46.10, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 1.79, height: 4.68, left: 99.12, top: 48.67, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 14.25, height: 19.88, left: 99.51, top: 45.52, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 14.25, height: 19.88, left: 99.51, top: 45.52, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 20.18, height: 1.15, left: 98.57, top: 123.56, position: 'absolute', mixBlendMode: 'multiply', background: '#E8ECF1'}} />
-                <div style={{width: 2.26, height: 5.02, left: 104.39, top: 116.58, position: 'absolute', transform: 'rotate(-21deg)', transformOrigin: 'top left', background: '#E58A7B'}} />
-                <div style={{width: 3.03, height: 5.14, left: 112.85, top: 116.72, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 6.57, height: 2.52, left: 109.93, top: 121.61, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 8.21, height: 4, left: 101.42, top: 120.15, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 3.45, height: 2.82, left: 85.54, top: 56.57, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 1.88, height: 2.77, left: 84.67, top: 56.50, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 2.26, height: 2.60, left: 104.67, top: 116.98, position: 'absolute', transform: 'rotate(-21deg)', transformOrigin: 'top left', background: '#CF6F64'}} />
-                <div style={{width: 2.64, height: 2.65, left: 112.85, top: 116.72, position: 'absolute', background: '#CF6F64'}} />
-                <div style={{width: 12.78, height: 10.47, left: 99.69, top: 53.19, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 2.43, height: 2.64, left: 102.28, top: 49.71, position: 'absolute', background: 'white'}} />
-                <div style={{width: 2.42, height: 2.63, left: 104.09, top: 52.44, position: 'absolute', background: 'white'}} />
-                <div style={{width: 5.44, height: 7.33, left: 104.38, top: 39.92, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 1.96, height: 2.58, left: 106.40, top: 40.99, position: 'absolute', background: '#CF6F64'}} />
-                <div style={{width: 2.31, height: 2.44, left: 102.95, top: 38.41, position: 'absolute', background: '#CF6F64'}} />
-                <div style={{width: 2.27, height: 5.66, left: 103.26, top: 34.61, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 6.43, height: 8.71, left: 103.58, top: 34.23, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 10.51, height: 10.25, left: 101.90, top: 29.90, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 2.39, height: 2.44, left: 108.66, top: 38.41, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 10.30, height: 53.61, left: 97.91, top: 65.40, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 2.24, height: 14.39, left: 104.20, top: 69.58, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 4.72, height: 2.84, left: 103.75, top: 116.37, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 12.05, height: 53.46, left: 104.28, top: 65.40, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 4.79, height: 1.30, left: 111.74, top: 117.63, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 4.06, height: 48.67, left: 110.80, top: 67.79, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 0.42, height: 0.65, left: 106.19, top: 37.76, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 0.43, height: 0.65, left: 104.17, top: 37.76, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 0.94, height: 1.72, left: 104.29, top: 38.18, position: 'absolute', background: '#DF5753'}} />
-                <div style={{width: 1.32, height: 0.67, left: 105.23, top: 39.94, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.06, height: 0.36, left: 105.99, top: 37.20, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.02, height: 0.54, left: 103.74, top: 36.41, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 13.83, height: 13.53, left: 101.07, top: 48.18, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 1.15, height: 0.56, left: 112.24, top: 121.43, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 0.66, height: 1, left: 112.73, top: 120.92, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 1.41, height: 0.52, left: 104.23, top: 121.15, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 0.96, height: 0.86, left: 104.67, top: 120.53, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 3.86, height: 3.06, left: 97.92, top: 59.92, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 1.17, height: 2.03, left: 100.91, top: 59.73, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.18, height: 1.19, left: 100.92, top: 60.06, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 3.17, height: 1.56, left: 96.20, top: 61.34, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 4.72, height: 2.84, left: 103.75, top: 116.37, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 4.79, height: 1.30, left: 111.74, top: 117.63, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 6.87, height: 8.29, left: 108.96, top: 46.06, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 6.87, height: 8.29, left: 108.96, top: 46.06, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 1.88, height: 0.30, left: 70.31, top: 21.95, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 5.07, height: 0.30, left: 96.36, top: 39.03, position: 'absolute', transform: 'rotate(-87deg)', transformOrigin: 'top left', background: '#4CAF4F'}} />
-                <div style={{width: 38.03, height: 72.44, left: 57.97, top: 23.31, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 38.03, height: 72.44, left: 56.93, top: 24.31, position: 'absolute', opacity: 0.56, background: '#FAFAFA'}} />
-                <div style={{width: 38.03, height: 72.44, left: 55.89, top: 25.30, position: 'absolute', opacity: 0.07, background: '#4CAF4F'}} />
-                <div style={{width: 29.94, height: 5.54, left: 60.02, top: 56.90, position: 'absolute', background: 'white'}} />
-                <div style={{width: 16.26, height: 2.48, left: 60.34, top: 52.86, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 29.94, height: 5.54, left: 59.35, top: 71.86, position: 'absolute', background: 'white'}} />
-                <div style={{width: 20.27, height: 6.64, left: 63.58, top: 84.89, position: 'absolute', opacity: 0.47, background: '#4CAF4F'}} />
-                <div style={{width: 20.33, height: 6.71, left: 62.52, top: 85.86, position: 'absolute', background: 'white'}} />
-                <div style={{width: 13.44, height: 2.48, left: 59.67, top: 67.81, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 15.13, height: 15.11, left: 68.35, top: 31.44, position: 'absolute', background: 'white'}} />
-                <div style={{width: 4.02, height: 4.01, left: 80.16, top: 31.02, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 1.78, height: 1.77, left: 61.69, top: 58.79, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 65.67, top: 58.79, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 69.64, top: 58.79, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 61.02, top: 73.75, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 65, top: 73.75, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 68.98, top: 73.75, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 72.95, top: 73.75, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.78, height: 1.77, left: 76.94, top: 73.75, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 6.25, height: 5.97, left: 71.70, top: 36.52, position: 'absolute', transform: 'rotate(-44deg)', transformOrigin: 'top left', background: '#4CAF4F'}} />
-                <div style={{width: 12.22, height: 5.48, left: 69.61, top: 41.07, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 6.25, height: 5.97, left: 71.70, top: 36.52, position: 'absolute', transform: 'rotate(-44deg)', transformOrigin: 'top left', opacity: 0.10, background: 'white'}} />
-                <div style={{width: 12.22, height: 5.48, left: 69.61, top: 41.07, position: 'absolute', opacity: 0.10, background: 'white'}} />
-                <div style={{width: 7.13, height: 15.54, left: 33.65, top: 62.72, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 2.63, height: 2.40, left: 39.82, top: 75.99, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 2.45, height: 2.29, left: 41.91, top: 75.99, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 0.47, height: 1.34, left: 47.29, top: 52.74, position: 'absolute', background: '#DF5753'}} />
-                <div style={{width: 0.44, height: 0.68, left: 47.02, top: 52.08, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 0.45, height: 0.20, left: 47.17, top: 51.96, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 4.65, height: 6.19, left: 41.12, top: 54.90, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 6.59, height: 8.79, left: 40.79, top: 48.43, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 8.81, height: 9.15, left: 38.60, top: 49.09, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.16, height: 2.15, left: 45.89, top: 52.33, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 8.09, height: 4.20, left: 39.98, top: 47.68, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 6.17, height: 1.66, left: 40.30, top: 58.88, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 6.17, height: 1.66, left: 40.30, top: 58.88, position: 'absolute', opacity: 0.60, background: 'black'}} />
-                <div style={{width: 5.08, height: 5.63, left: 43.27, top: 107.06, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 4.82, height: 5.70, left: 38.83, top: 106.72, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 3.54, height: 3.54, left: 44.81, top: 107.06, position: 'absolute', background: '#CF6F64'}} />
-                <div style={{width: 3.46, height: 3.50, left: 40.20, top: 106.72, position: 'absolute', background: '#CF6F64'}} />
-                <div style={{width: 13.63, height: 35.31, left: 37.45, top: 74.26, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 13.63, height: 35.31, left: 37.45, top: 74.26, position: 'absolute', opacity: 0.60, background: 'black'}} />
-                <div style={{width: 3.65, height: 16.62, left: 47.43, top: 79.20, position: 'absolute', opacity: 0.40, background: 'black'}} />
-                <div style={{width: 17.88, height: 36.13, left: 39.51, top: 74.26, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 17.88, height: 36.13, left: 39.51, top: 74.26, position: 'absolute', opacity: 0.60, background: 'black'}} />
-                <div style={{width: 4.64, height: 6.23, left: 35.26, top: 60.19, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 2.23, height: 3.96, left: 37.60, top: 62.47, position: 'absolute', opacity: 0.20, background: 'black'}} />
-                <div style={{width: 12.44, height: 14.63, left: 37.13, top: 59.63, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 7.72, height: 9.13, left: 48.01, top: 61.52, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 5.15, height: 6.55, left: 46.54, top: 60.21, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 2.55, height: 2.90, left: 54.59, top: 59.48, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 2.14, height: 0.64, left: 56.30, top: 59.48, position: 'absolute', background: '#E58A7B'}} />
-                <div style={{width: 4.39, height: 3.23, left: 44.51, top: 107.32, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 1.22, height: 0.55, left: 41.29, top: 111.72, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 0.88, height: 0.92, left: 41.30, top: 111.09, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.37, height: 0.78, left: 45.31, top: 112.77, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 1.19, height: 0.64, left: 45.30, top: 112.25, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 6.29, height: 3.97, left: 37.84, top: 110.97, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 5.95, height: 5.53, left: 41.50, top: 111, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 4.51, height: 2.96, left: 39.81, top: 106.81, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 10.16, height: 1.04, left: 38.32, top: 73.65, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 10.16, height: 1.04, left: 38.32, top: 73.65, position: 'absolute', opacity: 0.40, background: 'white'}} />
-                <div style={{width: 0.56, height: 1.21, left: 39.85, top: 73.56, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 0.56, height: 1.21, left: 45.86, top: 73.56, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 15.80, height: 1.14, left: 32.07, top: 123.56, position: 'absolute', mixBlendMode: 'multiply', background: '#F5F5F5'}} />
-                <div style={{width: 10.18, height: 39.16, left: 34.86, top: 84.96, position: 'absolute', background: '#E0E0E0'}} />
-                <div style={{width: 13.54, height: 6.17, left: 33.20, top: 82.02, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 10.69, height: 1.34, left: 34.63, top: 88.19, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 10.69, height: 1.34, left: 34.63, top: 88.19, position: 'absolute', opacity: 0.30, background: 'white'}} />
-            </div>
-            <div style={{width: 220.69, left: 152, top: 36.38, position: 'absolute', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.68, display: 'inline-flex'}}>
-                <div style={{width: 200.65, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                    <div style={{alignSelf: 'stretch', color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>당신이 선택한 선호조건을 반영합니다</div>
-                    <div style={{alignSelf: 'stretch', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>시간표 편성할 때 가장 많이 하는 고민들 위주로 실현 가능한 범위에서 조건들을 선별하였습니다.<br/></div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', paddingLeft: 48.08, paddingRight: 48.08, paddingTop: 21.37, paddingBottom: 21.37, background: '#F5F7FA', justifyContent: 'space-between', alignItems: 'center', display: 'inline-flex'}}>
-            <div style={{width: 146, overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'flex'}}>
-                    <div style={{width: 136.22, color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>남은 졸업 학점 확인가능</div>
-                </div>
-                <div style={{alignSelf: 'stretch', color: '#18191F', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>현재까지 이수한 학점을 분석하여 졸업까지 필요한 학점을 정확하게 계산하고 학기별 이수 계획을 세울 수 있습니다.</div>
-            </div>
-            <div style={{width: 146, overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 13.35, display: 'inline-flex'}}>
-                <div style={{overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'center', gap: 10.02, display: 'inline-flex'}}>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 15.62, height: 10.39, left: 0.25, top: 2.75, position: 'absolute', background: '#4CAF4F', border: '0.33px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>2,245,341</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Members</div>
-                        </div>
-                    </div>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative'}}>
-                            <div style={{width: 4.19, height: 5.69, left: 5.73, top: 3, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                            <div style={{width: 5.12, height: 4.51, left: 2.66, top: 8.51, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                            <div style={{width: 5.12, height: 4.51, left: 8.35, top: 8.51, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>46,328</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Clubs</div>
-                        </div>
-                    </div>
-                </div>
-                <div style={{overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'center', gap: 10.02, display: 'inline-flex'}}>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 10.68, height: 12.02, left: 2.67, top: 2, position: 'absolute', background: '#4CAF4F', outline: '0.67px #4CAF4F solid', outlineOffset: '-0.33px'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>828,867</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Event Bookings</div>
-                        </div>
-                    </div>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 14.02, height: 11.02, left: 1, top: 2.50, position: 'absolute', background: '#4CAF4F', border: '0.33px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>1,926,436</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Payments</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', position: 'relative', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-            <div style={{width: 390, paddingLeft: 48.08, paddingRight: 48.08, left: 0, top: 0, position: 'absolute', justifyContent: 'space-between', alignItems: 'center', display: 'flex'}}>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 33, display: 'flex'}}>
-                    <div style={{width: 49.86, height: 32.73, background: '#E0E0E0'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 49.55, height: 32.38, background: '#E6E6E6'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 49.85, height: 32.73, background: '#E0E0E0'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 58.50, height: 59.41, background: '#E6E6E6'}} />
-                    <div style={{width: 45.83, height: 54.01, background: '#F0F0F0'}} />
-                    <div style={{width: 45.83, height: 5.88, background: '#E0E0E0'}} />
-                    <div style={{width: 1.92, height: 2.18, background: 'white'}} />
-                    <div style={{width: 1.93, height: 2.19, background: 'white'}} />
-                    <div style={{width: 1.93, height: 2.19, background: 'white'}} />
-                    <div style={{width: 58.50, height: 66.13, background: '#F0F0F0'}} />
-                    <div style={{width: 58.50, height: 7.75, background: '#E0E0E0'}} />
-                    <div style={{width: 2.54, height: 2.88, background: 'white'}} />
-                    <div style={{width: 2.54, height: 2.87, background: 'white'}} />
-                    <div style={{width: 2.54, height: 2.88, background: 'white'}} />
-                    <div style={{width: 94.28, height: 99.64, background: '#F0F0F0'}} />
-                    <div style={{width: 94.36, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 25.28, height: 37.53, background: '#4CAF4F'}} />
-                    <div style={{width: 18.47, height: 48.48, background: '#263238'}} />
-                    <div style={{width: 1.33, height: 11.35, background: '#263238'}} />
-                    <div style={{width: 11.66, height: 2.49, background: '#263238'}} />
-                    <div style={{width: 5.89, height: 16.94, background: '#263238'}} />
-                    <div style={{width: 15.54, height: 5.68, background: '#263238'}} />
-                    <div style={{width: 25.34, height: 34.38, background: '#4CAF4F'}} />
-                    <div style={{width: 13.10, height: 5.38, background: '#263238'}} />
-                    <div style={{width: 16.56, height: 24.57, background: '#263238'}} />
-                    <div style={{width: 6.48, height: 9.22, background: '#263238'}} />
-                    <div style={{width: 6.52, height: 11.38, background: '#263238'}} />
-                    <div style={{width: 43.95, height: 101.58, background: '#455A64'}} />
-                    <div style={{width: 39.90, height: 94.98, background: 'white'}} />
-                    <div style={{width: 23.42, height: 8.08, background: '#4CAF4F'}} />
-                    <div style={{width: 29.21, height: 34.51, color: '#E8E8E3', fontSize: 2.71, fontFamily: 'Montserrat', fontWeight: '400', wordWrap: 'break-word'}}>SING UP</div>
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.41, height: 6.08, background: '#E0E0E0'}} />
-                    <div style={{width: 14.31, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 14.31, height: 1.52, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.42, height: 6.06, background: '#E0E0E0'}} />
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.41, height: 6.09, background: '#E0E0E0'}} />
-                    <div style={{width: 14.31, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 14.31, height: 1.52, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.52, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.52, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 4.03, height: 4.98, background: '#4CAF4F'}} />
-                    <div style={{width: 4.03, height: 4.98, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 14.35, height: 1.95, background: '#4CAF4F'}} />
-                    <div style={{width: 14.35, height: 1.95, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 15.69, height: 20.21, background: '#4CAF4F'}} />
-                    <div style={{width: 4.75, height: 7.64, background: '#4CAF4F'}} />
-                    <div style={{width: 1.31, height: 4.36, background: '#4CAF4F'}} />
-                    <div style={{width: 7.85, height: 4.60, background: '#4CAF4F'}} />
-                    <div style={{width: 7.79, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 0.37, height: 0.56, background: '#263238'}} />
-                    <div style={{width: 0.35, height: 0.65, background: '#263238'}} />
-                    <div style={{width: 1.35, height: 1.04, background: '#263238'}} />
-                    <div style={{width: 0.45, height: 0.25, background: '#263238'}} />
-                    <div style={{width: 0.56, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 7.85, height: 4.58, background: '#4CAF4F'}} />
-                    <div style={{width: 7.79, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 0.37, height: 0.56, background: '#263238'}} />
-                    <div style={{width: 0.35, height: 0.65, background: '#263238'}} />
-                    <div style={{width: 1.35, height: 1.04, background: '#263238'}} />
-                    <div style={{width: 0.45, height: 0.25, background: '#263238'}} />
-                    <div style={{width: 0.56, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 43.56, height: 51.81, background: '#FFBE9D'}} />
-                    <div style={{width: 26.53, height: 24.15, background: '#4CAF4F'}} />
-                    <div style={{width: 4.81, height: 0.60, background: '#263238'}} />
-                    <div style={{width: 5.23, height: 0.79, background: '#263238'}} />
-                    <div style={{width: 1.13, height: 5.20, background: '#263238'}} />
-                    <div style={{width: 4.12, height: 1.27, background: '#263238'}} />
-                    <div style={{width: 3.76, height: 6.89, background: '#263238'}} />
-                    <div style={{width: 0.18, height: 6.36, background: '#263238'}} />
-                    <div style={{width: 6.46, height: 13.07, background: '#FFBE9D'}} />
-                    <div style={{width: 0.69, height: 1.30, background: '#EB996E'}} />
-                    <div style={{width: 15.47, height: 27.38, background: '#263238'}} />
-                    <div style={{width: 1.05, height: 1.36, background: '#4CAF4F'}} />
-                    <div style={{width: 20.02, height: 57.09, background: '#263238'}} />
-                    <div style={{width: 4.40, height: 1.02, background: '#455A64'}} />
-                    <div style={{width: 7.22, height: 0.18, background: '#455A64'}} />
-                    <div style={{width: 7.01, height: 0.18, background: '#455A64'}} />
-                    <div style={{width: 0.71, height: 47.28, background: '#455A64'}} />
-                    <div style={{width: 5.89, height: 53.72, background: '#455A64'}} />
-                    <div style={{width: 3.24, height: 0.63, background: '#455A64'}} />
-                    <div style={{width: 2.84, height: 0.29, background: '#455A64'}} />
-                    <div style={{width: 13.55, height: 1.87, opacity: 0.20, background: 'black'}} />
-                    <div style={{width: 2.49, height: 10.95, background: 'black'}} />
-                    <div style={{width: 197, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.68, display: 'inline-flex'}}>
-                        <div style={{width: 200.65, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                            <div style={{alignSelf: 'stretch', color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>제가 선택한 조건을 어떻게 반영하나요?</div>
-                            <div style={{alignSelf: 'stretch', color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>제약 만족 문제(CSP) 해결 알고리즘을 통해 다영한 조건을 동시에 만족하는 <br/>최적의 시간표 조합을 찾아냅니다. </div>
-                        </div>
-                        <div data-icon="No" data-size="Medium" data-state="Default" data-type="Primary" style={{paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 4.67, paddingBottom: 4.67, background: '#4CAF4F', borderRadius: 1.34, justifyContent: 'center', alignItems: 'center', gap: 3.34, display: 'inline-flex'}}>
-                            <div style={{textAlign: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: 'white', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Learn More</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', paddingLeft: 48.08, paddingRight: 48.08, paddingTop: 21.37, paddingBottom: 21.37, background: '#F5F7FA', justifyContent: 'space-between', alignItems: 'center', display: 'inline-flex'}}>
-            <div style={{width: 146, overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'inline-flex'}}>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'flex'}}>
-                    <div style={{width: 136.22, color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>AI기반 개인화 조건 반영 <br/>코멘트 작성 </div>
-                </div>
-                <div style={{alignSelf: 'stretch', color: '#18191F', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>생성된 시간표 후보군 3개중 개인 선호조건을 고려히여 코멘트를 작성합니다</div>
-            </div>
-            <div style={{width: 146, overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 13.35, display: 'inline-flex'}}>
-                <div style={{overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'center', gap: 10.02, display: 'inline-flex'}}>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 15.62, height: 10.39, left: 0.25, top: 2.75, position: 'absolute', background: '#4CAF4F', border: '0.33px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>2,245,341</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Members</div>
-                        </div>
-                    </div>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative'}}>
-                            <div style={{width: 4.19, height: 5.69, left: 5.73, top: 3, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                            <div style={{width: 5.12, height: 4.51, left: 2.66, top: 8.51, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                            <div style={{width: 5.12, height: 4.51, left: 8.35, top: 8.51, position: 'absolute', background: '#4CAF4F', border: '0.45px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>46,328</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Clubs</div>
-                        </div>
-                    </div>
-                </div>
-                <div style={{overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'center', gap: 10.02, display: 'inline-flex'}}>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 10.68, height: 12.02, left: 2.67, top: 2, position: 'absolute', background: '#4CAF4F', outline: '0.67px #4CAF4F solid', outlineOffset: '-0.33px'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>828,867</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Event Bookings</div>
-                        </div>
-                    </div>
-                    <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 5.34, display: 'flex'}}>
-                        <div style={{width: 16.03, height: 16.03, position: 'relative', overflow: 'hidden'}}>
-                            <div style={{width: 14.02, height: 11.02, left: 1, top: 2.50, position: 'absolute', background: '#4CAF4F', border: '0.33px #4CAF4F solid'}} />
-                        </div>
-                        <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-                            <div style={{width: 63.77, color: '#4D4D4D', fontSize: 9.35, fontFamily: 'Inter', fontWeight: '700', lineHeight: 12.02, wordWrap: 'break-word'}}>1,926,436</div>
-                            <div style={{width: 63.77, color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>Payments</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', position: 'relative', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex'}}>
-            <div style={{width: 390, paddingLeft: 48.08, paddingRight: 48.08, left: 0, top: 0, position: 'absolute', justifyContent: 'space-between', alignItems: 'center', display: 'flex'}}>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 33, display: 'flex'}}>
-                    <div style={{width: 49.86, height: 32.73, background: '#E0E0E0'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 49.55, height: 32.38, background: '#E6E6E6'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 3.09, height: 3.66, background: 'white'}} />
-                    <div style={{width: 49.85, height: 32.73, background: '#E0E0E0'}} />
-                    <div style={{width: 32.90, height: 1.09, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 35.16, height: 1.19, background: '#F0F0F0'}} />
-                    <div style={{width: 11.50, height: 2.84, background: '#F0F0F0'}} />
-                    <div style={{width: 49.55, height: 5.21, background: '#E0E0E0'}} />
-                    <div style={{width: 58.50, height: 59.41, background: '#E6E6E6'}} />
-                    <div style={{width: 45.83, height: 54.01, background: '#F0F0F0'}} />
-                    <div style={{width: 45.83, height: 5.88, background: '#E0E0E0'}} />
-                    <div style={{width: 1.92, height: 2.18, background: 'white'}} />
-                    <div style={{width: 1.93, height: 2.19, background: 'white'}} />
-                    <div style={{width: 1.93, height: 2.19, background: 'white'}} />
-                    <div style={{width: 58.50, height: 66.13, background: '#F0F0F0'}} />
-                    <div style={{width: 58.50, height: 7.75, background: '#E0E0E0'}} />
-                    <div style={{width: 2.54, height: 2.88, background: 'white'}} />
-                    <div style={{width: 2.54, height: 2.87, background: 'white'}} />
-                    <div style={{width: 2.54, height: 2.88, background: 'white'}} />
-                    <div style={{width: 94.28, height: 99.64, background: '#F0F0F0'}} />
-                    <div style={{width: 94.36, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 25.28, height: 37.53, background: '#4CAF4F'}} />
-                    <div style={{width: 18.47, height: 48.48, background: '#263238'}} />
-                    <div style={{width: 1.33, height: 11.35, background: '#263238'}} />
-                    <div style={{width: 11.66, height: 2.49, background: '#263238'}} />
-                    <div style={{width: 5.89, height: 16.94, background: '#263238'}} />
-                    <div style={{width: 15.54, height: 5.68, background: '#263238'}} />
-                    <div style={{width: 25.34, height: 34.38, background: '#4CAF4F'}} />
-                    <div style={{width: 13.10, height: 5.38, background: '#263238'}} />
-                    <div style={{width: 16.56, height: 24.57, background: '#263238'}} />
-                    <div style={{width: 6.48, height: 9.22, background: '#263238'}} />
-                    <div style={{width: 6.52, height: 11.38, background: '#263238'}} />
-                    <div style={{width: 43.95, height: 101.58, background: '#455A64'}} />
-                    <div style={{width: 39.90, height: 94.98, background: 'white'}} />
-                    <div style={{width: 23.42, height: 8.08, background: '#4CAF4F'}} />
-                    <div style={{width: 29.21, height: 34.51, color: '#E8E8E3', fontSize: 2.71, fontFamily: 'Montserrat', fontWeight: '400', wordWrap: 'break-word'}}>SING UP</div>
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.41, height: 6.08, background: '#E0E0E0'}} />
-                    <div style={{width: 14.31, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 14.31, height: 1.52, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.42, height: 6.06, background: '#E0E0E0'}} />
-                    <div style={{width: 7.82, height: 1.63, background: '#4CAF4F'}} />
-                    <div style={{width: 7.82, height: 1.63, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 31.41, height: 6.09, background: '#E0E0E0'}} />
-                    <div style={{width: 14.31, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 14.31, height: 1.52, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.52, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: '#4CAF4F'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.52, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.52, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 1.25, height: 1.42, background: 'white'}} />
-                    <div style={{width: 4.03, height: 4.98, background: '#4CAF4F'}} />
-                    <div style={{width: 4.03, height: 4.98, opacity: 0.10, background: 'black'}} />
-                    <div style={{width: 14.35, height: 1.95, background: '#4CAF4F'}} />
-                    <div style={{width: 14.35, height: 1.95, opacity: 0.20, background: 'white'}} />
-                    <div style={{width: 15.69, height: 20.21, background: '#4CAF4F'}} />
-                    <div style={{width: 4.75, height: 7.64, background: '#4CAF4F'}} />
-                    <div style={{width: 1.31, height: 4.36, background: '#4CAF4F'}} />
-                    <div style={{width: 7.85, height: 4.60, background: '#4CAF4F'}} />
-                    <div style={{width: 7.79, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 0.37, height: 0.56, background: '#263238'}} />
-                    <div style={{width: 0.35, height: 0.65, background: '#263238'}} />
-                    <div style={{width: 1.35, height: 1.04, background: '#263238'}} />
-                    <div style={{width: 0.45, height: 0.25, background: '#263238'}} />
-                    <div style={{width: 0.56, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 7.85, height: 4.58, background: '#4CAF4F'}} />
-                    <div style={{width: 7.79, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 0.37, height: 0.56, background: '#263238'}} />
-                    <div style={{width: 0.35, height: 0.65, background: '#263238'}} />
-                    <div style={{width: 1.35, height: 1.04, background: '#263238'}} />
-                    <div style={{width: 0.45, height: 0.25, background: '#263238'}} />
-                    <div style={{width: 0.56, height: 0.18, background: '#263238'}} />
-                    <div style={{width: 43.56, height: 51.81, background: '#FFBE9D'}} />
-                    <div style={{width: 26.53, height: 24.15, background: '#4CAF4F'}} />
-                    <div style={{width: 4.81, height: 0.60, background: '#263238'}} />
-                    <div style={{width: 5.23, height: 0.79, background: '#263238'}} />
-                    <div style={{width: 1.13, height: 5.20, background: '#263238'}} />
-                    <div style={{width: 4.12, height: 1.27, background: '#263238'}} />
-                    <div style={{width: 3.76, height: 6.89, background: '#263238'}} />
-                    <div style={{width: 0.18, height: 6.36, background: '#263238'}} />
-                    <div style={{width: 6.46, height: 13.07, background: '#FFBE9D'}} />
-                    <div style={{width: 0.69, height: 1.30, background: '#EB996E'}} />
-                    <div style={{width: 15.47, height: 27.38, background: '#263238'}} />
-                    <div style={{width: 1.05, height: 1.36, background: '#4CAF4F'}} />
-                    <div style={{width: 20.02, height: 57.09, background: '#263238'}} />
-                    <div style={{width: 4.40, height: 1.02, background: '#455A64'}} />
-                    <div style={{width: 7.22, height: 0.18, background: '#455A64'}} />
-                    <div style={{width: 7.01, height: 0.18, background: '#455A64'}} />
-                    <div style={{width: 0.71, height: 47.28, background: '#455A64'}} />
-                    <div style={{width: 5.89, height: 53.72, background: '#455A64'}} />
-                    <div style={{width: 3.24, height: 0.63, background: '#455A64'}} />
-                    <div style={{width: 2.84, height: 0.29, background: '#455A64'}} />
-                    <div style={{width: 13.55, height: 1.87, opacity: 0.20, background: 'black'}} />
-                    <div style={{width: 2.49, height: 10.95, background: 'black'}} />
-                    <div style={{width: 197, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.68, display: 'inline-flex'}}>
-                        <div style={{width: 200.65, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                            <div style={{alignSelf: 'stretch', color: '#4D4D4D', fontSize: 12.02, fontFamily: 'Inter', fontWeight: '600', lineHeight: 14.69, wordWrap: 'break-word'}}>내가 듣고 싶은 강의는 장바구니에</div>
-                            <div style={{width: 214, color: '#717171', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>내가 듣고 싶은 특정 교수님의 강의나 꼭 듣고 싶은 과목은 우선적으로 배치가 되니 걱정 안하셔도 됩니다.</div>
-                        </div>
-                        <div data-icon="No" data-size="Medium" data-state="Default" data-type="Primary" style={{paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 4.67, paddingBottom: 4.67, background: '#4CAF4F', borderRadius: 1.34, justifyContent: 'center', alignItems: 'center', gap: 3.34, display: 'inline-flex'}}>
-                            <div style={{textAlign: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: 'white', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Learn More</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', paddingLeft: 48.08, paddingRight: 48.08, paddingTop: 10.68, paddingBottom: 10.68, background: '#F5F7FA', justifyContent: 'flex-start', alignItems: 'center', gap: 26.04, display: 'inline-flex'}}>
-            <img style={{width: 88, height: 109, boxShadow: '0px 2.6709322929382324px 5.341864585876465px rgba(171, 190, 209, 0.40)', borderRadius: 2.67}} src="https://placehold.co/88x109" />
-            <div style={{width: 129, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.68, display: 'inline-flex'}}>
-                <div style={{alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'flex'}}>
-                    <div style={{alignSelf: 'stretch', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: '#717171', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>뭐 채워넣을지 모르겟네 ,,, </div>
-                    <div style={{alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 2.67, display: 'flex'}}>
-                        <div style={{alignSelf: 'stretch', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: '#4CAF4F', fontSize: 6.68, fontFamily: 'Inter', fontWeight: '600', lineHeight: 9.35, wordWrap: 'break-word'}}>Tim Smith</div>
-                        <div style={{alignSelf: 'stretch', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: '#89939E', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '400', lineHeight: 8.01, wordWrap: 'break-word'}}>British Dragon Boat Racing Association</div>
-                    </div>
-                </div>
-                <div style={{alignSelf: 'stretch', justifyContent: 'flex-start', alignItems: 'center', gap: 10.68, display: 'inline-flex'}}>
-                    <div style={{flex: '1 1 0', height: 13.35, padding: 2.67}} />
-                </div>
-            </div>
-        </div>
-    </div>
-    <div style={{alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'flex'}}>
-        <div style={{alignSelf: 'stretch', paddingTop: 10.68, paddingBottom: 10.68, background: '#F5F7FA', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 10.68, display: 'flex'}}>
-            <div style={{width: 296.14, textAlign: 'center', color: '#263238', fontSize: 21.37, fontFamily: 'Inter', fontWeight: '600', lineHeight: 25.37, wordWrap: 'break-word'}}>지금 바로 시작하세요!</div>
-            <div data-icon="Right" data-size="Medium" data-state="Default" data-type="Primary" style={{paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 4.67, paddingBottom: 4.67, background: '#4CAF4F', borderRadius: 1.34, justifyContent: 'center', alignItems: 'center', gap: 2.67, display: 'inline-flex'}}>
-                <div style={{textAlign: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: 'white', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>시작하기</div>
-                <div style={{width: 5.34, height: 5.34, position: 'relative', transform: 'rotate(180deg)', transformOrigin: 'top left'}}>
-                    <div style={{width: 2, height: 3.82, left: 0.83, top: 3.67, position: 'absolute', transform: 'rotate(-90deg)', transformOrigin: 'top left', outline: '0.37px white solid', outlineOffset: '-0.18px'}} />
-                </div>
-            </div>
-        </div>
-        <div style={{alignSelf: 'stretch', paddingLeft: 55.09, paddingRight: 55.09, paddingTop: 21.37, paddingBottom: 21.37, background: '#263238', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 41.73, display: 'inline-flex'}}>
-            <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 13.35, display: 'inline-flex'}}>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 3.30, display: 'inline-flex'}}>
-                    <div style={{width: 14.45, height: 9.91, position: 'relative'}}>
-                        <div style={{width: 5.65, height: 4.83, left: 2.71, top: 5.08, position: 'absolute', background: 'white'}} />
-                        <div style={{width: 5.65, height: 4.83, left: 8.80, top: 0, position: 'absolute', background: 'white'}} />
-                        <div style={{width: 4.95, height: 4.27, left: 0, top: 0, position: 'absolute', background: '#4CAF4F'}} />
-                        <div style={{width: 4.97, height: 4.24, left: 3.04, top: 0.37, position: 'absolute', background: '#4CAF4F'}} />
-                        <div style={{width: 5.09, height: 4.36, left: 6.05, top: 5.55, position: 'absolute', background: '#4CAF4F'}} />
-                        <div style={{width: 4.90, height: 4.29, left: 9.19, top: 5.28, position: 'absolute', background: '#4CAF4F'}} />
-                    </div>
-                    <div style={{width: 46.02, height: 8.53, background: 'white'}} />
-                </div>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{width: 116.85, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Copyright © 2020 Landify UI Kit.</div>
-                    <div style={{width: 116.85, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>All rights reserved</div>
-                </div>
-                <div style={{overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 5.34, display: 'inline-flex'}}>
-                    <div data-social="Instagram" data-style="White" style={{width: 10.68, height: 10.68, position: 'relative'}}>
-                        <div style={{width: 10.68, height: 10.68, left: 0, top: 0, position: 'absolute', opacity: 0.10, background: 'white'}} />
-                        <div style={{width: 5.70, height: 5.70, left: 2.49, top: 2.49, position: 'absolute', background: 'white'}} />
-                    </div>
-                    <div data-social="Dribbble" data-style="White" style={{width: 10.68, height: 10.68, position: 'relative'}}>
-                        <div style={{width: 10.68, height: 10.68, left: 0, top: 0, position: 'absolute', opacity: 0.10, background: 'white'}} />
-                        <div style={{width: 5.70, height: 5.69, left: 2.49, top: 2.49, position: 'absolute', background: 'white'}} />
-                    </div>
-                    <div data-social="Twitter" data-style="White" style={{width: 10.68, height: 10.68, position: 'relative'}}>
-                        <div style={{width: 10.68, height: 10.68, left: 0, top: 0, position: 'absolute', opacity: 0.10, background: 'white'}} />
-                        <div style={{width: 5.17, height: 4.27, left: 2.67, top: 3.21, position: 'absolute', background: 'white'}} />
-                    </div>
-                    <div data-social="Youtube" data-style="White" style={{width: 10.68, height: 10.68, position: 'relative'}}>
-                        <div style={{width: 10.68, height: 10.68, left: 0, top: 0, position: 'absolute', opacity: 0.10, background: 'white'}} />
-                        <div style={{width: 5.70, height: 4.10, left: 2.49, top: 3.38, position: 'absolute', background: 'white'}} />
-                    </div>
-                </div>
-            </div>
-            <div style={{flex: '1 1 0', overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 10.02, display: 'flex'}}>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8.01, display: 'inline-flex'}}>
-                    <div style={{width: 53.42, color: 'white', fontSize: 6.68, fontFamily: 'Inter', fontWeight: '600', lineHeight: 9.35, wordWrap: 'break-word'}}>Company</div>
-                    <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 4.01, display: 'flex'}}>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>About us</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Blog</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Contact us</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Pricing</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Testimonials</div>
-                    </div>
-                </div>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8.01, display: 'inline-flex'}}>
-                    <div style={{width: 53.42, color: 'white', fontSize: 6.68, fontFamily: 'Inter', fontWeight: '600', lineHeight: 9.35, wordWrap: 'break-word'}}>Support</div>
-                    <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 4.01, display: 'flex'}}>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Help center</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Terms of service</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Legal</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Privacy policy</div>
-                        <div style={{width: 53.42, color: '#F5F7FA', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Status</div>
-                    </div>
-                </div>
-                <div style={{overflow: 'hidden', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8.01, display: 'inline-flex'}}>
-                    <div style={{width: 53.42, color: 'white', fontSize: 6.68, fontFamily: 'Inter', fontWeight: '600', lineHeight: 9.35, wordWrap: 'break-word'}}>Stay up to date</div>
-                    <div style={{width: 85.14, height: 13.35, opacity: 0.20, background: 'white', borderRadius: 2.67}} />
-                    <div style={{width: 6.01, height: 6.01, position: 'relative', overflow: 'hidden'}}>
-                        <div style={{width: 5.51, height: 5.51, left: 0.25, top: 0.25, position: 'absolute', background: 'white'}} />
-                    </div>
-                    <div style={{color: '#D9DBE1', fontSize: 4.67, fontFamily: 'Inter', fontWeight: '400', lineHeight: 6.68, wordWrap: 'break-word'}}>Your email address</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div style={{width: 390, height: 52, paddingLeft: 48.08, paddingRight: 48.08, paddingTop: 5.34, paddingBottom: 5.34, left: -1, top: 39, position: 'absolute', background: 'white', boxShadow: '0px 1.3354661464691162px 2.6709322929382324px rgba(171, 190, 209, 0.40)', justifyContent: 'center', alignItems: 'center', gap: 21.03, display: 'inline-flex'}}>
-        <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-            <div style={{width: 11.69, height: 8.01, position: 'relative'}}>
-                <div style={{width: 4.57, height: 3.90, left: 2.19, top: 4.11, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 4.57, height: 3.90, left: 7.12, top: 0, position: 'absolute', background: '#263238'}} />
-                <div style={{width: 4.01, height: 3.45, left: 0, top: 0, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 4.02, height: 3.43, left: 2.46, top: 0.30, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 4.12, height: 3.53, left: 4.89, top: 4.49, position: 'absolute', background: '#4CAF4F'}} />
-                <div style={{width: 3.96, height: 3.47, left: 7.43, top: 4.27, position: 'absolute', background: '#4CAF4F'}} />
-            </div>
-            <div style={{width: 37.22, height: 6.90, background: '#263238'}} />
-        </div>
-        <div style={{flex: '1 1 0', justifyContent: 'flex-end', alignItems: 'center', gap: 10.68, display: 'flex'}}>
-            <div style={{justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8.01, display: 'flex'}}>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{width: 34.05, textAlign: 'center', color: '#4D4D4D', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Home</div>
-                </div>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{textAlign: 'center', color: '#4D4D4D', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Features</div>
-                </div>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{textAlign: 'center', color: '#4D4D4D', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Community</div>
-                </div>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{color: '#4D4D4D', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Blog</div>
-                </div>
-                <div style={{justifyContent: 'flex-start', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                    <div style={{color: '#4D4D4D', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Pricing</div>
-                </div>
-            </div>
-            <div data-icon="Right" data-size="Medium" data-state="Default" data-type="Primary" style={{paddingLeft: 10.68, paddingRight: 10.68, paddingTop: 4.67, paddingBottom: 4.67, background: '#4CAF4F', borderRadius: 1.34, justifyContent: 'center', alignItems: 'center', gap: 2.67, display: 'flex'}}>
-                <div style={{textAlign: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', color: 'white', fontSize: 5.34, fontFamily: 'Inter', fontWeight: '500', lineHeight: 8.01, wordWrap: 'break-word'}}>Register Now</div>
-                <div style={{width: 5.34, height: 5.34, position: 'relative', transform: 'rotate(180deg)', transformOrigin: 'top left'}}>
-                    <div style={{width: 2, height: 3.82, left: 0.83, top: 3.67, position: 'absolute', transform: 'rotate(-90deg)', transformOrigin: 'top left', outline: '0.37px white solid', outlineOffset: '-0.18px'}} />
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
-  );
+// ============================================
+// SVG Path Data (피그마에서 import한 SVG)
+// ============================================
+const svgPaths = {
+  pf354c80: "M8.00945 3.33864C6.81713 3.33864 5.84648 4.31817 5.84648 5.51557C5.84648 6.27305 6.23545 6.94188 6.82282 7.33174C6.1134 7.56894 5.49955 8.01228 5.04932 8.59226C4.8004 8.40079 4.52226 8.24681 4.22242 8.13647C4.67711 7.79892 4.97423 7.25668 4.97423 6.64725C4.97423 5.63171 4.15289 4.80037 3.14351 4.80037C2.13413 4.80037 1.31279 5.63171 1.31279 6.64725C1.31279 7.25703 1.61016 7.79952 2.06523 8.13707C0.860443 8.58165 0 9.74563 0 11.1155V12.0777C0.000123313 12.1511 0.029466 12.2214 0.0814931 12.273C0.13352 12.3248 0.203919 12.3537 0.277275 12.3534H4.49901C4.50924 12.3545 4.51947 12.3551 4.5297 12.355H11.4894C11.4997 12.3551 11.51 12.3545 11.5201 12.3534H15.7422C15.894 12.3528 16.0169 12.2296 16.0172 12.0777V11.1155C16.0172 9.74563 15.1583 8.58165 13.9541 8.13695C14.4092 7.79952 14.7066 7.2569 14.7066 6.64713C14.7066 5.63159 13.8852 4.80025 12.8758 4.80025C11.8665 4.80025 11.0451 5.63159 11.0451 6.64713C11.0451 7.25656 11.3424 7.79889 11.7971 8.13635C11.4966 8.24694 11.2183 8.40142 10.9691 8.59336C10.519 8.01303 9.90605 7.56908 9.19666 7.33174C9.78387 6.94188 10.173 6.27305 10.173 5.51557C10.173 4.31817 9.20184 3.33864 8.00952 3.33864H8.00945ZM8.00945 3.89098C8.9012 3.89098 9.62009 4.61469 9.62009 5.51557C9.62009 6.4094 8.91241 7.12608 8.03053 7.13757C8.02351 7.13757 8.0166 7.13658 8.00945 7.13658C8.0023 7.13658 7.99552 7.13757 7.98837 7.13757C7.1065 7.12622 6.39929 6.40943 6.39929 5.51557C6.39929 4.61457 7.11758 3.89098 8.00933 3.89098H8.00945ZM3.14354 5.35267C3.8511 5.35267 4.42193 5.92695 4.42193 6.64722C4.42193 7.36267 3.85848 7.93448 3.15759 7.94224C3.1529 7.94224 3.14834 7.94175 3.14353 7.94175C3.13885 7.94175 3.13429 7.94224 3.12948 7.94224C2.42858 7.93447 1.86514 7.36254 1.86514 6.64722C1.86514 5.92698 2.43597 5.35267 3.14352 5.35267H3.14354ZM12.8757 5.35267C13.5832 5.35267 14.1541 5.92695 14.1541 6.64722C14.1541 7.36267 13.5906 7.93448 12.8897 7.94224C12.885 7.94224 12.8805 7.94175 12.8757 7.94175C12.871 7.94175 12.8664 7.94224 12.8616 7.94224C12.1607 7.93447 11.5973 7.36254 11.5973 6.64722C11.5973 5.92698 12.1681 5.35267 12.8757 5.35267H12.8757ZM7.9883 7.68987C7.99533 7.68999 8.00224 7.69086 8.00939 7.69086C8.01642 7.69086 8.02332 7.68987 8.03047 7.68987C9.79905 7.70121 11.2144 9.12878 11.2144 10.9158L11.2143 11.8025H4.80471V10.9158C4.80471 9.12862 6.2197 7.70123 7.98805 7.68987H7.9883ZM3.12239 8.49521C3.12942 8.49533 3.13633 8.49619 3.14348 8.49619C3.15063 8.49619 3.15741 8.49521 3.16456 8.49521C3.76275 8.50001 4.30868 8.70628 4.74338 9.05136C4.43233 9.60174 4.25244 10.237 4.25244 10.916V11.8006H0.552112V11.1155C0.552112 9.66309 1.69402 8.50654 3.12233 8.49508L3.12239 8.49521ZM12.8545 8.49521C12.8617 8.49533 12.8685 8.49619 12.8756 8.49619C12.8828 8.49619 12.8895 8.49521 12.8967 8.49521C14.325 8.50655 15.4669 9.66325 15.4669 11.1156V11.8006H11.7647L11.7646 10.916C11.7646 10.2374 11.5852 9.60259 11.2747 9.05234C11.7096 8.70677 12.2559 8.5 12.8546 8.49521H12.8545Z",
 };
 
-export default Landing;
+// ============================================
+// TimetableGrid Component
+// ============================================
+function TimetableGrid() {
+  // 1. 실제 시간에 맞춰 수정된 데이터 (빅데이터프로그래밍 14:00 종료 반영)
+  const everytimeSlots = [
+    { day: '월', start: '09:00', end: '12:00', name: '블록체인개론', room: 'AI관-408', color: '#D68677' },
+    { day: '월', start: '12:00', end: '14:00', name: '빅데이터프로그래밍', room: 'AI관-302', color: '#C5B376' },
+    { day: '월', start: '15:00', end: '17:00', name: '음악감상 및 비평 (실시간화상강의)', room: '화상강의강의실(가상)', color: '#B4D68A' },
+    { day: '화', start: '09:00', end: '12:00', name: '종합프로젝트(캡스톤디자인)', room: 'AI관-508', color: '#82B2A7' },
+    { day: '화', start: '13:00', end: '14:00', name: '빅데이터프로그래밍', room: 'AI관-302', color: '#C5B376' },
+    { day: '화', start: '15:00', end: '17:00', name: '지성학I (실시간화상강의)(P/NP)', room: '화상강의강의실(가상)', color: '#8CA8D6' },
+    { day: '수', start: '09:00', end: '12:00', name: '디지털 미디어 리터러시 (실시간화상강의)', room: '화상강의강의실(가상)', color: '#D6A677' },
+    { day: '목', start: '11:00', end: '13:00', name: '가정과육아 (실시간화상강의)', room: '화상강의강의실(가상)', color: '#988AD6' },
+  ];
+
+  const days = ['월', '화', '수', '목', '금'];
+  const startHour = 9;
+  const endHour = 19; 
+  const hourHeight = 65; // 1시간당 높이 (약간 늘려서 가독성 확보)
+
+  const getTimeInfo = (timeStr) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h + m / 60;
+  };
+
+  return (
+    <div className="bg-[#121212] rounded-lg p-3 font-sans max-w-4xl mx-auto shadow-2xl border border-[#222]">
+      {/* 요일 헤더 */}
+      <div className="grid grid-cols-[40px_repeat(5,1fr)] border-b border-[#222]">
+        <div className="h-10"></div>
+        {days.map(day => (
+          <div key={day} className="text-center text-[12px] font-bold text-[#777] leading-10 border-l border-[#222]">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* 본체 레이아웃 */}
+      <div className="grid grid-cols-[40px_repeat(5,1fr)] relative" style={{ height: (endHour - startHour) * hourHeight }}>
+        
+        {/* 가로 시간 구분선 & 라벨 */}
+        {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
+          <React.Fragment key={i}>
+            <div className="text-[11px] text-[#555] text-right pr-3" style={{ position: 'absolute', top: i * hourHeight - 8, width: '40px' }}>
+              {startHour + i}
+            </div>
+            {/* 배경 가로선 */}
+            <div 
+              className="col-start-2 col-span-5 border-t border-[#1f1f1f] w-full" 
+              style={{ position: 'absolute', top: i * hourHeight, height: '1px' }} 
+            />
+          </React.Fragment>
+        ))}
+
+        {/* 요일별 세로 영역 분리 (과목 배치 핵심) */}
+        <div className="absolute inset-0 left-[40px] grid grid-cols-5 h-full">
+          {days.map((day, dIdx) => (
+            <div key={day} className="relative h-full border-l border-[#1f1f1f]">
+              {everytimeSlots.filter(s => s.day === day).map((slot, sIdx) => {
+                const top = (getTimeInfo(slot.start) - startHour) * hourHeight;
+                const height = (getTimeInfo(slot.end) - getTimeInfo(slot.start)) * hourHeight;
+                
+                return (
+                  <div
+                    key={sIdx}
+                    className="absolute left-[1px] right-[1px] p-2 flex flex-col shadow-inner transition-all hover:brightness-110"
+                    style={{
+                      top: `${top}px`,
+                      height: `${height}px`,
+                      backgroundColor: slot.color,
+                      borderLeft: '3px solid rgba(0,0,0,0.1)',
+                      borderRadius: '2px'
+                    }}
+                  >
+                    <span className="text-white text-[11px] font-bold leading-tight mb-1">
+                      {slot.name}
+                    </span>
+                    <span className="text-white/80 text-[10px] leading-tight truncate">
+                      {slot.room}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 하단 메모 섹션 */}
+      <div className="mt-4 pt-3 border-t border-[#222] text-[11px] text-[#777] flex justify-between px-2">
+        <div className="flex gap-4">
+          <span className="font-medium text-[#999]">사회봉사1 (P/NP)</span>
+        </div>
+        <span className="italic opacity-50 text-[9px]">Gachon Univ. Sometime</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Navbar Component
+// ============================================
+function Navbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const navItems = [
+    { label: '기능', href: '#features' },
+    { label: '사용법', href: '#howto' },
+    { label: 'FAQ', href: '#faq' },
+  ];
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">알</span>
+            </div>
+            <span className="font-bold text-xl text-foreground">알잘딱깔센</span>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-8">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+              >
+                {item.label}
+              </a>
+            ))}
+            <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
+              시간표 만들기
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X className="w-6 h-6 text-foreground" /> : <Menu className="w-6 h-6 text-foreground" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background">
+          <div className="px-4 py-4 space-y-3">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="block text-foreground/80 hover:text-foreground transition-colors font-medium py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+            <button className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+              시간표 만들기
+            </button>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+// ============================================
+// HeroSection Component
+// ============================================
+function HeroSection() {
+  return (
+    <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/20">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
+              가천대학교 공식 시간표 생성기
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+              시간표, 이제
+              <br />
+              고민하지 말고 맡겨.
+            </h1>
+
+            <p className="text-lg text-foreground/70 leading-relaxed max-w-xl">
+              여러분의 선호 조건을 모두 반영할 수 있습니다 
+               <br />
+              공강요일, 온라인 강의 선호, 오르막 회피까지 모두 고려한 완벽한 시간표를 만들어드립니다<div className=""></div>
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <button className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition-all hover:shadow-lg flex items-center justify-center gap-2 group">
+                시간표 만들기
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button className="bg-background border-2 border-border text-foreground px-8 py-4 rounded-lg font-semibold hover:bg-muted transition-colors">
+                사용법 보기
+              </button>
+            </div>
+
+            {/* Stats */}
+      
+          </motion.div>
+
+          {/* Right Content - Timetable */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="absolute -top-4 -left-4 w-24 h-24 bg-primary/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-accent/20 rounded-full blur-3xl" />
+            <div className="relative">
+              <TimetableGrid compact={true} />
+
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// Features Component
+// ============================================
+function Features() {
+  const features = [
+    {
+      title: '개인선호 조건 반영',
+      description: '원하는 요일과 시간에 공강을 자동으로 배치하고 오르막 회피 역시 가능합니다.',
+      iconBg: '#e8f5e9',
+      iconColor: '#103E13',
+    },
+    {
+      title: '졸업요건 충족여부 확인',
+      description: '졸업 걱정 끝! 졸업까지 남은 학점 및 이수현황을 한눈에 보여드립니다.',
+      iconBg: '#e3f2fd',
+      iconColor: '#0d47a1',
+    },
+    {
+      title: '빠른 생성',
+      description: '복잡한 조건도 3초 만에 처리. 수백 개의 조합을 즉시 비교하고 최적의 결과를 보여드립니다.',
+      iconBg: '#fff3e0',
+      iconColor: '#e65100',
+    },
+  ];
+
+  return (
+    <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">왜 알잘딱깔센인가요?</h2>
+          <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
+            수동으로 시간표를 짜던 시대는 끝났습니다. 이제 더 스마트하게 준비하세요.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="bg-white flex flex-col gap-2 items-center px-8 py-6 rounded-lg shadow-[0px_2px_4px_0px_rgba(171,190,209,0.2)] hover:shadow-xl transition-all hover:-translate-y-1"
+            >
+              <div className="flex flex-col gap-4 items-center mb-2">
+                <div className="h-[46px] relative w-[54px]">
+                  <div className="absolute flex h-[40px] items-center justify-center left-[12px] top-[5px] w-[41px]">
+                    <div className="flex-none rotate-180">
+                      <div
+                        style={{ backgroundColor: feature.iconBg }}
+                        className="h-[40px] rounded-bl-sm rounded-br-md rounded-tl-2xl rounded-tr-sm w-[41px]"
+                      />
+                    </div>
+                  </div>
+                  <div className="absolute left-0 size-[40px] top-0">
+                    <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16.0256 16.0256">
+                      <g>
+                        <path d={svgPaths.pf354c80} fill={feature.iconColor} />
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="font-bold text-[#4d4d4d] text-base text-center">{feature.title}</h3>
+              </div>
+              <p className="font-normal text-[#717171] text-sm text-center leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// StatsSection Component
+// ============================================
+
+
+// ============================================
+// SecondaryFeature Component
+// ============================================
+function SecondaryFeature() {
+  const features = [
+    {
+      icon: RefreshCw,
+      title: '실시간 수정',
+      description: '마음에 안 들면 즉시 재생성',
+    },
+    {
+      icon: Share2,
+      title: '친구와 공유',
+      description: '같은 과목 듣는 친구 찾기',
+    },
+    {
+      icon: Download,
+      title: '다양한 포맷',
+      description: 'PDF, 이미지로 저장',
+    },
+  ];
+
+  return (
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left - Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="space-y-6 order-2 lg:order-1"
+          >
+            <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-600 px-4 py-2 rounded-full text-sm font-semibold">
+              언제 어디서나
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground leading-tight">
+              언제든 수정git branch -d 브랜치명 가능한
+              <br />
+              나만의 시간표
+            </h2>
+
+            <p className="text-lg text-foreground/70 leading-relaxed">
+              모바일에서도 완벽하게 작동하는 반응형 디자인. <br/>이동 중에도 시간표를 확인하고 수정할 수 있습니다.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-6 pt-4">
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="font-semibold text-foreground">{feature.title}</h4>
+                    <p className="text-sm text-foreground/60">{feature.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Right - Mobile Mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="relative order-1 lg:order-2"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-3xl blur-3xl" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1599950753725-ea5d8aba0d29?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2JpbGUlMjBwaG9uZSUyMHNjaGVkdWxlJTIwYXBwJTIwc2NyZWVufGVufDF8fHx8MTc3NTQ4MjEwN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="모바일 시간표 앱"
+                className="w-full h-auto"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// HighlightSection Component
+// ============================================
+function HighlightSection() {
+  const benefits = ['학과별 필수과목 자동 인식', '교양 선택 최적 추천', '졸업요건 충족 여부 확인'];
+
+  return (
+    <section id="howto" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/20">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left - Image */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-primary/10 rounded-3xl blur-3xl" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1632406895715-c9521b447fab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjB3b3Jrc3BhY2UlMjBkZXNrJTIwY2FsZW5kYXJ8ZW58MXx8fHwxNzc1NDgyMTA2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="시간표 생성 화면"
+                className="w-full h-auto"
+              />
+            </div>
+          </motion.div>
+
+          {/* Right - Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <div className="inline-block bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
+              스마트 알고리즘
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground leading-tight">
+              3초 만에 완성되는
+              <br />
+              완벽한 시간표
+            </h2>
+
+            <p className="text-lg text-foreground/70 leading-relaxed">
+              복잡한 조건을 입력할 필요 없이, 몇 번의 클릭만으로 나에게 딱 맞는 시간표를 받아보세요. <br/>CSP엔진이 수천 개의 조합을
+              분석하여 최고의 결과를 제공합니다.
+            </p>
+
+            <div className="space-y-3 pt-4">
+              {benefits.map((benefit, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-foreground/80">{benefit}</span>
+                </div>
+              ))}
+            </div>
+
+            <button className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition-all hover:shadow-lg flex items-center gap-2 group mt-8">
+              지금 바로 시작하기
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// Testimonial Component
+// ============================================
+
+
+// ============================================
+// SocialProof Component
+// ============================================
+function SocialProof() {
+  const stats = [
+    {
+      icon: Users,
+      label: '많은 가천대 학생들이',
+      value: '신뢰하는 서비스',
+    },
+    {
+      icon: TrendingUp,
+      label: '매 학기마다',
+      value: '2배씩 성장',
+    },
+    {
+      icon: Clock,
+      label: '평균 생성 시간',
+      value: '단 3초',
+    },
+    {
+      icon: Heart,
+      label: '사용자 만족도',
+      value: '96%',
+    },
+  ];
+
+  return (
+    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-foreground mb-3">이런 학생들에게 추천해요</h2>
+          <p className="text-foreground/70">시간표 짜는 데 시간을 낭비하고 싶지 않은 모든 가천인</p>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className="bg-background rounded-xl p-6 text-center hover:shadow-lg transition-shadow border border-border"
+              >
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Icon className="w-6 h-6 text-primary" />
+                </div>
+                <div className="text-sm text-foreground/60 mb-1">{stat.label}</div>
+                <div className="text-xl font-bold text-foreground">{stat.value}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// CTASection Component
+// ============================================
+function CTASection() {
+  return (
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-4xl mx-auto text-center relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="space-y-8"
+        >
+          <div className="inline-flex items-center gap-2 bg-primary-foreground/20 backdrop-blur-sm px-6 py-3 rounded-full text-sm font-semibold">
+            
+            지금 바로 시작하세요
+          </div>
+
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+            시간표 고민은 이제 그만,
+            <br />
+            3초면 충분합니다
+          </h2>
+
+          <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto leading-relaxed">
+            수천 명의 가천대 학생들이 이미 경험한 편리함. 복잡한 시간표 계획을 단 몇 번의 클릭으로 해결하세요.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <button className="bg-primary-foreground text-primary px-10 py-5 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2 group">
+              지금 시간표 만들기
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </button>
+            <button className="bg-transparent border-2 border-primary-foreground text-primary-foreground px-10 py-5 rounded-xl font-bold text-lg hover:bg-primary-foreground/10 transition-colors">
+              자세히 알아보기
+            </button>
+          </div>
+
+    
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================
+// Footer Component
+// ============================================
+function Footer() {
+  const links = {
+    product: [
+      { label: '기능', href: '#features' },
+      { label: '사용법', href: '#howto' },
+      { label: '가격', href: '#pricing' },
+      { label: 'FAQ', href: '#faq' },
+    ],
+    company: [
+      { label: '팀 소개', href: '#' },
+      { label: '블로그', href: '#' },
+      { label: '채용', href: '#' },
+      { label: '문의하기', href: '#' },
+    ],
+    legal: [
+      { label: '이용약관', href: '#' },
+      { label: '개인정보처리방침', href: '#' },
+      { label: '쿠키 정책', href: '#' },
+    ],
+  };
+
+const socials = [
+  { icon: Mail, href: 'mailto:contact@aljalddakgalsaen.com', label: 'Email' },
+  { icon: MessageSquare, href: '#', label: 'Instagram' },
+  { icon: Video, href: '#', label: 'Youtube' },
+  { icon: Code, href: '#', label: 'Github' },
+];
+
+  return (
+    <footer className="bg-muted border-t border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+          {/* Brand */}
+          <div className="col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">알</span>
+              </div>
+              <span className="font-bold text-xl text-foreground">알잘딱깔센</span>
+            </div>
+            <p className="text-foreground/70 text-sm mb-6 max-w-sm">
+              가천대학교 학생들을 위한 스마트 시간표 생성 서비스. 더 이상 시간표로 고민하지 마세요.
+            </p>
+            <div className="flex items-center gap-4">
+              {socials.map((social, index) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={index}
+                    href={social.href}
+                    aria-label={social.label}
+                    className="w-10 h-10 bg-background border border-border rounded-lg flex items-center justify-center text-foreground/60 hover:text-foreground hover:border-primary transition-all"
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">제품</h4>
+            <ul className="space-y-3">
+              {links.product.map((link, index) => (
+                <li key={index}>
+                  <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">회사</h4>
+            <ul className="space-y-3">
+              {links.company.map((link, index) => (
+                <li key={index}>
+                  <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">법적 고지</h4>
+            <ul className="space-y-3">
+              {links.legal.map((link, index) => (
+                <li key={index}>
+                  <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-foreground/60 text-sm">© 2026 알잘딱깔센. All rights reserved.</p>
+          <p className="text-foreground/60 text-sm">Made with ❤️ for Gachon University</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ============================================
+// Main Landing Page Component
+// ============================================
+export default function Landing() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />ㄹ
+      <HeroSection />
+      <Features />
+      <HighlightSection />
+      <SecondaryFeature />
+      <SocialProof />
+      <CTASection />
+      <Footer />
+    </div>
+  );
+}
