@@ -1,5 +1,6 @@
 // src/pages/user/Landing.jsx
 // 가천대학교 시간표 생성 서비스 "알잘딱깔센" 랜딩페이지
+import { Link } from 'react-router-dom';
 import '../../styles/global.css';
 import React, { useState, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -172,9 +173,12 @@ function Navbar() {
                 {item.label}
               </a>
             ))}
-            <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
-              시간표 만들기
-            </button>
+           <Link 
+        to="/Login" 
+        className="bg-[#0A0A14] text-white px-6 py-2 rounded-xl font-medium hover:bg-gray-800 transition-colors inline-block text-center"
+      >
+        로그인
+      </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -198,9 +202,11 @@ function Navbar() {
                 {item.label}
               </a>
             ))}
-            <button className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
-              시간표 만들기
-            </button>
+            
+  <button className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+    시간표 만들기
+  </button>
+
           </div>
         </div>
       )}
@@ -240,13 +246,13 @@ function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition-all hover:shadow-lg flex items-center justify-center gap-2 group">
-                시간표 만들기
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button className="bg-background border-2 border-border text-foreground px-8 py-4 rounded-lg font-semibold hover:bg-muted transition-colors">
-                사용법 보기
-              </button>
+<Link 
+  to="/timetable" 
+  className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition-all hover:shadow-lg flex items-center justify-center gap-2 group w-fit"
+>
+  시간표 만들기
+  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+</Link>
             </div>
 
             {/* Stats */}
@@ -732,32 +738,32 @@ function CTASection() {
 // Footer Component
 // ============================================
 function Footer() {
+  // 옵션 1: 서비스 중심 라우팅 구조로 변경
   const links = {
-    product: [
-      { label: '기능', href: '#features' },
-      { label: '사용법', href: '#howto' },
-      { label: '가격', href: '#pricing' },
+    service: [
+      { label: '시간표 만들기', href: '/timetable/setup' },
+      { label: '장바구니', href: '/cart' },
+      { label: '졸업 요건 관리', href: '/graduation/dashboard' },
+    ],
+    support: [
+      { label: '공지사항', href: '/notice' },
       { label: 'FAQ', href: '#faq' },
+      { label: '문의 및 버그 제보', href: '#' },
     ],
-    company: [
+    account: [
+      { label: '마이페이지', href: '/mypage' },
       { label: '팀 소개', href: '#' },
-      { label: '블로그', href: '#' },
-      { label: '채용', href: '#' },
-      { label: '문의하기', href: '#' },
-    ],
-    legal: [
       { label: '이용약관', href: '#' },
       { label: '개인정보처리방침', href: '#' },
-      { label: '쿠키 정책', href: '#' },
     ],
   };
 
-const socials = [
-  { icon: Mail, href: 'mailto:contact@aljalddakgalsaen.com', label: 'Email' },
-  { icon: MessageSquare, href: '#', label: 'Instagram' },
-  { icon: Video, href: '#', label: 'Youtube' },
-  { icon: Code, href: '#', label: 'Github' },
-];
+  const socials = [
+    { icon: Mail, href: 'mailto:contact@aljalddakgalsaen.com', label: 'Email' },
+    { icon: MessageSquare, href: '#', label: 'Instagram' },
+    { icon: Video, href: '#', label: 'Youtube' },
+    { icon: Code, href: 'https://github.com/', label: 'Github' }, // 깃허브 링크용
+  ];
 
   return (
     <footer className="bg-muted border-t border-border">
@@ -791,11 +797,11 @@ const socials = [
             </div>
           </div>
 
-          {/* Links */}
+          {/* Links - 서비스 */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">제품</h4>
+            <h4 className="font-semibold text-foreground mb-4">서비스</h4>
             <ul className="space-y-3">
-              {links.product.map((link, index) => (
+              {links.service.map((link, index) => (
                 <li key={index}>
                   <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
                     {link.label}
@@ -805,10 +811,11 @@ const socials = [
             </ul>
           </div>
 
+          {/* Links - 커뮤니티 & 지원 */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">회사</h4>
+            <h4 className="font-semibold text-foreground mb-4">커뮤니티 & 지원</h4>
             <ul className="space-y-3">
-              {links.company.map((link, index) => (
+              {links.support.map((link, index) => (
                 <li key={index}>
                   <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
                     {link.label}
@@ -818,10 +825,11 @@ const socials = [
             </ul>
           </div>
 
+          {/* Links - 내 계정 & 정책 */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">법적 고지</h4>
+            <h4 className="font-semibold text-foreground mb-4">내 계정 & 정책</h4>
             <ul className="space-y-3">
-              {links.legal.map((link, index) => (
+              {links.account.map((link, index) => (
                 <li key={index}>
                   <a href={link.href} className="text-foreground/70 hover:text-foreground transition-colors text-sm">
                     {link.label}
@@ -834,7 +842,7 @@ const socials = [
 
         {/* Bottom */}
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-foreground/60 text-sm">© 2026 알잘딱깔센. All rights reserved.</p>
+          <p className="text-foreground/60 text-sm">© 2026 알잘딱깔표 (Sometime). All rights reserved.</p>
           <p className="text-foreground/60 text-sm">Made with ❤️ for Gachon University</p>
         </div>
       </div>
