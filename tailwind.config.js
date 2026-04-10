@@ -7,18 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // CSS 변수와 Tailwind 클래스명을 매핑
         primary: {
-          DEFAULT: "var(--landing-primary, #030213)",
+          DEFAULT: "var(--landing-primary, #4F7CF3)",
           foreground: "var(--landing-primary-foreground, #ffffff)",
         },
         muted: {
-          DEFAULT: "var(--landing-muted, #f3f4f6)",
-          foreground: "var(--landing-muted-foreground, #717182)",
+          DEFAULT: "var(--landing-muted, #F5F7FB)",
+          foreground: "var(--landing-muted-foreground, #6B7280)",
         },
-        border: "var(--landing-border, rgba(0, 0, 0, 0.1))",
+        border: "var(--landing-border, #E8F0FF)",
         background: "var(--landing-background, #ffffff)",
-        foreground: "var(--landing-foreground, #030213)",
+        foreground: "var(--landing-foreground, #1F2937)",
+        accent: {
+          DEFAULT: "#2EC4B6",
+          foreground: "#ffffff",
+        },
       },
     },
   },

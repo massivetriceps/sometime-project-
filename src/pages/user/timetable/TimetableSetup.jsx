@@ -1,135 +1,122 @@
 ﻿import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles, CalendarDays, Clock, Mountain, Laptop } from 'lucide-react';
-import { Switch } from '../../../components/ui/Switch';
-import { Slider } from '../../../components/ui/Slider';
-import { useTimetable } from '../../../context/TimetableContext';
+import { Link } from 'react-router-dom';
 import { GachonLogo } from '../../../components/ui/GachonLogo';
+import { CheckCircle2, ArrowRight, Download, Share2, RotateCcw } from 'lucide-react';
+import { useTimetable } from '../../../context/TimetableContext';
 
-const DAYS = ['월', '화', '수', '목', '금'];
-const DAY_LABELS = { 월: '월요일', 화: '화요일', 수: '수요일', 목: '목요일', 금: '금요일' };
-const DEFAULT_CONDITIONS = { preferredFreeDays: [], avoidMorningClasses: false, avoidUphill: false, preferOnline: false, minCredits: 15, maxCredits: 21, additionalNotes: '' };
+const COLORS = ['#4F7CF3', '#2EC4B6', '#A78BFA', '#d4a017', '#ef4444'];
+const PLANS = {
+  A: [
+    { id: 1, name: '자료구조', professor: '김교수', day: '월', time: '10:00-12:00', room: '공학관 301', credits: 3 },
+    { id: 2, name: '알고리즘', professor: '이교수', day: '화', time: '13:00-15:00', room: 'AI공학관 201', credits: 3 },
+    { id: 3, name: '운영체제', professor: '박교수', day: '목', time: '10:00-12:00', room: '공학관 402', credits: 3 },
+    { id: 4, name: '영어회화', professor: 'Smith', day: '수', time: '14:00-15:00', room: '글로벌센터 201', credits: 2 },
+    { id: 5, name: '프로젝트', professor: '최교수', day: '금', time: '13:00-16:00', room: '공학관 501', credits: 3 },
+  ],
+  B: [
+    { id: 1, name: '컴퓨터네트워크', professor: '김교수', day: '월', time: '13:00-15:00', room: 'AI공학관 305', credits: 3 },
+    { id: 2, name: '데이터베이스', professor: '정교수', day: '화', time: '10:00-12:00', room: '공학관 201', credits: 3 },
+    { id: 3, name: '소프트웨어공학', professor: '한교수', day: '수', time: '10:00-12:00', room: '공학관 501', credits: 3 },
+    { id: 4, name: '영어회화', professor: 'Smith', day: '목', time: '14:00-15:00', room: '글로벌센터 201', credits: 2 },
+    { id: 5, name: '자료구조', professor: '김교수', day: '금', time: '10:00-12:00', room: '공학관 301', credits: 3 },
+  ],
+  C: [
+    { id: 1, name: '알고리즘', professor: '이교수', day: '월', time: '09:00-11:00', room: 'AI공학관 201', credits: 3 },
+    { id: 2, name: '운영체제', professor: '박교수', day: '화', time: '13:00-15:00', room: '공학관 402', credits: 3 },
+    { id: 3, name: '영어회화', professor: 'Smith', day: '수', time: '14:00-15:00', room: '글로벌센터 201', credits: 2 },
+    { id: 4, name: '컴퓨터네트워크', professor: '김교수', day: '목', time: '10:00-12:00', room: 'AI공학관 305', credits: 3 },
+    { id: 5, name: '프로젝트', professor: '최교수', day: '금', time: '13:00-16:00', room: '공학관 501', credits: 3 },
+  ],
+};
+const AI_COMMENTS = {
+  A: '수요일 공강이 확보되었으며, 부족했던 전공 필수 3학점을 채우고 아침 수업을 피한 완벽한 시간표입니다.',
+  B: '화요일과 목요일에 수업이 집중되어 월·수·금 공강에 가까운 일정입니다. 동선이 최소화된 플랜입니다.',
+  C: '전체적으로 오전 수업이 적고, 수업 간 여유 시간이 충분합니다. 체력 소모가 적은 시간표입니다.',
+};
 
-export default function TimetableSetup() {
-  const navigate = useNavigate();
-  const { setConditions, setIsGenerating } = useTimetable();
-  const [localConditions, setLocalConditions] = useState(DEFAULT_CONDITIONS);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const toggleDay = (day) => {
-    setLocalConditions(prev => ({
-      ...prev,
-      preferredFreeDays: prev.preferredFreeDays.includes(day)
-        ? prev.preferredFreeDays.filter(d => d !== day)
-        : [...prev.preferredFreeDays, day],
-    }));
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    setConditions(localConditions);
-    setIsGenerating(true);
-    setTimeout(() => navigate('/timetable/result'), 300);
-  };
+export default function Result() {
+  const { conditions } = useTimetable();
+  const [selectedPlan, setSelectedPlan] = useState('A');
+  const courses = PLANS[selectedPlan];
+  const total = courses.reduce((s, c) => s + c.credits, 0);
+  const s = { fontFamily: 'Pretendard, sans-serif' };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
-      <header className="sticky top-0 z-50 border-b border-[#E8F0FF] bg-[#FFFFFF]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', ...s }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid #E8F0FF', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)' }}>
+        <div style={{ maxWidth: 896, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, padding: '0 16px' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <GachonLogo size={32} />
-            <span className="text-xl font-bold text-[#1F2937]">Sometime</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#1F2937' }}>Sometime</span>
           </Link>
-          <Link to="/"><button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#6B7280] hover:bg-[#F5F7FB] transition-colors"><ArrowLeft className="h-4 w-4" />홈으로</button></Link>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, border: '1px solid #E8F0FF', padding: '8px 12px', fontSize: 13, color: '#6B7280', background: 'white', cursor: 'pointer', ...s }}>
+              <Download size={14} />저장
+            </button>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, border: '1px solid #E8F0FF', padding: '8px 12px', fontSize: 13, color: '#6B7280', background: 'white', cursor: 'pointer', ...s }}>
+              <Share2 size={14} />공유
+            </button>
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 py-8 pb-24">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-          <div className="mb-2 flex items-center gap-2 text-sm text-[#6B7280]"><Sparkles className="h-4 w-4 text-[#4F7CF3]" /><span>STEP 1</span></div>
-          <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-[#1F2937]">시간표 조건 설정</h1>
-          <p className="text-[#6B7280]">원하는 조건을 선택하면 AI가 최적의 시간표를 추천해 드립니다</p>
-        </motion.div>
-        <div className="flex flex-col gap-5">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="rounded-2xl bg-[#FFFFFF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#E8F0FF] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF]"><CalendarDays className="h-5 w-5 text-[#4F7CF3]" /></div>
-              <div><h2 className="text-base font-semibold text-[#1F2937]">공강일 설정</h2><p className="text-sm text-[#6B7280]">수업 없이 쉬고 싶은 요일을 선택하세요</p></div>
-            </div>
-            <div className="grid grid-cols-5 gap-2 sm:gap-3">
-              {DAYS.map(day => {
-                const selected = localConditions.preferredFreeDays.includes(day);
-                return (
-                  <button key={day} type="button" onClick={() => toggleDay(day)}
-                    className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 sm:py-4 transition-all ${selected ? 'border-[#4F7CF3] bg-[#E8F0FF] text-[#4F7CF3]' : 'border-[#F5F7FB] bg-[#F5F7FB] text-[#6B7280] hover:border-[#BFD4FF]'}`}>
-                    <span className="hidden sm:block text-xs font-medium">{DAY_LABELS[day]}</span>
-                    <span className="text-sm font-bold">{day}</span>
-                    {selected && <span className="text-[10px] font-semibold text-[#4F7CF3]">공강</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="rounded-2xl bg-[#FFFFFF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#E8F0FF] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF]"><Sparkles className="h-5 w-5 text-[#4F7CF3]" /></div>
-              <div><h2 className="text-base font-semibold text-[#1F2937]">수업 환경 설정</h2><p className="text-sm text-[#6B7280]">선호하는 수업 환경을 설정해 주세요</p></div>
-            </div>
-            <div className="flex flex-col gap-3">
-              {[
-                { key: 'avoidMorningClasses', icon: <Clock className="h-5 w-5 text-[#d4a017]" />, bg: '#F4D58D30', label: '1교시 수업 회피', desc: '오전 9시 수업을 제외하고 시간표를 구성합니다' },
-                { key: 'avoidUphill', icon: <Mountain className="h-5 w-5 text-[#2EC4B6]" />, bg: '#2EC4B610', label: '오르막길 이동 최소화', desc: '가천관, AI공학관 등 언덕 위 건물로의 이동을 줄입니다' },
-                { key: 'preferOnline', icon: <Laptop className="h-5 w-5 text-[#A78BFA]" />, bg: '#A78BFA10', label: '온라인 강의 선호', desc: '가능한 경우 온라인 강의를 우선 배치합니다' },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between rounded-xl border border-[#F5F7FB] bg-[#F5F7FB] p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: item.bg }}>{item.icon}</div>
-                    <div><p className="text-sm font-medium text-[#1F2937]">{item.label}</p><p className="text-xs text-[#6B7280]">{item.desc}</p></div>
-                  </div>
-                  <Switch checked={localConditions[item.key]} onCheckedChange={checked => setLocalConditions(prev => ({ ...prev, [item.key]: checked }))} />
-                </div>
-              ))}
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="rounded-2xl bg-[#FFFFFF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#E8F0FF] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF]"><CalendarDays className="h-5 w-5 text-[#4F7CF3]" /></div>
-              <div><h2 className="text-base font-semibold text-[#1F2937]">학점 범위 설정</h2><p className="text-sm text-[#6B7280]">수강할 학점 범위를 설정해 주세요</p></div>
-            </div>
-            <div className="flex flex-col gap-6">
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#1F2937]">최소 학점</span>
-                  <span className="rounded-lg bg-[#E8F0FF] px-3 py-1 text-sm font-bold text-[#4F7CF3]">{localConditions.minCredits}학점</span>
-                </div>
-                <Slider value={[localConditions.minCredits]} onValueChange={([v]) => setLocalConditions(prev => ({ ...prev, minCredits: v, maxCredits: Math.max(v, prev.maxCredits) }))} min={12} max={21} step={1} className="w-full" />
-              </div>
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#1F2937]">최대 학점</span>
-                  <span className="rounded-lg bg-[#E8F0FF] px-3 py-1 text-sm font-bold text-[#4F7CF3]">{localConditions.maxCredits}학점</span>
-                </div>
-                <Slider value={[localConditions.maxCredits]} onValueChange={([v]) => setLocalConditions(prev => ({ ...prev, maxCredits: v, minCredits: Math.min(v, prev.minCredits) }))} min={12} max={24} step={1} className="w-full" />
-              </div>
-              <p className="text-sm text-[#6B7280]">{localConditions.minCredits}학점 ~ {localConditions.maxCredits}학점 범위에서 시간표를 구성합니다</p>
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} className="rounded-2xl bg-[#FFFFFF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#E8F0FF] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF]"><Sparkles className="h-5 w-5 text-[#4F7CF3]" /></div>
-              <div><h2 className="text-base font-semibold text-[#1F2937]">추가 요청사항</h2><p className="text-sm text-[#6B7280]">시간표 생성에 반영할 추가 요청사항이 있다면 작성해 주세요</p></div>
-            </div>
-            <textarea placeholder="예: 점심시간(12:00-13:00)은 비워두었으면 좋겠습니다." value={localConditions.additionalNotes}
-              onChange={e => setLocalConditions(prev => ({ ...prev, additionalNotes: e.target.value }))} rows={4}
-              className="w-full resize-none rounded-xl border border-[#E8F0FF] bg-[#F5F7FB] p-4 text-sm text-[#1F2937] placeholder-[#6B7280] focus:border-[#4F7CF3] focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#4F7CF3]/20 transition-all" />
-          </motion.div>
+
+      <main style={{ maxWidth: 896, margin: '0 auto', padding: '28px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#d1faf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircle2 size={20} color="#2EC4B6" />
+          </div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1F2937', margin: 0 }}>최적화 시간표 생성 완료!</h1>
+            <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>조건에 맞는 3개의 플랜을 준비했어요. 가장 마음에 드는 플랜을 선택하세요.</p>
+          </div>
         </div>
-        <div className="mt-8 flex items-center justify-between">
-          <Link to="/"><button className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm text-[#6B7280] hover:bg-[#F5F7FB] transition-colors"><ArrowLeft className="h-4 w-4" />이전으로</button></Link>
-          <button onClick={handleSubmit} disabled={isSubmitting}
-            className="flex items-center gap-2 rounded-full bg-[#4F7CF3] px-8 py-3 text-sm font-semibold text-white shadow-lg hover:bg-[#3a6ce0] transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-            {isSubmitting ? '생성 중...' : (<>시간표 생성하기<ArrowRight className="h-4 w-4" /></>)}
-          </button>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {['A', 'B', 'C'].map(plan => (
+            <button key={plan} onClick={() => setSelectedPlan(plan)}
+              style={{ flex: 1, padding: '10px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: selectedPlan === plan ? 'none' : '1px solid #E8F0FF', background: selectedPlan === plan ? '#4F7CF3' : 'white', color: selectedPlan === plan ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
+              Plan {plan}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ background: '#E8F0FF', borderRadius: 14, border: '1px solid #BFD4FF', padding: 18, marginBottom: 16 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#4F7CF3', marginBottom: 6 }}>✨ AI 맞춤 코멘트 (Plan {selectedPlan})</p>
+          <p style={{ fontSize: 13, color: '#1F2937', lineHeight: 1.6, margin: 0 }}>{AI_COMMENTS[selectedPlan]}</p>
+        </div>
+
+        <div style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', padding: '14px 18px', marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 14, color: '#6B7280' }}>Plan {selectedPlan} 요약</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#1F2937' }}>총 {total}학점 · {courses.length}과목</span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
+          {courses.map((course, i) => (
+            <div key={course.id} style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 5, height: 36, borderRadius: 999, background: COLORS[i % COLORS.length], flexShrink: 0 }} />
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 3px', fontSize: 14 }}>{course.name}</p>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{course.professor} · {course.room}</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: '#1F2937', margin: '0 0 2px' }}>{course.day}요일 {course.time}</p>
+                  <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{course.credits}학점</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Link to="/timetable/setup" style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 12, border: '1px solid #E8F0FF', background: 'white', padding: '11px 18px', fontSize: 13, color: '#6B7280', textDecoration: 'none' }}>
+            <RotateCcw size={14} /> 조건 다시 설정
+          </Link>
+          <Link to="/timetable/manage" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#4F7CF3', color: 'white', padding: '12px 28px', borderRadius: 999, fontWeight: 600, fontSize: 14, textDecoration: 'none', boxShadow: '0 4px 12px rgba(79,124,243,0.35)' }}>
+            Plan {selectedPlan}으로 확정 <ArrowRight size={16} />
+          </Link>
         </div>
       </main>
     </div>

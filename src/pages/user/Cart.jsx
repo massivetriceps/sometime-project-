@@ -1,45 +1,79 @@
-﻿import { Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, ArrowRight, Star } from 'lucide-react';
-import { useTimetable } from '../../context/TimetableContext';
+import { Link } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
+import { ShoppingCart, Trash2, ArrowRight, Star, AlertCircle } from 'lucide-react';
+import { useTimetable } from '../../context/TimetableContext';
+
+const PRIORITY_LABEL = { high: '최우선', medium: '우선', low: '보통' };
+const PRIORITY_COLOR = {
+  high: { bg: '#fef2f2', color: '#ef4444' },
+  medium: { bg: '#E8F0FF', color: '#4F7CF3' },
+  low: { bg: '#F5F7FB', color: '#6B7280' },
+};
 
 export default function Cart() {
   const { cart, removeFromCart } = useTimetable();
+  const s = { fontFamily: 'Pretendard, sans-serif' };
+
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
-      <header className="sticky top-0 z-50 border-b border-[#E8F0FF] bg-[#FFFFFF]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2"><GachonLogo size={32} /><span className="text-xl font-bold text-[#1F2937]">Sometime</span></Link>
-          <Link to="/timetable/setup" className="text-sm text-[#4F7CF3] font-medium hover:underline">시간표 만들기</Link>
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', ...s }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid #E8F0FF', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)' }}>
+        <div style={{ maxWidth: 896, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, padding: '0 16px' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <GachonLogo size={32} />
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#1F2937' }}>Sometime</span>
+          </Link>
+          <Link to="/courses" style={{ fontSize: 14, color: '#4F7CF3', textDecoration: 'none', fontWeight: 500 }}>강의 검색</Link>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1F2937] mb-2 flex items-center gap-3"><ShoppingCart className="h-7 w-7 text-[#4F7CF3]" />관심 강의 장바구니</h1>
-          <p className="text-[#6B7280]">담아둔 강의를 확인하고 시간표 생성에 반영하세요</p>
+
+      <main style={{ maxWidth: 896, margin: '0 auto', padding: '28px 16px' }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F2937', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <ShoppingCart size={26} color="#4F7CF3" /> 관심 강의 장바구니
+          </h1>
+          <p style={{ color: '#6B7280', margin: 0, fontSize: 14 }}>담아둔 강의는 시간표 생성 시 최우선 제약 조건으로 반영됩니다.</p>
         </div>
+
+        {cart.length > 0 && (
+          <div style={{ background: '#E8F0FF', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertCircle size={15} color="#4F7CF3" />
+            <p style={{ fontSize: 13, color: '#4F7CF3', margin: 0 }}>장바구니에 담긴 {cart.length}개 강의가 시간표 생성 시 우선 배치됩니다.</p>
+          </div>
+        )}
+
         {cart.length === 0 ? (
-          <div className="rounded-2xl bg-[#FFFFFF] border border-[#E8F0FF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-16 text-center">
-            <ShoppingCart className="h-12 w-12 text-[#BFD4FF] mx-auto mb-4" />
-            <p className="text-[#6B7280] mb-6">아직 담은 강의가 없습니다</p>
-            <Link to="/timetable/setup"><button className="inline-flex items-center gap-2 rounded-full bg-[#4F7CF3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#3a6ce0] transition-all shadow-sm">시간표 만들기 <ArrowRight className="h-4 w-4" /></button></Link>
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', padding: '56px 24px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <ShoppingCart size={44} color="#BFD4FF" style={{ margin: '0 auto 14px', display: 'block' }} />
+            <p style={{ color: '#6B7280', marginBottom: 20, fontSize: 15 }}>아직 담은 강의가 없습니다</p>
+            <Link to="/courses" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#4F7CF3', color: 'white', padding: '12px 24px', borderRadius: 999, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+              강의 검색하기 <ArrowRight size={15} />
+            </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {cart.map(item => (
-              <div key={item.courseId} className="rounded-2xl bg-[#FFFFFF] border border-[#E8F0FF] shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF]"><Star className="h-5 w-5 text-[#4F7CF3]" /></div>
+              <div key={item.courseId} style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Star size={18} color="#4F7CF3" />
+                  </div>
                   <div>
-                    <p className="font-semibold text-[#1F2937]">{item.course?.name ?? item.courseId}</p>
-                    <p className="text-sm text-[#6B7280]">우선순위: {item.priority === 'high' ? '높음' : item.priority === 'medium' ? '보통' : '낮음'}</p>
+                    <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 5px', fontSize: 14 }}>{item.course?.name ?? item.courseId}</p>
+                    <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 999, fontWeight: 500, background: PRIORITY_COLOR[item.priority]?.bg, color: PRIORITY_COLOR[item.priority]?.color }}>
+                      {PRIORITY_LABEL[item.priority] || '보통'}
+                    </span>
                   </div>
                 </div>
-                <button onClick={() => removeFromCart(item.courseId)} className="text-[#6B7280] hover:text-red-400 transition-colors"><Trash2 className="h-5 w-5" /></button>
+                <button onClick={() => removeFromCart(item.courseId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 6 }}>
+                  <Trash2 size={17} />
+                </button>
               </div>
             ))}
-            <div className="mt-4 flex justify-end">
-              <Link to="/timetable/setup"><button className="inline-flex items-center gap-2 rounded-full bg-[#4F7CF3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#3a6ce0] transition-all shadow-sm">시간표 생성하기 <ArrowRight className="h-4 w-4" /></button></Link>
+            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Link to="/courses" style={{ fontSize: 13, color: '#6B7280', textDecoration: 'none' }}>← 강의 더 담기</Link>
+              <Link to="/timetable/setup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#4F7CF3', color: 'white', padding: '12px 24px', borderRadius: 999, fontWeight: 600, fontSize: 14, textDecoration: 'none', boxShadow: '0 4px 12px rgba(79,124,243,0.35)' }}>
+                시간표 생성하기 <ArrowRight size={15} />
+              </Link>
             </div>
           </div>
         )}
