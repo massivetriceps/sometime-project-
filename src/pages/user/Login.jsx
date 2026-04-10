@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
@@ -18,7 +18,7 @@ export default function Login() {
       setError('이메일과 비밀번호를 모두 입력해주세요.');
       return;
     }
-    login({ name: '홍길동', email: form.email, department: '컴퓨터공학과', studentId: '21', grade: '3' });
+    login({ name: '구라진', email: form.email, department: '컴퓨터공학과', studentId: '21', grade: '3' });
     navigate('/');
   };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import { User, Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
@@ -9,7 +9,7 @@ export default function MyPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [form, setForm] = useState({
-    name: user?.name || '홍길동',
+    name: user?.name || '구라진',
     department: user?.department || '컴퓨터공학과',
     studentId: user?.studentId || '21',
     email: user?.email || 'hong@gachon.ac.kr',

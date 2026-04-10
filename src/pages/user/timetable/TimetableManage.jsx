@@ -1,7 +1,16 @@
+import React from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GachonLogo } from '../../../components/ui/GachonLogo';
 import { ArrowRight, LayoutDashboard, Trash2, Edit, Plus } from 'lucide-react';
+
+const TIMETABLE_SLOTS = [
+  { day: '월', start: '10:00', end: '12:00', name: '자료구조', room: '공학관 301', color: '#8FA8FF' },
+  { day: '화', start: '13:00', end: '15:00', name: '알고리즘', room: 'AI공학관 201', color: '#8EDDD0' },
+  { day: '목', start: '10:00', end: '12:00', name: '운영체제', room: '공학관 402', color: '#C3B5FF' },
+  { day: '수', start: '14:00', end: '15:00', name: '영어회화', room: '글로벌센터 201', color: '#F7CFA1' },
+  { day: '금', start: '13:00', end: '16:00', name: '프로젝트', room: '공학관 501', color: '#F4AFCF' },
+];
 
 const SAVED = [
   { id: 1, name: '2025-1학기 시간표 Plan A', credits: 14, count: 5, date: '2025.01.15', courses: [
@@ -12,7 +21,59 @@ const SAVED = [
     { id: 5, name: '프로젝트', professor: '최교수', day: '금', time: '13:00-16:00', room: '공학관 501', credits: 3 },
   ]},
 ];
-const COLORS = ['#4F7CF3', '#2EC4B6', '#A78BFA', '#d4a017', '#ef4444'];
+
+const COLORS = ['#8FA8FF', '#8EDDD0', '#C3B5FF', '#F7CFA1', '#F4AFCF'];
+
+function TimetableGrid() {
+  const days = ['월', '화', '수', '목', '금'];
+  const startHour = 9;
+  const endHour = 19;
+  const hourHeight = 48;
+  const getTime = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
+  const s = { fontFamily: 'Pretendard, sans-serif' };
+
+  return (
+    <div style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid #E8F0FF', boxShadow: '0 4px 16px rgba(79,124,243,0.08)', marginBottom: 20, ...s }}>
+      {/* 요일 헤더 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '36px repeat(5, 1fr)', marginBottom: 4 }}>
+        <div style={{ height: 32 }} />
+        {days.map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#4F7CF3', lineHeight: '32px', background: '#F0F4FF', borderRadius: 6, margin: '0 2px' }}>{d}</div>
+        ))}
+      </div>
+      {/* 시간표 바디 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '36px repeat(5, 1fr)', position: 'relative', height: (endHour - startHour) * hourHeight }}>
+        {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
+          <React.Fragment key={i}>
+            <div style={{ position: 'absolute', top: i * hourHeight - 8, width: 32, fontSize: 10, color: '#9CA3AF', textAlign: 'right', paddingRight: 4 }}>{startHour + i}</div>
+            <div style={{ position: 'absolute', top: i * hourHeight, height: 1, left: 36, right: 0, background: '#F3F4F6' }} />
+          </React.Fragment>
+        ))}
+        <div style={{ position: 'absolute', inset: 0, left: 36, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', height: '100%' }}>
+          {days.map(day => (
+            <div key={day} style={{ position: 'relative', height: '100%', borderLeft: '1px solid #F3F4F6' }}>
+              {TIMETABLE_SLOTS.filter(slot => slot.day === day).map((slot, i) => {
+                const top = (getTime(slot.start) - startHour) * hourHeight;
+                const height = (getTime(slot.end) - getTime(slot.start)) * hourHeight;
+                return (
+                  <div key={i} style={{ position: 'absolute', left: 3, right: 3, top, height, backgroundColor: slot.color, borderRadius: 7, padding: '5px 7px', overflow: 'hidden' }}>
+                    <div style={{ color: 'white', fontSize: 10, fontWeight: 700, lineHeight: 1.3, marginBottom: 2 }}>{slot.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slot.room}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* 푸터 */}
+      <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid #F3F4F6', fontSize: 10, color: '#9CA3AF', display: 'flex', justifyContent: 'space-between' }}>
+        <span>사회봉사1 (P/NP)</span>
+        <span>Gachon Univ.</span>
+      </div>
+    </div>
+  );
+}
 
 export default function TimetableManage() {
   const [plans, setPlans] = useState(SAVED);
@@ -34,12 +95,15 @@ export default function TimetableManage() {
       </header>
 
       <main style={{ maxWidth: 896, margin: '0 auto', padding: '28px 16px' }}>
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F2937', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <LayoutDashboard size={26} color="#4F7CF3" /> 시간표 관리 대시보드
           </h1>
           <p style={{ color: '#6B7280', margin: 0, fontSize: 14 }}>생성된 시간표를 조회, 수정, 삭제할 수 있어요</p>
         </div>
+
+        {/* 시간표 그리드 */}
+        <TimetableGrid />
 
         {plans.length === 0 ? (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', padding: '48px 24px', textAlign: 'center' }}>

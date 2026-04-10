@@ -18,12 +18,12 @@ function useWindowWidth() {
 
 function TimetableGrid() {
   const slots = [
-    { day: '월', start: '09:00', end: '12:00', name: '블록체인개론', room: 'AI관-408', color: '#D68677' },
-    { day: '월', start: '12:00', end: '14:00', name: '빅데이터프로그래밍', room: 'AI관-302', color: '#C5B376' },
-    { day: '화', start: '09:00', end: '12:00', name: '종합프로젝트', room: 'AI관-508', color: '#82B2A7' },
-    { day: '화', start: '15:00', end: '17:00', name: '지성학I', room: '화상강의', color: '#8CA8D6' },
-    { day: '수', start: '09:00', end: '12:00', name: '디지털미디어', room: '화상강의', color: '#D6A677' },
-    { day: '목', start: '11:00', end: '13:00', name: '가정과육아', room: '화상강의', color: '#988AD6' },
+    { day: '월', start: '09:00', end: '12:00', name: '블록체인개론', room: 'AI관-408', color: '#8FA8FF' },
+    { day: '월', start: '12:00', end: '14:00', name: '빅데이터프로그래밍', room: 'AI관-302', color: '#F7CFA1' },
+    { day: '화', start: '09:00', end: '12:00', name: '종합프로젝트', room: 'AI관-508', color: '#8EDDD0' },
+    { day: '화', start: '15:00', end: '17:00', name: '지성학I', room: '화상강의', color: '#C3B5FF' },
+    { day: '수', start: '09:00', end: '12:00', name: '디지털미디어', room: '화상강의', color: '#F4AFCF' },
+    { day: '목', start: '11:00', end: '13:00', name: '가정과육아', room: '화상강의', color: '#8FA8FF' },
   ];
   const days = ['월', '화', '수', '목', '금'];
   const startHour = 9;
@@ -32,30 +32,30 @@ function TimetableGrid() {
   const getTime = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
 
   return (
-    <div style={{ background: '#121212', borderRadius: 16, padding: 12, border: '1px solid #222', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '40px repeat(5, 1fr)', borderBottom: '1px solid #222' }}>
-        <div style={{ height: 40 }} />
+    <div style={{ background: 'white', borderRadius: 16, padding: 16, border: '1px solid #E8F0FF', boxShadow: '0 8px 32px rgba(79,124,243,0.12)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '40px repeat(5, 1fr)', marginBottom: 4 }}>
+        <div style={{ height: 36 }} />
         {days.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#777', lineHeight: '40px', borderLeft: '1px solid #222' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#4F7CF3', lineHeight: '36px', background: '#F0F4FF', borderRadius: 8, margin: '0 2px' }}>{d}</div>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '40px repeat(5, 1fr)', position: 'relative', height: (endHour - startHour) * hourHeight }}>
         {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
           <React.Fragment key={i}>
-            <div style={{ position: 'absolute', top: i * hourHeight - 8, width: 40, fontSize: 11, color: '#555', textAlign: 'right', paddingRight: 6 }}>{startHour + i}</div>
-            <div style={{ position: 'absolute', top: i * hourHeight, height: 1, left: 40, right: 0, background: '#1f1f1f' }} />
+            <div style={{ position: 'absolute', top: i * hourHeight - 8, width: 36, fontSize: 11, color: '#9CA3AF', textAlign: 'right', paddingRight: 6 }}>{startHour + i}</div>
+            <div style={{ position: 'absolute', top: i * hourHeight, height: 1, left: 40, right: 0, background: '#F3F4F6' }} />
           </React.Fragment>
         ))}
         <div style={{ position: 'absolute', inset: 0, left: 40, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', height: '100%' }}>
           {days.map(day => (
-            <div key={day} style={{ position: 'relative', height: '100%', borderLeft: '1px solid #1f1f1f' }}>
+            <div key={day} style={{ position: 'relative', height: '100%', borderLeft: '1px solid #F3F4F6' }}>
               {slots.filter(s => s.day === day).map((slot, i) => {
                 const top = (getTime(slot.start) - startHour) * hourHeight;
                 const height = (getTime(slot.end) - getTime(slot.start)) * hourHeight;
                 return (
-                  <div key={i} style={{ position: 'absolute', left: 1, right: 1, top, height, backgroundColor: slot.color, borderLeft: '3px solid rgba(0,0,0,0.15)', borderRadius: 3, padding: 4 }}>
-                    <div style={{ color: 'white', fontSize: 10, fontWeight: 700, lineHeight: 1.2 }}>{slot.name}</div>
-                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slot.room}</div>
+                  <div key={i} style={{ position: 'absolute', left: 3, right: 3, top, height, backgroundColor: slot.color, borderRadius: 8, padding: '6px 8px', overflow: 'hidden' }}>
+                    <div style={{ color: '#1F2937', fontSize: 11, fontWeight: 700, lineHeight: 1.3, marginBottom: 2 }}>{slot.name}</div>
+                    <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slot.room}</div>
                   </div>
                 );
               })}
@@ -63,9 +63,9 @@ function TimetableGrid() {
           ))}
         </div>
       </div>
-      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #222', fontSize: 10, color: '#555', display: 'flex', justifyContent: 'space-between', paddingLeft: 8, paddingRight: 8 }}>
-        <span style={{ color: '#888' }}>사회봉사1 (P/NP)</span>
-        <span style={{ opacity: 0.5 }}>Gachon Univ.</span>
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #F3F4F6', fontSize: 11, color: '#9CA3AF', display: 'flex', justifyContent: 'space-between' }}>
+        <span>사회봉사1 (P/NP)</span>
+        <span>Gachon Univ.</span>
       </div>
     </div>
   );
@@ -101,9 +101,11 @@ function Navbar() {
               <Link to="/notice" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>공지사항</Link>
               <div style={{ width: 1, height: 18, background: '#E8F0FF' }} />
               <Link to="/mypage" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1F2937', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#4F7CF3' }}>
-                  {user?.name?.[0] || 'U'}
-                </div>
+                <img
+                  src="/src/assets/student-logo.png"
+                  alt="프로필"
+                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid #E8F0FF' }}
+                />
                 {user?.name || '마이페이지'}
               </Link>
               <button onClick={handleLogout}
@@ -116,7 +118,7 @@ function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>로그인</Link>
+              <Link to="/login" style={{ border: '1px solid #E8F0FF', color: '#1F2937', padding: '8px 16px', borderRadius: 12, fontWeight: 500, fontSize: 14, textDecoration: 'none' }}>로그인</Link>
               <Link to="/signup" style={{ border: '1px solid #E8F0FF', color: '#1F2937', padding: '8px 16px', borderRadius: 12, fontWeight: 500, fontSize: 14, textDecoration: 'none' }}>회원가입</Link>
               <Link to="/timetable/setup" style={{ background: '#4F7CF3', color: 'white', padding: '8px 18px', borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
                 시간표 만들기
@@ -138,9 +140,11 @@ function Navbar() {
               {isLoggedIn ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 8px', marginBottom: 4, borderBottom: '1px solid #F3F4F6' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#4F7CF3' }}>
-                      {user?.name?.[0] || 'U'}
-                    </div>
+                    <img
+                      src="/src/assets/student-logo.png"
+                      alt="프로필"
+                      style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #E8F0FF' }}
+                    />
                     <div>
                       <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{user?.name}</p>
                       <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{user?.department}</p>
@@ -172,13 +176,13 @@ function Navbar() {
                     <a key={i.href} href={i.href} style={{ padding: '11px 8px', fontSize: 14, color: '#6B7280', textDecoration: 'none' }} onClick={() => setOpen(false)}>{i.label}</a>
                   ))}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px solid #F3F4F6' }}>
-                    <Link to="/login" onClick={() => setOpen(false)}
+                    <Link to="/signup" onClick={() => setOpen(false)}
                       style={{ flex: 1, padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 600, color: '#1F2937', textDecoration: 'none', textAlign: 'center', border: '1px solid #E8F0FF', background: '#F9FAFB' }}>
-                      로그인
+                      회원가입
                     </Link>
-                    <Link to="/timetable/setup" onClick={() => setOpen(false)}
+                    <Link to="/login" onClick={() => setOpen(false)}
                       style={{ flex: 1, background: '#4F7CF3', color: 'white', padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-                      시작하기
+                      로그인
                     </Link>
                   </div>
                 </>
@@ -213,16 +217,18 @@ function HeroSection() {
                 장바구니에 담은 강의와 졸업 요건을 분석해<br />나만의 최적 시간표를 3초 만에 만들어드립니다.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 480 }}>
-                {[
-                  { to: '/timetable/setup', label: '시간표 만들기', bg: '#4F7CF3', color: 'white' },
-                  { to: '/timetable/manage', label: '내 시간표 보기', bg: '#F5F7FB', color: '#1F2937', border: '1px solid #E8F0FF' },
-                  { to: '/cart', label: '장바구니', bg: '#ede9fe', color: '#A78BFA' },
-                  { to: '/graduation/dashboard', label: '졸업요건 확인', bg: '#d1faf5', color: '#2EC4B6' },
-                ].map((btn, i) => (
-                  <Link key={i} to={btn.to} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: btn.bg, color: btn.color, padding: '14px', borderRadius: 14, fontWeight: 600, fontSize: 14, textDecoration: 'none', border: btn.border || 'none' }}>
-                    {btn.label}
-                  </Link>
-                ))}
+                <Link to="/timetable/setup" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#4F7CF3', color: 'white', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 4px 12px rgba(79,124,243,0.35)' }}>
+                  시간표 만들기
+                </Link>
+                <Link to="/timetable/manage" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'white', color: '#1F2937', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none', border: '1.5px solid #D1D5DB', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  내 시간표 보기
+                </Link>
+                <Link to="/cart" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#EDE9FE', color: '#7C3AED', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none', border: '1.5px solid #C4B5FD' }}>
+                  장바구니
+                </Link>
+                <Link to="/graduation/dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#CCFBF1', color: '#0F766E', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none', border: '1.5px solid #99F6E4' }}>
+                  졸업요건 확인
+                </Link>
               </div>
             </>
           ) : (
@@ -239,10 +245,10 @@ function HeroSection() {
                 공강요일, 온라인 강의 선호, 오르막 회피까지 모두 고려한 완벽한 시간표를 만들어드립니다
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                <Link to="/login" style={{ background: '#4F7CF3', color: 'white', padding: '16px 32px', borderRadius: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link to="/login" style={{ background: '#4F7CF3', color: 'white', padding: '16px 32px', borderRadius: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(79,124,243,0.35)' }}>
                   시작하기 <ArrowRight style={{ width: 20, height: 20 }} />
                 </Link>
-                <Link to="/timetable/setup" style={{ border: '1px solid #E8F0FF', color: '#1F2937', padding: '16px 32px', borderRadius: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link to="/timetable/setup" style={{ background: 'white', border: '1.5px solid #D1D5DB', color: '#1F2937', padding: '16px 32px', borderRadius: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                   지금 시간표 만들기
                 </Link>
               </div>
