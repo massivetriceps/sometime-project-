@@ -180,8 +180,8 @@ export default function TimetableSetup() {
                     style={{ borderRadius: 12, border: '1px solid #E8F0FF', padding: '11px 14px', fontSize: 14, outline: 'none', background: '#FAFBFF', ...s }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#1F2937' }}>학번 (2글자)</label>
-                  <input type="text" value={userInfo.studentId} onChange={e => setUserInfo({ ...userInfo, studentId: e.target.value })} placeholder="예: 21"
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#1F2937' }}>학번</label>
+                  <input type="text" value={userInfo.studentId} maxLength={9} onChange={e => setUserInfo({ ...userInfo, studentId: e.target.value })} placeholder="202336064"
                     style={{ borderRadius: 12, border: '1px solid #E8F0FF', padding: '11px 14px', fontSize: 14, outline: 'none', background: '#FAFBFF', ...s }} />
                 </div>
               </div>

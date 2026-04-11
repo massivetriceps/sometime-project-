@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
@@ -35,14 +35,14 @@ export default function Signup() {
               <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>이름</label>
               <input style={inp} type="text" placeholder="이름을 입력하세요" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', gap: 10 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>소속 학과</label>
-                <input style={inp} type="text" placeholder="컴퓨터공학과" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
+                <input style={inp} type="text" placeholder="학과명을 입력하세요" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>학번</label>
-                <input style={inp} type="text" placeholder="21학번" value={form.studentId} onChange={e => setForm({ ...form, studentId: e.target.value })} />
+                <input style={inp} type="text" placeholder="학번을 입력하세요" value={form.studentId} maxLength={9} onChange={e => setForm({ ...form, studentId: e.target.value })} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>학년</label>

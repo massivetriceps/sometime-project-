@@ -97,7 +97,7 @@ function Navbar() {
               <Link to="/courses" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>강의 검색</Link>
               <Link to="/cart" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>장바구니</Link>
               <Link to="/timetable/manage" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>내 시간표</Link>
-              <Link to="/graduation/dashboard" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>졸업요건</Link>
+              <Link to="/graduation/dashboard" style={{ color: "#6B7280", textDecoration: "none", fontWeight: 500, fontSize: 14 }}>졸업요건</Link><Link to="/graduation/history" style={{ color: "#6B7280", textDecoration: "none", fontWeight: 500, fontSize: 14 }}>수강내역</Link>
               <Link to="/notice" style={{ color: '#6B7280', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>공지사항</Link>
               <div style={{ width: 1, height: 18, background: '#E8F0FF' }} />
               <Link to="/mypage" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1F2937', textDecoration: 'none', fontWeight: 500, fontSize: 14 }}>
@@ -156,7 +156,7 @@ function Navbar() {
                     { to: '/cart', label: '장바구니' },
                     { to: '/timetable/manage', label: '내 시간표' },
                     { to: '/graduation/dashboard', label: '졸업요건' },
-                    { to: '/graduation/history', label: '기수강 내역' },
+                    { to: '/graduation/history', label: '수강내역' },
                     { to: '/notice', label: '공지사항' },
                     { to: '/mypage', label: '마이페이지' },
                   ].map(item => (
@@ -266,7 +266,7 @@ function HeroSection() {
 function Features() {
   const features = [
     { iconBg: '#E8F0FF', iconColor: '#4F7CF3', title: '개인선호 맞춤형 조건 반영', desc: '단순한 공강 설정을 넘어섭니다. 선호하는 시간대는 물론, 건물 이동 동선 및 오르막 회피까지 계산해 나만의 최적화된 시간표를 조립합니다.' },
-    { iconBg: '#d1faf5', iconColor: '#2EC4B6', title: '직관적인 졸업 요건 대시보드', desc: '복잡한 졸업 규정, 더 이상 헤매지 마세요. 내 기수강 내역을 분석해 졸업까지 남은 학점과 필수 과목을 한눈에 시각화해 드립니다.' },
+    { iconBg: '#d1faf5', iconColor: '#2EC4B6', title: '직관적인 졸업 요건 대시보드', desc: '복잡한 졸업 규정, 더 이상 헤매지 마세요. 내 수강내역을 분석해 졸업까지 남은 학점과 필수 과목을 한눈에 시각화해 드립니다.' },
     { iconBg: '#ede9fe', iconColor: '#A78BFA', title: '3초 만에 빠른 생성', desc: '아무리 복잡한 조건이라도 문제없습니다. 자체 CSP 엔진이 수백 개의 경우의 수를 즉시 비교하여 가장 완벽한 결과물을 제공합니다.' },
   ];
   return (
@@ -274,7 +274,7 @@ function Features() {
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: '#1F2937', marginBottom: 16 }}>왜 Sometime인가요?</h2>
-          <p style={{ fontSize: 18, color: '#6B7280', maxWidth: 512, margin: '0 auto' }}>수동으로 시간표를 짜던 시대는 끝났습니다. 이제 더 스마트하게 준비하세요.</p>
+          <p style={{ textAlign: 'center', fontSize: 18, color: '#6B7280' }}>수동으로 시간표를 짜던 시대는 끝났습니다.<br />이제 더 스마트하게 준비하세요.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
           {features.map((f, i) => (
@@ -405,7 +405,7 @@ function SecondaryFeature() {
               <GraduationCap style={{ width: 16, height: 16 }} />졸업요건 대시보드
             </div>
             <h2 style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: '#1F2937', lineHeight: 1.3, margin: 0 }}>복잡한 졸업 규정?<br />대시보드 하나로 종결.</h2>
-            <p style={{ fontSize: 18, color: '#6B7280', lineHeight: 1.7, margin: 0 }}>입학년도마다 달라지는 복잡한 요건들, 내 기수강 내역을 바탕으로 남은 학점을 대시보드에서 직관적으로 트래킹하세요.</p>
+            <p style={{ fontSize: 18, color: '#6B7280', lineHeight: 1.7, margin: 0 }}>입학년도마다 달라지는 복잡한 요건들, 내 수강내역을 바탕으로 남은 학점을 대시보드에서 직관적으로 트래킹하세요.</p>
             <Link to="/graduation/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#2EC4B6', color: 'white', padding: '12px 24px', borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', width: 'fit-content' }}>
               졸업요건 확인하기 <ArrowRight style={{ width: 16, height: 16 }} />
             </Link>
@@ -474,7 +474,7 @@ function CTASection() {
               </Link>
             )}
             <Link to="/timetable/setup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: isLoggedIn ? 'white' : 'rgba(255,255,255,0.2)', color: isLoggedIn ? '#4F7CF3' : 'white', padding: '14px 32px', borderRadius: 999, fontWeight: 700, fontSize: 16, textDecoration: 'none', border: isLoggedIn ? 'none' : '2px solid rgba(255,255,255,0.5)', boxShadow: isLoggedIn ? '0 8px 32px rgba(0,0,0,0.15)' : 'none' }}>
-              지금 시간표 만들기 <ArrowRight style={{ width: 18, height: 18 }} />
+              지금 시간표 만들기
             </Link>
           </div>
         </motion.div>
@@ -486,7 +486,7 @@ function CTASection() {
 function Footer() {
   const links = {
     service: [{ label: '시간표 만들기', to: '/timetable/setup' }, { label: '강의 검색', to: '/courses' }, { label: '장바구니', to: '/cart' }, { label: '시간표 관리', to: '/timetable/manage' }],
-    graduation: [{ label: '기수강 내역', to: '/graduation/history' }, { label: '졸업요건 대시보드', to: '/graduation/dashboard' }],
+    graduation: [{ label: '수강내역', to: '/graduation/history' }, { label: '졸업요건 대시보드', to: '/graduation/dashboard' }],
     support: [{ label: '공지사항', to: '/notice' }, { label: 'FAQ', to: '#faq' }],
     account: [{ label: '로그인', to: '/login' }, { label: '회원가입', to: '/signup' }, { label: '마이페이지', to: '/mypage' }],
   };

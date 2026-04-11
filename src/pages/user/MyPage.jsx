@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
-import { User, Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
+import { Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function MyPage() {
@@ -11,9 +11,9 @@ export default function MyPage() {
   const [form, setForm] = useState({
     name: user?.name || '구라진',
     department: user?.department || '컴퓨터공학과',
-    studentId: user?.studentId || '21',
+    studentId: user?.studentId || '202336064',
     email: user?.email || 'hong@gachon.ac.kr',
-    grade: '3',
+    grade: '4',
   });
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [showWithdraw, setShowWithdraw] = useState(false);
@@ -41,16 +41,19 @@ export default function MyPage() {
       </header>
 
       <main style={{ maxWidth: 896, margin: '0 auto', padding: '32px 16px' }}>
+
+        {/* 프로필 카드 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32, background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <User size={28} color="#4F7CF3" />
-          </div>
+          <img src="/src/assets/student-logo.png" alt="프로필" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
           <div>
             <p style={{ fontWeight: 700, fontSize: 18, color: '#1F2937', margin: '0 0 4px' }}>{form.name}</p>
-            <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>{form.department} · {form.studentId}학번 · {form.grade}학년</p>
+            <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>
+              {form.department} · {form.studentId.length >= 4 ? form.studentId.slice(2, 4) : form.studentId}학번 · {form.grade}학년
+            </p>
           </div>
         </div>
 
+        {/* 탭 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           {[{ key: 'profile', label: '개인정보 수정' }, { key: 'password', label: '비밀번호 변경' }, { key: 'withdraw', label: '회원탈퇴' }].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
@@ -60,6 +63,7 @@ export default function MyPage() {
           ))}
         </div>
 
+        {/* 개인정보 수정 */}
         {tab === 'profile' && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: 24 }}>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1F2937', marginBottom: 20 }}>개인정보 수정</h2>
@@ -68,14 +72,14 @@ export default function MyPage() {
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>이름</label>
                 <input style={inp} type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', gap: 10 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>소속 학과</label>
                   <input style={inp} type="text" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>학번</label>
-                  <input style={inp} type="text" value={form.studentId} onChange={e => setForm({ ...form, studentId: e.target.value })} />
+                  <input style={inp} type="text" value={form.studentId} maxLength={9} onChange={e => setForm({ ...form, studentId: e.target.value })} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>학년</label>
@@ -95,6 +99,7 @@ export default function MyPage() {
           </div>
         )}
 
+        {/* 비밀번호 변경 */}
         {tab === 'password' && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: 24 }}>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1F2937', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -114,6 +119,7 @@ export default function MyPage() {
           </div>
         )}
 
+        {/* 회원탈퇴 */}
         {tab === 'withdraw' && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #fecaca', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: 24 }}>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: '#ef4444', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>

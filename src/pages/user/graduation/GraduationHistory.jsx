@@ -1,11 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../../components/ui/GachonLogo';
-import { ArrowRight, Plus, Trash2, BookOpen, GraduationCap, Award, TrendingUp } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Plus, Trash2, BookOpen, GraduationCap, Award, TrendingUp } from 'lucide-react';
 
 const CATS = ['전공필수', '전공선택', '교양필수', '교양선택', '자유선택'];
 const GRADES = ['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P', 'NP'];
-const CAT_COLOR = { '전공필수': '#4F7CF3', '전공선택': '#2EC4B6', '교양필수': '#A78BFA', '교양선택': '#d4a017', '자유선택': '#6B7280' };
+const CAT_COLOR = { '전공필수': '#4F7CF3', '전공선택': '#2EC4B6', '교양필수': '#A78BFA', '교양선택': '#F4D58D', '자유선택': '#6B7280' };
 
 export default function GraduationHistory() {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export default function GraduationHistory() {
     { title: '총 이수 학점', value: total + '학점', pct: Math.round(total / 130 * 100), icon: <GraduationCap size={16} color="white" />, bg: '#4F7CF3' },
     { title: '전공 필수', value: completed.majorRequired + '/' + studentInfo.requirements.majorRequired + '학점', pct: Math.round(completed.majorRequired / studentInfo.requirements.majorRequired * 100), icon: <BookOpen size={16} color="white" />, bg: '#2EC4B6' },
     { title: '전공 선택', value: completed.majorElective + '/' + studentInfo.requirements.majorElective + '학점', pct: Math.round(completed.majorElective / studentInfo.requirements.majorElective * 100), icon: <Award size={16} color="white" />, bg: '#A78BFA' },
-    { title: '교양', value: completed.general + '/' + studentInfo.requirements.general + '학점', pct: Math.round(completed.general / studentInfo.requirements.general * 100), icon: <TrendingUp size={16} color="white" />, bg: '#d4a017' },
+    { title: '교양', value: completed.general + '/' + studentInfo.requirements.general + '학점', pct: Math.round(completed.general / studentInfo.requirements.general * 100), icon: <TrendingUp size={16} color="white" />, bg: '#F4D58D' },
   ];
 
   return (
@@ -48,15 +48,15 @@ export default function GraduationHistory() {
             <GachonLogo size={32} />
             <span style={{ fontSize: 20, fontWeight: 700, color: '#1F2937' }}>Sometime</span>
           </Link>
-          <Link to="/graduation/dashboard" style={{ fontSize: 14, color: '#4F7CF3', textDecoration: 'none', fontWeight: 500 }}>
-            졸업 요건 확인 →
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
+          <ArrowLeft size={14} /> 홈으로
           </Link>
         </div>
       </header>
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 'clamp(24px,4vw,36px)', fontWeight: 700, color: '#1F2937', margin: '0 0 6px' }}>기수강 내역 입력</h1>
+          <h1 style={{ fontSize: 'clamp(24px,4vw,36px)', fontWeight: 700, color: '#1F2937', margin: '0 0 6px' }}>수강내역 입력</h1>
           <p style={{ fontSize: 16, color: '#6B7280', margin: 0 }}>지금까지 이수한 과목과 학점을 입력하세요</p>
         </div>
 

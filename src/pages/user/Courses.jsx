@@ -1,7 +1,7 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
-import { Search, ShoppingCart, Plus, Check, Filter } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Check, Filter, ArrowLeft } from 'lucide-react';
 import { useTimetable } from '../../context/TimetableContext';
 
 const COURSES = [
@@ -51,8 +51,8 @@ export default function Courses() {
             <GachonLogo size={32} />
             <span style={{ fontSize: 20, fontWeight: 700, color: '#1F2937' }}>Sometime</span>
           </Link>
-          <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#4F7CF3', textDecoration: 'none', fontWeight: 500 }}>
-            <ShoppingCart size={15} /> 장바구니 ({cart.length})
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
+            <ArrowLeft size={14} /> 홈으로
           </Link>
         </div>
       </header>
@@ -80,7 +80,12 @@ export default function Courses() {
           </div>
         </div>
 
-        <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 12 }}>총 {filtered.length}개 강의</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>총 {filtered.length}개 강의</p>
+          <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4F7CF3', textDecoration: 'none', fontWeight: 600, background: '#E8F0FF', padding: '7px 14px', borderRadius: 999 }}>
+            <ShoppingCart size={13} /> 장바구니 ({cart.length})
+          </Link>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(course => (
@@ -107,7 +112,7 @@ export default function Courses() {
                   )}
                   <button onClick={() => !isInCart(course.id) && handleAdd(course)} disabled={isInCart(course.id)}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', cursor: isInCart(course.id) ? 'default' : 'pointer', background: isInCart(course.id) ? '#E8F0FF' : '#4F7CF3', color: isInCart(course.id) ? '#4F7CF3' : 'white', ...s }}>
-                    {isInCart(course.id) ? <><Check size={13} />담음</> : <><Plus size={13} />담기</>}
+                    {isInCart(course.id) ? <><Check size={13} />담김</> : <><Plus size={13} />담기</>}
                   </button>
                 </div>
               </div>
