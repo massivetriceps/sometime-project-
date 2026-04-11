@@ -119,10 +119,10 @@ export default function GraduationDashboard() {
               <div key={i} style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '18px 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {done ? <CheckCircle2 size={15} color="#22c55e" /> : <AlertCircle size={15} color={req.color} />}
+                    {done ? <CheckCircle2 size={15} color="#A78BFA" /> : <AlertCircle size={15} color={req.color} />}
                     <span style={{ fontWeight: 600, color: '#1F2937', fontSize: 14 }}>{req.category}</span>
                     <span style={{ fontSize: 11, color: '#9CA3AF' }}>{req.desc}</span>
-                    {done && <span style={{ fontSize: 10, background: '#dcfce7', color: '#16a34a', padding: '1px 8px', borderRadius: 999, fontWeight: 600 }}>완료</span>}
+                    {done && <span style={{ fontSize: 10, background: '#ede9fe', color: '#A78BFA', padding: '1px 8px', borderRadius: 999, fontWeight: 600 }}>완료</span>}
                   </div>
                   <div>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#1F2937' }}>{req.completed}</span>
