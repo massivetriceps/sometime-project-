@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+﻿import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/global.css';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,11 +19,11 @@ function useWindowWidth() {
 function TimetableGrid() {
   const slots = [
     { day: '월', start: '09:00', end: '12:00', name: '블록체인개론', room: 'AI관-408', color: '#8FA8FF' },
-    { day: '월', start: '12:00', end: '14:00', name: '빅데이터프로그래밍', room: 'AI관-302', color: '#F7CFA1' },
+    { day: '월', start: '12:00', end: '14:00', name: '소프트웨어공학', room: 'AI관-302', color: '#F7CFA1' },
     { day: '화', start: '09:00', end: '12:00', name: '종합프로젝트', room: 'AI관-508', color: '#8EDDD0' },
-    { day: '화', start: '15:00', end: '17:00', name: '지성학I', room: '화상강의', color: '#C3B5FF' },
+    { day: '화', start: '15:00', end: '17:00', name: '지성학I', room: '화상강의', color: '#F5E88F' },
     { day: '수', start: '09:00', end: '12:00', name: '디지털미디어', room: '화상강의', color: '#F4AFCF' },
-    { day: '목', start: '11:00', end: '13:00', name: '가정과육아', room: '화상강의', color: '#8FA8FF' },
+    { day: '목', start: '11:00', end: '13:00', name: '가정과육아', room: '화상강의', color: '#C3B5FF' },
   ];
   const days = ['월', '화', '수', '목', '금'];
   const startHour = 9;
@@ -54,8 +54,8 @@ function TimetableGrid() {
                 const height = (getTime(slot.end) - getTime(slot.start)) * hourHeight;
                 return (
                   <div key={i} style={{ position: 'absolute', left: 3, right: 3, top, height, backgroundColor: slot.color, borderRadius: 8, padding: '6px 8px', overflow: 'hidden' }}>
-                    <div style={{ color: '#1F2937', fontSize: 11, fontWeight: 700, lineHeight: 1.3, marginBottom: 2 }}>{slot.name}</div>
-                    <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slot.room}</div>
+                    <div style={{ color: 'white', fontSize: 12, fontWeight: 700, lineHeight: 1.3, marginBottom: 2, textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{slot.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{slot.room}</div>
                   </div>
                 );
               })}

@@ -10,15 +10,15 @@ const CREDIT_DATA = {
 
 const REQS = [
   { category: '전공필수', required: 60, completed: 42, color: '#4F7CF3', desc: '핵심 전공 과목 이수' },
-  { category: '전공선택', required: 30, completed: 18, color: '#2EC4B6', desc: '전공 선택 과목 이수' },
-  { category: '교양필수', required: 21, completed: 21, color: '#A78BFA', desc: '필수 교양 과목 이수' },
-  { category: '교양선택', required: 12, completed: 6, color: '#d4a017', desc: '선택 교양 과목 이수' },
+  { category: '전공선택', required: 30, completed: 18, color: '#A78BFA', desc: '전공 선택 과목 이수' },
+  { category: '교양필수', required: 21, completed: 21, color: '#2EC4B6', desc: '필수 교양 과목 이수' },
+  { category: '교양선택', required: 12, completed: 6, color: '#F4D58D', desc: '선택 교양 과목 이수' },
   { category: '자유선택', required: 15, completed: 12, color: '#6B7280', desc: '자유 이수 학점' },
-];
+]; 
 
 const calcPct = (c, t) => Math.round((c / t) * 100);
 
-export default function GraduationDashboard() {
+export default function GraduationDashboard() {n
   const s = { fontFamily: 'Pretendard, sans-serif' };
   const totalReq = REQS.reduce((a, r) => a + r.required, 0);
   const totalCom = REQS.reduce((a, r) => a + r.completed, 0);
