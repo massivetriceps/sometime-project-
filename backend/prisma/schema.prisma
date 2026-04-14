@@ -94,3 +94,14 @@ model Carts {
   @@id([user_id, course_id])
   @@map("CARTS")
 }
+
+model Admin {
+  admin_id   Int      @id @default(autoincrement())
+  login_id   String   @unique @db.VarChar(50)
+  password   String   @db.VarChar(255)
+  name       String   @db.VarChar(50)
+  role       String   @default("ADMIN") @db.VarChar(20)
+  created_at DateTime @default(now())
+
+  @@map("ADMINS") // 실제 DB 테이블 이름을 ADMINS로 매핑
+}

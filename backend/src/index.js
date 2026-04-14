@@ -8,6 +8,7 @@ const swaggerSpec = require('./config/swagger');
 const authRouter   = require('./domains/auth/auth.router');
 const userRouter   = require('./domains/user/user.router');
 const courseRouter = require('./domains/course/course.router');
+const adminRouter  = require('./domains/admin/admin.router');
 
 const app  = express();
 const PORT = process.env.PORT || 8080;
@@ -39,6 +40,7 @@ app.use('/api/users',         userRouter);
 app.use('/api/courses',       courseRouter);
 app.use('/api/users',         courseRouter);   // cart: /api/users/me/cart
 app.use('/api/admin/courses', courseRouter);   // upload: /api/admin/courses/upload
+app.use('/api/admin',         adminRouter);
 
 // ── 헬스체크 ───────────────────────────────────────────
 app.get('/', (req, res) => res.send('Sometime API Server is running! 🚀'));

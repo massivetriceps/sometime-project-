@@ -8,4 +8,8 @@ const deleteUser = async (user_id) => {
   return prisma.users.delete({ where: { user_id } });
 };
 
-module.exports = { findUserById, deleteUser };
+const updateUser = async (user_id, data) => {
+  return prisma.users.update({ where: { user_id }, data });
+};
+
+module.exports = { findUserById, deleteUser, updateUser };
