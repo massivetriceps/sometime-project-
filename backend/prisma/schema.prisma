@@ -23,3 +23,15 @@ model Users {
 
   @@map("USERS")
 }
+
+// ADMINS 테이블
+model admins {
+  admin_id Int    @id @default(autoincrement())
+  login_id String @db.VarChar(50)
+  password String @db.VarChar(255)
+  name     String @db.VarChar(50)
+  email    String @db.VarChar(20)
+  role     String @db.VarChar(20) // '운영자' 또는 '개발자'
+
+  @@map("ADMINS")
+}

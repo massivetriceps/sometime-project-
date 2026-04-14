@@ -15,7 +15,7 @@ router.post('/logout', authController.logout);
 // POST /api/auth/findid 엔드포인트 연결 (아이디 찾기)
 router.post('/findid', authController.findId);
 
-// POST /api/auth/findpw 엔드포인트 연결
+// POST /api/auth/findpw 엔드포인트 연결 (비밀번호 찾기)
 router.post('/findpw', authController.resetPassword);
 
 module.exports = router;
