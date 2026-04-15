@@ -22,7 +22,7 @@ model Users {
   created_at DateTime @default(now())
 
   carts      Carts[]
-
+  preference Preference?
   @@map("USERS")
 }
 
@@ -104,4 +104,21 @@ model Admin {
   created_at DateTime @default(now())
 
   @@map("ADMINS") // 실제 DB 테이블 이름을 ADMINS로 매핑
+}
+
+model Preference {
+  pref_id             Int      @id @default(autoincrement())
+  user_id             Int      @unique // 1:1 관계를 위해 유니크 설정
+  avoid_uphill        Boolean  @default(false)
+  preferred_time      String   @default("ANY") @db.VarChar(20)
+  free_days           String?  @db.VarChar(20)
+  credit_intensity    String   @default("NORMAL") @db.VarChar(20)
+  minimize_gaps       Boolean  @default(false)
+  prioritize_required Boolean  @default(false)
+  prefer_online       Boolean  @default(false)
+  max_classes_per_day Int?
+
+  // 기존 User 모델과의 관계
+  user                Users    @relation(fields: [user_id], references: [user_id])
+  @@map("PREFERENCES")
 }
