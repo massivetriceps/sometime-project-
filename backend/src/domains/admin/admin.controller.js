@@ -26,7 +26,50 @@ const handleLogout = async (req, res, next) => {
   }
 };
 
+// 관리자 정보 수정 컨트롤러
+const handleUpdateInfo = async (req, res, next) => {
+  try {
+    // adminMiddleware가 검증하고 넘겨준 admin 객체에서 id를 꺼냅니다.
+    const adminId = req.admin.admin_id; 
+    const { current_password, new_password, name } = req.body;
+    
+    const updateData = { new_password, name };
+    
+    const result = await adminService.updateAdminInfo(adminId, current_password, updateData);
+    
+    // 팀장님 스타일 응답
+    res.status(StatusCodes.OK).success(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 전체 사용자 목록 조회 컨트롤러
+const handleGetAllUsers = async (req, res, next) => {
+  try {
+    const result = await adminService.getAllUsers();
+    res.status(StatusCodes.OK).success(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 사용자 삭제 컨트롤러
+const handleDeleteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const result = await adminService.deleteUserByAdmin(userId);
+    
+    res.status(StatusCodes.OK).success(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   handleLogin,
-  handleLogout
+  handleLogout,
+  handleUpdateInfo,
+  handleGetAllUsers,
+  handleDeleteUser
 };
