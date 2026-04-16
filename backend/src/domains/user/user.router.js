@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const isLoggedIn = require('../../middlewares/authMiddleware');
-const { handleWithdraw, handleUpdateInfo } = require('./user.controller');
+const { handleWithdraw, handleUpdateInfo, handleGetUserInfo } = require('./user.controller');
 
 /**
  * @swagger
@@ -9,6 +9,58 @@ const { handleWithdraw, handleUpdateInfo } = require('./user.controller');
  *   name: Users
  *   description: 사용자 계정 관리 API
  */
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: 내 정보 조회
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 내 정보 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user_id:
+ *                           type: integer
+ *                           example: 1
+ *                         login_id:
+ *                           type: string
+ *                           example: "student123"
+ *                         name:
+ *                           type: string
+ *                           example: "가천이"
+ *                         email:
+ *                           type: string
+ *                           example: "gachon@gachon.ac.kr"
+ *                         grade:
+ *                           type: integer
+ *                           example: 4
+ *                         student_id:
+ *                           type: string
+ *                           example: "202112345"
+ *                         major_id:
+ *                           type: integer
+ *                           example: 2
+ *                         created_at:
+ *                           type: string
+ *                           format: date-time
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/me', isLoggedIn, handleGetUserInfo);
 
 /**
  * @swagger
