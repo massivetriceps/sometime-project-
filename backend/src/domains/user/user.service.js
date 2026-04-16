@@ -50,4 +50,15 @@ const updateUserInfo = async (userId, currentPassword, updateData) => {
   return { message: '회원 정보가 성공적으로 수정되었습니다.' };
 };
 
-module.exports = { withdrawUser, updateUserInfo };
+// 내 정보 조회 로직
+const getUserInfo = async (userId) => {
+  const userProfile = await userRepository.getUserProfile(userId);
+  
+  if (!userProfile) {
+    throw new UserNotFoundError('유저 정보를 찾을 수 없습니다.', { userId });
+  }
+
+  return userProfile;
+};
+
+module.exports = { withdrawUser, updateUserInfo, getUserInfo };

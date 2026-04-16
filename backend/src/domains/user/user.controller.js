@@ -28,4 +28,16 @@ const handleUpdateInfo = async (req, res, next) => {
   }
 };
 
-module.exports = { handleWithdraw, handleUpdateInfo };
+// 내 정보 조회 컨트롤러
+const handleGetUserInfo = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+    const result = await userService.getUserInfo(userId);
+    
+    res.status(StatusCodes.OK).success(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { handleWithdraw, handleUpdateInfo, handleGetUserInfo };
