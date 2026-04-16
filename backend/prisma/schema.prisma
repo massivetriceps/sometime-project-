@@ -1,0 +1,124 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" 
+  url      = env("DATABASE_URL")
+}
+
+// USERS 테이블 
+model Users {
+  user_id    Int      @id @default(autoincrement())
+  login_id   String   @unique
+  password   String
+  name       String
+  grade      Int
+  student_id String
+  major_id   Int
+  email      String   @unique
+  created_at DateTime @default(now())
+
+  carts      Carts[]
+  preference Preference?
+  @@map("USERS")
+}
+
+model Majors {
+  major_id    Int       @id @default(autoincrement())
+  college_name String   @db.VarChar(50)
+  major_name  String    @db.VarChar(50)
+  courses     Courses[]
+  @@map("MAJORS")
+}
+
+model Courses {
+  course_id      Int               @id @default(autoincrement())
+  course_code    String            @db.VarChar(50)
+  course_name    String            @db.VarChar(100)
+  organization   String?           @db.VarChar(500)
+  major_id       Int
+  classification String            @db.VarChar(50)
+  credits        Int
+  professor      String?           @db.VarChar(50)
+  capacity       Int               @default(0)
+  cart_count     Int               @default(0)
+  rating         Float             @default(0.0)
+  majors         Majors            @relation(fields: [major_id], references: [major_id])
+  course_schedules CourseSchedules[]
+  carts          Carts[]
+  @@map("COURSES")
+}
+
+model CourseSchedules {
+  schedule_id  Int      @id @default(autoincrement())
+  course_id    Int
+  day_of_week  String   @db.VarChar(10)
+  start_period Int
+  end_period   Int
+  building_id  Int?
+  room_name    String?  @db.VarChar(50)
+  courses      Courses  @relation(fields: [course_id], references: [course_id])
+  buildings    Buildings? @relation(fields: [building_id], references: [building_id])
+  @@map("COURSE_SCHEDULES")
+}
+
+model Buildings {
+  building_id    Int               @id @default(autoincrement())
+  building_name  String            @db.VarChar(50)
+  course_schedules CourseSchedules[]
+  from_distances Distances[]       @relation("FromBuilding")
+  to_distances   Distances[]       @relation("ToBuilding")
+  @@map("BUILDINGS")
+}
+
+model Distances {
+  distance_id      Int       @id @default(autoincrement())
+  from_building_id Int
+  to_building_id   Int
+  time_minutes     Int
+  is_uphill        Boolean   @default(false)
+  from_building    Buildings @relation("FromBuilding", fields: [from_building_id], references: [building_id])
+  to_building      Buildings @relation("ToBuilding",   fields: [to_building_id],   references: [building_id])
+  @@map("DISTANCES")
+}
+
+model Carts {
+  user_id    Int
+  course_id  Int
+  created_at DateTime  @default(now())
+  users      Users     @relation(fields: [user_id], references: [user_id])
+  courses    Courses   @relation(fields: [course_id], references: [course_id])
+  @@id([user_id, course_id])
+  @@map("CARTS")
+}
+
+model Admin {
+  admin_id   Int      @id @default(autoincrement())
+  login_id   String   @unique @db.VarChar(50)
+  password   String   @db.VarChar(255)
+  name       String   @db.VarChar(50)
+  role       String   @default("ADMIN") @db.VarChar(20)
+  created_at DateTime @default(now())
+
+  @@map("ADMINS") // 실제 DB 테이블 이름을 ADMINS로 매핑
+}
+
+model Preference {
+  pref_id             Int      @id @default(autoincrement())
+  user_id             Int      @unique // 1:1 관계를 위해 유니크 설정
+  avoid_uphill        Boolean  @default(false)
+  preferred_time      String   @default("ANY") @db.VarChar(20)
+  free_days           String?  @db.VarChar(20)
+  credit_intensity    String   @default("NORMAL") @db.VarChar(20)
+  minimize_gaps       Boolean  @default(false)
+  prioritize_required Boolean  @default(false)
+  prefer_online       Boolean  @default(false)
+  max_classes_per_day Int?
+
+  // 기존 User 모델과의 관계
+  user                Users    @relation(fields: [user_id], references: [user_id])
+  @@map("PREFERENCES")
+}
