@@ -103,6 +103,7 @@ model Admin {
   role       String   @default("ADMIN") @db.VarChar(20)
   created_at DateTime @default(now())
 
+  notices    Notices[]
   @@map("ADMINS") // 실제 DB 테이블 이름을 ADMINS로 매핑
 }
 
@@ -121,4 +122,17 @@ model Preference {
   // 기존 User 모델과의 관계
   user                Users    @relation(fields: [user_id], references: [user_id])
   @@map("PREFERENCES")
+}
+
+model Notices {
+  notice_id      Int      @id @default(autoincrement())
+  admin_id       Int
+  title          String   @db.VarChar(200)
+  content        String   @db.Text
+  created_at     DateTime @default(now())
+  attachment_url String?  @db.VarChar(255)
+
+  admin          Admin    @relation(fields: [admin_id], references: [admin_id])
+
+  @@map("NOTICES")
 }

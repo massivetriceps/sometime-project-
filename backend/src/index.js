@@ -10,6 +10,8 @@ const userRouter   = require('./domains/user/user.router');
 const courseRouter = require('./domains/course/course.router');
 const adminRouter  = require('./domains/admin/admin.router');
 const preferenceRouter = require('./domains/preference/preference.router');
+const noticeRouter      = require('./domains/notice/notice.router');
+const adminNoticeRouter = require('./domains/notice/admin-notice.router');
 
 const app  = express();
 const PORT = process.env.PORT || 8080;
@@ -43,6 +45,8 @@ app.use('/api/users',         courseRouter);   // cart: /api/users/me/cart
 app.use('/api/admin/courses', courseRouter);   // upload: /api/admin/courses/upload
 app.use('/api/admin',         adminRouter);
 app.use('/api/users/me/preferences', preferenceRouter);
+app.use('/api/notices',       noticeRouter);       
+app.use('/api/admin/notices', adminNoticeRouter);  
 
 // ── 헬스체크 ───────────────────────────────────────────
 app.get('/', (req, res) => res.send('Sometime API Server is running! 🚀'));
