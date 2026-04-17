@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Mail, Lock } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
+import api from '../../api/axios';
 
 export default function FindAccount() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('id');
   const [form, setForm] = useState({ name: '', email: '', userId: '' });
   const [done, setDone] = useState(false);
+  const [result, setResult] = useState('');
+  const [error, setError] = useState('');
   const s = { fontFamily: 'Pretendard, sans-serif' };
   const inp = { borderRadius: 12, border: '1px solid #E8F0FF', padding: '12px 16px', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box', background: '#FAFBFF', ...s };
 
@@ -25,14 +28,45 @@ export default function FindAccount() {
         <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #E8F0FF', padding: 28 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             {[{ key: 'id', label: '아이디 찾기' }, { key: 'pw', label: '비밀번호 찾기' }].map(t => (
-              <button key={t.key} onClick={() => { setTab(t.key); setDone(false); }}
+              <button key={t.key} onClick={() => { setTab(t.key); setDone(false); setError(''); setResult(''); }}
                 style={{ flex: 1, padding: '10px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', background: tab === t.key ? '#4F7CF3' : '#F5F7FB', color: tab === t.key ? 'white' : '#6B7280', ...s }}>
                 {t.label}
               </button>
             ))}
           </div>
           {!done ? (
-            <form onSubmit={(e) => { e.preventDefault(); setDone(true); }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setError('');
+              try {
+                if (tab === 'id') {
+                  const res = await api.post('/api/auth/findid', {
+                    name: form.name,
+                    email: form.email,
+                  });
+                  if (res.data.resultType === 'SUCCESS') {
+                    setResult(res.data.success.login_id);
+                    setDone(true);
+                  }
+                } else {
+                  const res = await api.post('/api/auth/findpw', {
+                    name: form.name,
+                    email: form.userId,
+                  });
+                  if (res.data.resultType === 'SUCCESS') {
+                    setDone(true);
+                  }
+                }
+              } catch (err) {
+                const reason = err.response?.data?.error?.reason;
+                setError(reason || '오류가 발생했습니다.');
+              }
+            }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {error && (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#EF4444' }}>
+                  {error}
+                </div>
+              )}
               {tab === 'id' ? (
                 <>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -65,8 +99,12 @@ export default function FindAccount() {
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#E8F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                 {tab === 'id' ? <Mail size={24} color="#4F7CF3" /> : <Lock size={24} color="#4F7CF3" />}
               </div>
-              <p style={{ fontWeight: 700, color: '#1F2937', marginBottom: 8, fontSize: 16 }}>{tab === 'id' ? '아이디를 찾았어요!' : '인증 메일을 발송했어요!'}</p>
-              <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 20 }}>{tab === 'id' ? '가입된 이메일: h***@gachon.ac.kr' : '입력한 이메일로 비밀번호 재설정 링크를 보냈어요.'}</p>
+              <p style={{ fontWeight: 700, color: '#1F2937', marginBottom: 8, fontSize: 16 }}>
+                {tab === 'id' ? '아이디를 찾았어요!' : '인증 메일을 발송했어요!'}
+              </p>
+              <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 20 }}>
+                {tab === 'id' ? `찾은 아이디: ${result}` : '입력한 이메일로 임시 비밀번호를 보냈어요.'}
+              </p>
               <button onClick={() => navigate('/login')} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#4F7CF3', padding: '13px', fontSize: 14, fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', ...s }}>
                 로그인하러 가기 <ArrowRight size={16} />
               </button>

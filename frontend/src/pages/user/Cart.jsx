@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, Star, AlertCircle } from 'lucide-react';
 import useTimetableStore from '../../store/timetableStore';
-
+import { useEffect } from 'react'; // 상단에 추가
+import api from '../../api/axios'; // 상단에 추가
 
 const PRIORITY_COLOR = {
   high:   { bg: '#fef2f2', color: '#ef4444' },
@@ -13,9 +14,36 @@ const PRIORITY_COLOR = {
 
 export default function Cart() {
   const cart = useTimetableStore((state) => state.cart);
-  const removeFromCart = useTimetableStore((state) => state.removeFromCart);
+  const removeFromCart = useTimetableStore((state) => state.removeFromCart); // ✅ 추가
+  const handleRemove = async (courseId) => {
+  try {
+    await api.delete(`/api/users/me/cart/${courseId}`);
+    removeFromCart(courseId);
+  } catch (err) {
+    console.error('장바구니 삭제 실패', err);
+  }
+};
   const s = { fontFamily: 'Pretendard, sans-serif' };
-
+  const setCart = useTimetableStore((state) => state.setCart);
+  // 장바구니 조회
+  useEffect(() => {
+  const fetchCart = async () => {
+    try {
+      const res = await api.get('/api/users/me/cart');
+      if (res.data.resultType === 'SUCCESS') {
+        const items = res.data.success.map(item => ({
+          courseId: item.course_id,
+          course: { id: item.course_id, name: item.course_name },
+          priority: 'medium',
+        }));
+        setCart(items);
+      }
+    } catch (err) {
+      console.error('장바구니 조회 실패', err);
+    }
+  };
+  fetchCart();
+}, []);
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', ...s }}>
 
@@ -55,7 +83,7 @@ export default function Cart() {
                  
                   </div>
                 </div>
-                <button onClick={() => removeFromCart(item.courseId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 6 }}>
+                <button onClick={() => handleRemove(item.courseId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 6 }}>
                   <Trash2 size={17} />
                 </button>
               </div>

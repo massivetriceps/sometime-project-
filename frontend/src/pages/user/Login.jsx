@@ -26,12 +26,24 @@ export default function Login() {
       password: form.password,
     });
 
-    if (res.data.resultType === 'SUCCESS') {
-      const token = res.data.success.access_token;
-      login({ email: form.email }, token);
-      navigate('/');
-    }
+if (res.data.resultType === 'SUCCESS') {
+  const { access_token } = res.data.success;
+  
+  // 유저 상세 정보 먼저 가져오기
+  const userRes = await api.get('/api/users/me', {
+    headers: { Authorization: `Bearer ${access_token}` }
+  });
+  
+  if (userRes.data.resultType === 'SUCCESS') {
+    login(userRes.data.success, access_token); // 유저 정보 저장
+  } else {
+    login({ email: form.email }, access_token); // 실패 시 임시 저장
+  }
+  
+  navigate('/');
+}
   } catch (err) {
+    console.log('에러:', err); // ✅ 추가
     const reason = err.response?.data?.error?.reason;
     setError(reason || '로그인 중 오류가 발생했습니다.');
   }

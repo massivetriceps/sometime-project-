@@ -3,6 +3,7 @@ import { Link, useNavigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, LogOut } from 'lucide-react';
+import api from '../api/axios';
 
 function Navbar() {
   const [open, setOpen] = useState(false);
@@ -11,11 +12,17 @@ function Navbar() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+  try {
+    await api.post('/api/auth/logout');
+  } catch (err) {
+    console.error('로그아웃 실패', err);
+  } finally {
     logout();
     navigate('/');
     setOpen(false);
-  };
+  }
+}
 
 return (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E8F0FF] font-pretendard"

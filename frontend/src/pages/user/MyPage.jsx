@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import { Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import api from '../../api/axios';
 
 export default function MyPage() {
  const user = useAuthStore((state) => state.user);
@@ -10,17 +11,17 @@ const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [form, setForm] = useState({
-    name: user?.name || '구라진',
-    department: user?.department || '컴퓨터공학과',
-    studentId: user?.studentId || '202336064',
-    email: user?.email || 'hong@gachon.ac.kr',
-    grade: '4',
-  });
+  name: user?.name || '',
+   department: user?.major_name || '',
+  studentId: user?.student_id || '',  // ✅ student_id로 변경
+  email: user?.email || '',
+  grade: String(user?.grade || '1'),  // ✅ grade 실제값으로
+  currentPassword: '',  // ✅ 추가
+});
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawPw, setWithdrawPw] = useState('');
 
-  const handleLogout = () => { logout(); navigate('/'); };
 
   return (
     <div className="min-h-screen bg-slate-50 font-pretendard">
@@ -110,10 +111,37 @@ const logout = useAuthStore((state) => state.logout);
                     type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} 
                   />
                 </div>
-                
-                <button className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">
-                  저장하기 <ArrowRight size={16} />
-                </button>
+                <div className="space-y-1.5">
+  <label className="text-xs font-semibold text-slate-600 ml-1">현재 비밀번호 확인</label>
+  <input
+    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+    type="password"
+    placeholder="정보 수정을 위해 현재 비밀번호를 입력하세요"
+    value={form.currentPassword}
+    onChange={e => setForm({ ...form, currentPassword: e.target.value })}
+  />
+</div>
+
+                <button 
+  onClick={async () => {
+    try {
+   await api.put('/api/users/me', {
+  current_password: form.currentPassword,  // ✅ 추가
+  email: form.email,
+  grade: Number(form.grade),
+  student_id: form.studentId,
+  major_id: user?.major_id,
+});
+      alert('저장되었습니다!');
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      alert(reason || '저장 중 오류가 발생했습니다.');
+    }
+  }}
+  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
+>
+  저장하기 <ArrowRight size={16} />
+</button>
               </div>
             </div>
           )}
@@ -139,9 +167,28 @@ const logout = useAuthStore((state) => state.logout);
                     />
                   </div>
                 ))}
-                <button className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">
-                  변경하기 <ArrowRight size={16} />
-                </button>
+             <button 
+  onClick={async () => {
+    if (pwForm.next !== pwForm.confirm) {
+      alert('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    try {
+      await api.put('/api/users/me', {
+        current_password: pwForm.current,
+        new_password: pwForm.next,
+      });
+      alert('비밀번호가 변경되었습니다!');
+      setPwForm({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      alert(reason || '변경 중 오류가 발생했습니다.');
+    }
+  }}
+  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
+>
+  변경하기 <ArrowRight size={16} />
+</button>
               </div>
             </div>
           )}

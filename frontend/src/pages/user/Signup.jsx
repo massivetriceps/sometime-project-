@@ -24,33 +24,40 @@ const handleSubmit = async (e) => {
 
   try {
     const res = await api.post('/api/auth/register', {
-      login_id: form.email,       // 이메일을 login_id로
+      login_id: form.email,
       password: form.password,
       name: form.name,
       grade: Number(form.grade),
       student_id: form.studentId,
-      major_id: 1,                // 일단 임시값
+      major_id: 1,
       email: form.email,
     });
 
     if (res.data.resultType === 'SUCCESS') {
-      // 회원가입 성공 시 로그인 처리
-      login({
-        name: form.name,
-        email: form.email,
-        department: form.department,
-        studentId: form.studentId,
-        grade: form.grade,
+      // ✅ 회원가입 후 자동 로그인
+      const loginRes = await api.post('/api/auth/login', {
+        login_id: form.email,
+        password: form.password,
       });
+
+      if (loginRes.data.resultType === 'SUCCESS') {
+        const { access_token } = loginRes.data.success;
+
+        // ✅ 유저 상세 정보 가져오기
+        const userRes = await api.get('/api/users/me', {
+          headers: { Authorization: `Bearer ${access_token}` }
+        });
+
+        if (userRes.data.resultType === 'SUCCESS') {
+          login(userRes.data.success, access_token);
+        }
+      }
+
       navigate('/');
     }
   } catch (err) {
     const reason = err.response?.data?.error?.reason;
-    if (reason) {
-      setError(reason);
-    } else {
-      setError('회원가입 중 오류가 발생했습니다.');
-    }
+    setError(reason || '회원가입 중 오류가 발생했습니다.');
   }
 };
   return (
