@@ -24,9 +24,14 @@ const getUserProfile = async (user_id) => {
       grade: true,
       student_id: true,
       major_id: true,
-      created_at: true
+      created_at: true,
+      majors: {        // ✅ 추가
+        select: {
+          major_name: true,
+          college_name: true,
+        }
     }
+  }
   });
 };
-
 module.exports = { findUserById, deleteUser, updateUser, getUserProfile };

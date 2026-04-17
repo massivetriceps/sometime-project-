@@ -57,8 +57,12 @@ const getUserInfo = async (userId) => {
   if (!userProfile) {
     throw new UserNotFoundError('유저 정보를 찾을 수 없습니다.', { userId });
   }
-
-  return userProfile;
+  const { majors, ...rest } = userProfile;  // majors 분리
+  
+  return {
+    ...rest,
+    major_name: userProfile.majors?.major_name || '미지정',
+    college_name: userProfile.majors?.college_name || '미지정',
+  };
 };
-
 module.exports = { withdrawUser, updateUserInfo, getUserInfo };

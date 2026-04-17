@@ -11,7 +11,10 @@ const createUser = async (userData) => {
 };
 
 const findUserByLoginId = async (login_id) => {
-  return prisma.users.findUnique({ where: { login_id } });
+  return prisma.users.findUnique({ 
+    where: { login_id },
+    include: { majors: true }  // ✅ 추가
+  });
 };
 
 const findUserByNameAndEmail = async (name, email) => {

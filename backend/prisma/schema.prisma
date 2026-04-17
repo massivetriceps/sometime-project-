@@ -23,6 +23,7 @@ model Users {
 
   carts      Carts[]
   preference Preference?
+  majors     Majors   @relation(fields: [major_id], references: [major_id]) // ✅!!!관계 추가!!!
   @@map("USERS")
 }
 
@@ -31,6 +32,7 @@ model Majors {
   college_name String   @db.VarChar(50)
   major_name  String    @db.VarChar(50)
   courses     Courses[]
+  users       Users[]   // ✅ 관계 추가
   @@map("MAJORS")
 }
 

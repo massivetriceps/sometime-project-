@@ -53,7 +53,19 @@ const loginUser = async (login_id, password) => {
     { expiresIn: '2h' }
   );
 
-  return { access_token: accessToken };
+  // ✅ 유저 정보 추가
+  return { 
+    access_token: accessToken,
+    user: {
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      student_id: user.student_id,
+      grade: user.grade,
+      major_id: user.major_id,
+      major_name: user.majors?.major_name || '미지정',// ✅ 추가
+    }
+  };
 };
 
 const findLoginId = async (name, email) => {
