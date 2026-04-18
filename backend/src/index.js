@@ -34,11 +34,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // ── 라우터 ─────────────────────────────────────────────
-app.use('/api/auth',          authRouter);
-app.use('/api/users',         userRouter);
-app.use('/api/courses',       courseRouter);
-app.use('/api/users',         courseRouter);   // cart: /api/users/me/cart
-app.use('/api/admin/courses', courseRouter);   // upload: /api/admin/courses/upload
+app.use('/api/auth',                  authRouter);
+app.use('/api/users',                 userRouter);
+app.use('/api/courses',               courseRouter);
+app.use('/api/users',                 courseRouter);         // cart: /api/users/me/cart
+app.use('/api/admin/courses',         courseRouter);         // upload: /api/admin/courses/upload
+
+const timetableRouter = require('./modules/timetable/timetable.router');
+app.use('/api/users/me/timetables',   timetableRouter);     // 시간표 CRUD
 
 // ── 헬스체크 ───────────────────────────────────────────
 app.get('/', (req, res) => res.send('Sometime API Server is running! 🚀'));
