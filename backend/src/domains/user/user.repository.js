@@ -24,6 +24,10 @@ const getUserProfile = async (user_id) => {
       grade: true,
       student_id: true,
       major_id: true,
+      status: true,          
+      is_push_noti: true,    
+      is_email_noti: true,   
+      is_sms_noti: true,     
       created_at: true
     }
   });

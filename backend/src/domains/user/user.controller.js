@@ -16,9 +16,15 @@ const handleWithdraw = async (req, res, next) => {
 const handleUpdateInfo = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    const { current_password, new_password, email, grade, student_id, major_id } = req.body;
-    
-    const updateData = { new_password, email, grade, student_id, major_id };
+    const { 
+      current_password, new_password, email, grade, student_id, major_id,
+      is_push_noti, is_email_noti, is_sms_noti 
+    } = req.body;
+
+    const updateData = { 
+      new_password, email, grade, student_id, major_id,
+      is_push_noti, is_email_noti, is_sms_noti 
+    };
     
     const result = await userService.updateUserInfo(userId, current_password, updateData);
     

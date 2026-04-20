@@ -43,7 +43,10 @@ const updateUserInfo = async (userId, currentPassword, updateData) => {
   if (updateData.grade) dataToUpdate.grade = updateData.grade;
   if (updateData.student_id) dataToUpdate.student_id = updateData.student_id;
   if (updateData.major_id) dataToUpdate.major_id = updateData.major_id;
-
+  
+  if (updateData.is_push_noti !== undefined) dataToUpdate.is_push_noti = updateData.is_push_noti;
+  if (updateData.is_email_noti !== undefined) dataToUpdate.is_email_noti = updateData.is_email_noti;
+  if (updateData.is_sms_noti !== undefined) dataToUpdate.is_sms_noti = updateData.is_sms_noti;
   // 5. 창고에 업데이트 지시
   await userRepository.updateUser(userId, dataToUpdate);
 

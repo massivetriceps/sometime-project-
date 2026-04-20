@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,94 +7,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
-// 사용자
-// ─────────────────────────────────────────────
 model Users {
-  user_id    Int      @id @default(autoincrement())
-  login_id   String   @unique @db.VarChar(50)
-  password   String   @db.VarChar(255)
-  name       String   @db.VarChar(50)
-  grade      Int
-  student_id String   @db.VarChar(20)
-  major_id   Int
-  email      String   @unique @db.VarChar(100)
-  created_at DateTime @default(now())
+  user_id       Int            @id @default(autoincrement())
+  login_id      String         @db.VarChar(50)
+  password      String         @db.VarChar(255)
+  name          String         @db.VarChar(50)
+  major_id      Int
+  grade         Int
+  student_id    String         @db.VarChar(20)
+  email         String         @db.VarChar(100)
+  status        String         @default("ACTIVE") @db.VarChar(20)
+  created_at    DateTime       @default(now()) @db.DateTime(0)
+  is_push_noti  Boolean        @default(true)
+  is_email_noti Boolean        @default(true)
+  is_sms_noti   Boolean        @default(true)
+  ACCESS_LOGS   ACCESS_LOGS[]
+  carts         Carts[]
+  INQUIRIES     INQUIRIES[]
+  preferences   Preferences[]
+  taken_courses TakenCourses[]
+  timetables    Timetables[]
+  majors        Majors         @relation(fields: [major_id], references: [major_id], onDelete: NoAction, onUpdate: NoAction, map: "USERS_ibfk_1")
 
-  majors         Majors          @relation(fields: [major_id], references: [major_id])
-  carts          Carts[]
-  preferences    Preferences?
-  timetables     Timetables[]
-  taken_courses  TakenCourses[]
-  error_logs     ErrorLogs[]
-
+  @@index([major_id], map: "major_id")
   @@map("USERS")
 }
 
-// ─────────────────────────────────────────────
-// 학과
-// ─────────────────────────────────────────────
 model Majors {
-  major_id     Int       @id @default(autoincrement())
-  college_name String    @db.VarChar(50)
-  major_name   String    @db.VarChar(50)
-
-  users   Users[]
-  courses Courses[]
+  major_id        Int               @id @default(autoincrement())
+  college_name    String            @db.VarChar(50)
+  major_name      String            @db.VarChar(50)
+  courses         Courses[]
+  GRADUATION_REQS GRADUATION_REQS[]
+  users           Users[]
 
   @@map("MAJORS")
 }
 
-// ─────────────────────────────────────────────
-// 강의
-// ─────────────────────────────────────────────
 model Courses {
-  course_id      Int     @id @default(autoincrement())
-  course_code    String  @db.VarChar(50)
-  course_name    String  @db.VarChar(100)
-  organization   String? @db.VarChar(500)
-  major_id       Int
-  classification String  @db.VarChar(50)
-  credits        Int
-  professor      String? @db.VarChar(50)
-  capacity       Int     @default(0)
-  cart_count     Int     @default(0)   // CSP 인기도 가중치용
-  rating         Float   @default(0.0)
-
-  majors            Majors             @relation(fields: [major_id], references: [major_id])
-  course_schedules  CourseSchedules[]
+  course_id         Int                @id @default(autoincrement())
+  course_code       String             @db.VarChar(50)
+  course_name       String             @db.VarChar(100)
+  organization      String?            @db.VarChar(500)
+  major_id          Int
+  classification    String             @db.VarChar(50)
+  credits           Int
+  professor         String?            @db.VarChar(50)
+  capacity          Int                @default(0)
+  cart_count        Int                @default(0)
+  rating            Float              @default(0) @db.Float
   carts             Carts[]
+  majors            Majors             @relation(fields: [major_id], references: [major_id], onDelete: NoAction, onUpdate: NoAction, map: "COURSES_ibfk_1")
+  course_schedules  CourseSchedules[]
   timetable_courses TimetableCourses[]
-  taken_courses     TakenCourses[]
 
+  @@index([major_id], map: "major_id")
   @@map("COURSES")
 }
 
-// ─────────────────────────────────────────────
-// 강의 시간표
-// ─────────────────────────────────────────────
 model CourseSchedules {
-  schedule_id  Int     @id @default(autoincrement())
+  schedule_id  Int        @id @default(autoincrement())
   course_id    Int
-  day_of_week  String  @db.VarChar(10)  // 월 화 수 목 금 토 일
+  day_of_week  String     @db.VarChar(10)
   start_period Int
   end_period   Int
   building_id  Int?
-  room_name    String? @db.VarChar(50)
+  room_name    String?    @db.VarChar(50)
+  courses      Courses    @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction, map: "COURSE_SCHEDULES_ibfk_1")
+  buildings    Buildings? @relation(fields: [building_id], references: [building_id], onDelete: NoAction, onUpdate: NoAction, map: "COURSE_SCHEDULES_ibfk_2")
 
-  courses   Courses    @relation(fields: [course_id], references: [course_id])
-  buildings Buildings? @relation(fields: [building_id], references: [building_id])
-
+  @@index([building_id], map: "building_id")
+  @@index([course_id], map: "course_id")
   @@map("COURSE_SCHEDULES")
 }
 
-// ─────────────────────────────────────────────
-// 건물
-// ─────────────────────────────────────────────
 model Buildings {
-  building_id   Int    @id @default(autoincrement())
-  building_name String @db.VarChar(50)
-
+  building_id      Int               @id @default(autoincrement())
+  building_name    String            @db.VarChar(50)
   course_schedules CourseSchedules[]
   from_distances   Distances[]       @relation("FromBuilding")
   to_distances     Distances[]       @relation("ToBuilding")
@@ -104,198 +91,219 @@ model Buildings {
   @@map("BUILDINGS")
 }
 
-// ─────────────────────────────────────────────
-// 건물 간 이동 거리 (단방향 저장)
-// ─────────────────────────────────────────────
 model Distances {
-  distance_id      Int     @id @default(autoincrement())
+  distance_id      Int       @id @default(autoincrement())
   from_building_id Int
   to_building_id   Int
-  time_minutes     Int                  // 실측 이동시간 (분)
-  is_uphill        Boolean @default(false)  // 오르막 여부 (CSP 페널티용)
+  time_minutes     Int
+  is_uphill        Boolean   @default(false)
+  from_building    Buildings @relation("FromBuilding", fields: [from_building_id], references: [building_id], onDelete: NoAction, onUpdate: NoAction, map: "DISTANCES_ibfk_1")
+  to_building      Buildings @relation("ToBuilding", fields: [to_building_id], references: [building_id], onDelete: NoAction, onUpdate: NoAction, map: "DISTANCES_ibfk_2")
 
-  from_building Buildings @relation("FromBuilding", fields: [from_building_id], references: [building_id])
-  to_building   Buildings @relation("ToBuilding",   fields: [to_building_id],   references: [building_id])
-
+  @@index([from_building_id], map: "from_building_id")
+  @@index([to_building_id], map: "to_building_id")
   @@map("DISTANCES")
 }
 
-// ─────────────────────────────────────────────
-// 장바구니
-// ─────────────────────────────────────────────
 model Carts {
   user_id    Int
   course_id  Int
-  created_at DateTime @default(now())
-
-  users   Users   @relation(fields: [user_id],   references: [user_id])
-  courses Courses @relation(fields: [course_id], references: [course_id])
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      Users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "CARTS_ibfk_1")
+  courses    Courses  @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction, map: "CARTS_ibfk_2")
 
   @@id([user_id, course_id])
+  @@index([course_id], map: "course_id")
   @@map("CARTS")
 }
 
-// ─────────────────────────────────────────────
-// 사용자 선호도 (Step Form 결과, 1:1)
-// ─────────────────────────────────────────────
 model Preferences {
-  preference_id  Int      @id @default(autoincrement())
-  user_id        Int      @unique
-  // Step 3: 거주 형태 — DORM(기숙사) / COMMUTE(통학) / NEAR(자취)
-  residence_type String   @db.VarChar(20)
-  // Step 4: 공강 요일 비트마스크 (월=1, 화=2, 수=4, 목=8, 금=16)
-  free_day_mask  Int      @default(0)
-  // Step 5: 오르막 회피 여부
-  avoid_uphill   Boolean  @default(false)
-  // Step 6: 아침 수업(1교시) 포함 여부
-  prefer_morning Boolean  @default(false)
-  // Step 6: 온라인 강의 선호 여부
-  prefer_online  Boolean  @default(false)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  pref_id             Int     @id @default(autoincrement())
+  user_id             Int
+  preferred_time      String  @default("ANY") @db.VarChar(20)
+  free_days           String? @db.VarChar(20)
+  credit_intensity    String  @default("NORMAL") @db.VarChar(20)
+  minimize_gaps       Boolean @default(false)
+  prioritize_required Boolean @default(false)
+  max_classes_per_day Int?
+  avoid_uphill        Boolean @default(false)
+  prefer_online       Boolean @default(false)
+  users               Users   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "PREFERENCES_ibfk_1")
 
-  users Users @relation(fields: [user_id], references: [user_id])
-
+  @@index([user_id], map: "user_id")
   @@map("PREFERENCES")
 }
 
-// ─────────────────────────────────────────────
-// 생성된 시간표 (Plan A / B / C)
-// ─────────────────────────────────────────────
 model Timetables {
-  timetable_id       Int      @id @default(autoincrement())
+  timetable_id       Int                @id @default(autoincrement())
   user_id            Int
-  plan_type          String   @db.VarChar(1)   // 'A' | 'B' | 'C'
-  ai_comment         String?  @db.Text         // LLM 자연어 설명
-  total_credits      Int      @default(0)
-  optimization_score Float    @default(0.0)    // CSP 점수
-  total_walk_minutes Int      @default(0)      // 총 이동시간(분)
-  is_selected        Boolean  @default(false)  // 최종 선택 여부
-  created_at         DateTime @default(now())
+  plan_type          String             @db.VarChar(10)
+  is_selected        Boolean            @default(false)
+  ai_comment         String?            @db.Text
+  optimization_score Int                @default(0)
+  characteristics    String?            @db.VarChar(100)
+  created_at         DateTime           @default(now()) @db.DateTime(0)
+  users              Users              @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "TIMETABLES_ibfk_1")
+  timetable_courses  TimetableCourses[]
 
-  users             Users              @relation(fields: [user_id], references: [user_id])
-  timetable_courses TimetableCourses[]
-
+  @@index([user_id], map: "user_id")
   @@map("TIMETABLES")
 }
 
-// ─────────────────────────────────────────────
-// 시간표 ↔ 강의 매핑
-// ─────────────────────────────────────────────
 model TimetableCourses {
+  map_id       Int        @id @default(autoincrement())
   timetable_id Int
   course_id    Int
+  timetables   Timetables @relation(fields: [timetable_id], references: [timetable_id], onDelete: NoAction, onUpdate: NoAction, map: "TIMETABLE_COURSES_ibfk_1")
+  courses      Courses    @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction, map: "TIMETABLE_COURSES_ibfk_2")
 
-  timetables Timetables @relation(fields: [timetable_id], references: [timetable_id])
-  courses    Courses    @relation(fields: [course_id],    references: [course_id])
-
-  @@id([timetable_id, course_id])
+  @@index([course_id], map: "course_id")
+  @@index([timetable_id], map: "timetable_id")
   @@map("TIMETABLE_COURSES")
 }
 
-// ─────────────────────────────────────────────
-// 기수강 내역
-// ─────────────────────────────────────────────
 model TakenCourses {
-  user_id    Int
-  course_id  Int
-  created_at DateTime @default(now())
+  history_id     Int      @id @default(autoincrement())
+  user_id        Int
+  course_code    String   @db.VarChar(50)
+  course_name    String   @db.VarChar(100)
+  classification String   @db.VarChar(50)
+  credits        Int
+  created_at     DateTime @default(now()) @db.DateTime(0)
+  users          Users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "TAKEN_COURSES_ibfk_1")
 
-  users   Users   @relation(fields: [user_id],   references: [user_id])
-  courses Courses @relation(fields: [course_id], references: [course_id])
-
-  @@id([user_id, course_id])
+  @@index([user_id], map: "user_id")
   @@map("TAKEN_COURSES")
 }
 
-// ─────────────────────────────────────────────
-// 관리자
-// ─────────────────────────────────────────────
 model Admins {
-  admin_id   Int      @id @default(autoincrement())
-  login_id   String   @unique @db.VarChar(50)
-  password   String   @db.VarChar(255)
-  name       String   @db.VarChar(50)
-  created_at DateTime @default(now())
-
-  notices              Notices[]
-  requested_configs    SystemConfigs[]     @relation("ConfigRequester")
-  approved_configs     SystemConfigs[]     @relation("ConfigApprover")
-  ai_prompt_templates  AiPromptTemplates[]
+  admin_id           Int                  @id @default(autoincrement())
+  login_id           String               @db.VarChar(50)
+  password           String               @db.VarChar(255)
+  name               String               @db.VarChar(50)
+  email              String               @db.VarChar(100)
+  role               String               @db.VarChar(20)
+  AI_ADMIN_VARIABLES AI_ADMIN_VARIABLES[]
+  INQUIRIES          INQUIRIES[]
+  notices            Notices[]
+  requested_configs  SystemConfigs[]      @relation("ConfigRequester")
 
   @@map("ADMINS")
 }
 
-// ─────────────────────────────────────────────
-// 공지사항
-// ─────────────────────────────────────────────
 model Notices {
-  notice_id  Int      @id @default(autoincrement())
-  admin_id   Int
-  title      String   @db.VarChar(200)
-  content    String   @db.Text
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  notice_id      Int      @id @default(autoincrement())
+  admin_id       Int
+  title          String   @db.VarChar(200)
+  content        String   @db.Text
+  created_at     DateTime @default(now()) @db.DateTime(0)
+  attachment_url String?  @db.VarChar(255)
+  admins         Admins   @relation(fields: [admin_id], references: [admin_id], onDelete: NoAction, onUpdate: NoAction, map: "NOTICES_ibfk_1")
 
-  admins Admins @relation(fields: [admin_id], references: [admin_id])
-
+  @@index([admin_id], map: "admin_id")
   @@map("NOTICES")
 }
 
-// ─────────────────────────────────────────────
-// CSP 가중치 설정 (승인 프로세스 포함)
-// ─────────────────────────────────────────────
 model SystemConfigs {
-  config_id       Int       @id @default(autoincrement())
-  config_key      String    @unique @db.VarChar(100)
-  config_value    String    @db.VarChar(500)      // 현재 적용 중인 값
-  pending_value   String?   @db.VarChar(500)      // 승인 대기 중인 값
-  description     String?   @db.VarChar(500)
-  // PENDING | APPROVED | REJECTED
-  approval_status String    @default("APPROVED") @db.VarChar(20)
-  requested_by    Int?
-  approved_by     Int?
-  requested_at    DateTime?
-  approved_at     DateTime?
-  updated_at      DateTime  @updatedAt
+  config_id       Int      @id @default(autoincrement())
+  config_key      String   @db.VarChar(100)
+  config_value    String   @db.Text
+  config_type     String   @db.VarChar(50)
+  approval_status String   @default("PENDING") @db.VarChar(20)
+  requested_by    Int
+  updated_at      DateTime @default(now()) @updatedAt @db.DateTime(0)
+  requester       Admins   @relation("ConfigRequester", fields: [requested_by], references: [admin_id], onDelete: NoAction, onUpdate: NoAction, map: "SYSTEM_CONFIGS_ibfk_1")
 
-  requester Admins? @relation("ConfigRequester", fields: [requested_by], references: [admin_id])
-  approver  Admins? @relation("ConfigApprover",  fields: [approved_by],  references: [admin_id])
-
+  @@index([requested_by], map: "requested_by")
   @@map("SYSTEM_CONFIGS")
 }
 
-// ─────────────────────────────────────────────
-// AI 프롬프트 템플릿
-// ─────────────────────────────────────────────
 model AiPromptTemplates {
-  template_id   Int      @id @default(autoincrement())
-  template_key  String   @unique @db.VarChar(100)  // e.g. "TIMETABLE_COMMENT"
-  system_prompt String   @db.Text
-  is_active     Boolean  @default(true)
-  updated_by    Int?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  admins Admins? @relation(fields: [updated_by], references: [admin_id])
+  template_id        Int                  @id @default(autoincrement())
+  template_name      String               @db.VarChar(100)
+  fixed_prompt       String               @db.Text
+  description        String?              @db.VarChar(255)
+  version            Int                  @default(1)
+  is_active          Boolean              @default(true)
+  created_at         DateTime             @default(now()) @db.DateTime(0)
+  updated_at         DateTime             @default(now()) @updatedAt @db.DateTime(0)
+  AI_ADMIN_VARIABLES AI_ADMIN_VARIABLES[]
 
   @@map("AI_PROMPT_TEMPLATES")
 }
 
-// ─────────────────────────────────────────────
-// 오류 로그
-// ─────────────────────────────────────────────
 model ErrorLogs {
-  log_id      Int      @id @default(autoincrement())
-  user_id     Int?
-  error_code  String?  @db.VarChar(50)
-  message     String   @db.Text
-  stack_trace String?  @db.Text
-  request_url String?  @db.VarChar(500)
-  method      String?  @db.VarChar(10)
-  created_at  DateTime @default(now())
-
-  users Users? @relation(fields: [user_id], references: [user_id])
+  log_id        Int      @id @default(autoincrement())
+  error_type    String   @db.VarChar(50)
+  error_message String   @db.Text
+  created_at    DateTime @default(now()) @db.DateTime(0)
 
   @@map("ERROR_LOGS")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ACCESS_LOGS {
+  log_id      Int      @id @default(autoincrement())
+  user_id     Int?
+  api_path    String   @db.VarChar(255)
+  http_method String   @db.VarChar(10)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  USERS       Users?   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "ACCESS_LOGS_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model AI_ADMIN_VARIABLES {
+  variable_id         Int               @id @default(autoincrement())
+  template_id         Int
+  admin_id            Int
+  variable_key        String            @db.VarChar(100)
+  variable_value      String            @db.Text
+  description         String?           @db.VarChar(255)
+  updated_at          DateTime          @default(now()) @db.DateTime(0)
+  AI_PROMPT_TEMPLATES AiPromptTemplates @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "AI_ADMIN_VARIABLES_ibfk_1")
+  ADMINS              Admins            @relation(fields: [admin_id], references: [admin_id], onDelete: NoAction, onUpdate: NoAction, map: "AI_ADMIN_VARIABLES_ibfk_2")
+
+  @@index([admin_id], map: "admin_id")
+  @@index([template_id], map: "template_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model GRADUATION_REQS {
+  req_id              Int    @id @default(autoincrement())
+  major_id            Int
+  apply_year          String @db.VarChar(20)
+  total_credits       Int
+  basic_liberal       Int
+  convergence_art     Int?
+  convergence_society Int?
+  convergence_nature  Int?
+  convergence_world   Int?
+  free_liberal        Int?
+  area_liberal        Int?
+  major_required      Int
+  major_elective      Int
+  MAJORS              Majors @relation(fields: [major_id], references: [major_id], onDelete: NoAction, onUpdate: NoAction, map: "GRADUATION_REQS_ibfk_1")
+
+  @@index([major_id], map: "major_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model INQUIRIES {
+  inquiry_id   Int       @id @default(autoincrement())
+  user_id      Int
+  inquiry_type String    @db.VarChar(50)
+  title        String    @db.VarChar(200)
+  content      String    @db.Text
+  status       String    @default("PENDING") @db.VarChar(20)
+  answer       String?   @db.Text
+  answered_by  Int?
+  created_at   DateTime  @default(now()) @db.DateTime(0)
+  answered_at  DateTime? @db.DateTime(0)
+  USERS        Users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "INQUIRIES_ibfk_1")
+  ADMINS       Admins?   @relation(fields: [answered_by], references: [admin_id], onDelete: NoAction, onUpdate: NoAction, map: "INQUIRIES_ibfk_2")
+
+  @@index([answered_by], map: "answered_by")
+  @@index([user_id], map: "user_id")
 }

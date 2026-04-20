@@ -1,19 +1,21 @@
+// admin.repository.js
 const prisma = require('../../config/db.config');
 
 // 로그인 ID로 관리자 찾기
 const findAdminByLoginId = async (login_id) => {
-  return prisma.admin.findUnique({
+  return prisma.admins.findFirst({ // admin -> admins
     where: { login_id },
   });
 };
+
 // 고유 ID로 관리자 찾기
 const findAdminById = async (admin_id) => {
-  return prisma.admin.findUnique({ where: { admin_id } });
+  return prisma.admins.findUnique({ where: { admin_id } }); // admin -> admins
 };
 
 // 관리자 정보 업데이트
 const updateAdmin = async (admin_id, data) => {
-  return prisma.admin.update({ where: { admin_id }, data });
+  return prisma.admins.update({ where: { admin_id }, data }); // admin -> admins
 };
 
 // 모든 사용자 목록 조회
@@ -30,7 +32,7 @@ const findAllUsers = async () => {
       created_at: true,
     },
     orderBy: {
-      created_at: 'desc' // 최근 가입한 순서대로 정렬
+      created_at: 'desc'
     }
   });
 };

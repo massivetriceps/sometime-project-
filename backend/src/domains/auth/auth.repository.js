@@ -11,7 +11,7 @@ const createUser = async (userData) => {
 };
 
 const findUserByLoginId = async (login_id) => {
-  return prisma.users.findUnique({ where: { login_id } });
+  return prisma.users.findFirst({ where: { login_id } });
 };
 
 const findUserByNameAndEmail = async (name, email) => {
