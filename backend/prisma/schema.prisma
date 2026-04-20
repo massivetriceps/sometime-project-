@@ -5,134 +5,297 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql" 
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-// USERS 테이블 
+// ─────────────────────────────────────────────
+// 사용자
+// ─────────────────────────────────────────────
 model Users {
   user_id    Int      @id @default(autoincrement())
-  login_id   String   @unique
-  password   String
-  name       String
+  login_id   String   @unique @db.VarChar(50)
+  password   String   @db.VarChar(255)
+  name       String   @db.VarChar(50)
   grade      Int
-  student_id String
+  student_id String   @db.VarChar(20)
   major_id   Int
-  email      String   @unique
+  email      String   @unique @db.VarChar(100)
   created_at DateTime @default(now())
 
-  carts      Carts[]
-  preference Preference?
+  majors         Majors          @relation(fields: [major_id], references: [major_id])
+  carts          Carts[]
+  preferences    Preferences?
+  timetables     Timetables[]
+  taken_courses  TakenCourses[]
+  error_logs     ErrorLogs[]
+
   @@map("USERS")
 }
 
+// ─────────────────────────────────────────────
+// 학과
+// ─────────────────────────────────────────────
 model Majors {
-  major_id    Int       @id @default(autoincrement())
-  college_name String   @db.VarChar(50)
-  major_name  String    @db.VarChar(50)
-  courses     Courses[]
+  major_id     Int       @id @default(autoincrement())
+  college_name String    @db.VarChar(50)
+  major_name   String    @db.VarChar(50)
+
+  users   Users[]
+  courses Courses[]
+
   @@map("MAJORS")
 }
 
+// ─────────────────────────────────────────────
+// 강의
+// ─────────────────────────────────────────────
 model Courses {
-  course_id      Int               @id @default(autoincrement())
-  course_code    String            @db.VarChar(50)
-  course_name    String            @db.VarChar(100)
-  organization   String?           @db.VarChar(500)
+  course_id      Int     @id @default(autoincrement())
+  course_code    String  @db.VarChar(50)
+  course_name    String  @db.VarChar(100)
+  organization   String? @db.VarChar(500)
   major_id       Int
-  classification String            @db.VarChar(50)
+  classification String  @db.VarChar(50)
   credits        Int
-  professor      String?           @db.VarChar(50)
-  capacity       Int               @default(0)
-  cart_count     Int               @default(0)
-  rating         Float             @default(0.0)
-  majors         Majors            @relation(fields: [major_id], references: [major_id])
-  course_schedules CourseSchedules[]
-  carts          Carts[]
+  professor      String? @db.VarChar(50)
+  capacity       Int     @default(0)
+  cart_count     Int     @default(0)   // CSP 인기도 가중치용
+  rating         Float   @default(0.0)
+
+  majors            Majors             @relation(fields: [major_id], references: [major_id])
+  course_schedules  CourseSchedules[]
+  carts             Carts[]
+  timetable_courses TimetableCourses[]
+  taken_courses     TakenCourses[]
+
   @@map("COURSES")
 }
 
+// ─────────────────────────────────────────────
+// 강의 시간표
+// ─────────────────────────────────────────────
 model CourseSchedules {
-  schedule_id  Int      @id @default(autoincrement())
+  schedule_id  Int     @id @default(autoincrement())
   course_id    Int
-  day_of_week  String   @db.VarChar(10)
+  day_of_week  String  @db.VarChar(10)  // 월 화 수 목 금 토 일
   start_period Int
   end_period   Int
   building_id  Int?
-  room_name    String?  @db.VarChar(50)
-  courses      Courses  @relation(fields: [course_id], references: [course_id])
-  buildings    Buildings? @relation(fields: [building_id], references: [building_id])
+  room_name    String? @db.VarChar(50)
+
+  courses   Courses    @relation(fields: [course_id], references: [course_id])
+  buildings Buildings? @relation(fields: [building_id], references: [building_id])
+
   @@map("COURSE_SCHEDULES")
 }
 
+// ─────────────────────────────────────────────
+// 건물
+// ─────────────────────────────────────────────
 model Buildings {
-  building_id    Int               @id @default(autoincrement())
-  building_name  String            @db.VarChar(50)
+  building_id   Int    @id @default(autoincrement())
+  building_name String @db.VarChar(50)
+
   course_schedules CourseSchedules[]
-  from_distances Distances[]       @relation("FromBuilding")
-  to_distances   Distances[]       @relation("ToBuilding")
+  from_distances   Distances[]       @relation("FromBuilding")
+  to_distances     Distances[]       @relation("ToBuilding")
+
   @@map("BUILDINGS")
 }
 
+// ─────────────────────────────────────────────
+// 건물 간 이동 거리 (단방향 저장)
+// ─────────────────────────────────────────────
 model Distances {
-  distance_id      Int       @id @default(autoincrement())
+  distance_id      Int     @id @default(autoincrement())
   from_building_id Int
   to_building_id   Int
-  time_minutes     Int
-  is_uphill        Boolean   @default(false)
-  from_building    Buildings @relation("FromBuilding", fields: [from_building_id], references: [building_id])
-  to_building      Buildings @relation("ToBuilding",   fields: [to_building_id],   references: [building_id])
+  time_minutes     Int                  // 실측 이동시간 (분)
+  is_uphill        Boolean @default(false)  // 오르막 여부 (CSP 페널티용)
+
+  from_building Buildings @relation("FromBuilding", fields: [from_building_id], references: [building_id])
+  to_building   Buildings @relation("ToBuilding",   fields: [to_building_id],   references: [building_id])
+
   @@map("DISTANCES")
 }
 
+// ─────────────────────────────────────────────
+// 장바구니
+// ─────────────────────────────────────────────
 model Carts {
   user_id    Int
   course_id  Int
-  created_at DateTime  @default(now())
-  users      Users     @relation(fields: [user_id], references: [user_id])
-  courses    Courses   @relation(fields: [course_id], references: [course_id])
+  created_at DateTime @default(now())
+
+  users   Users   @relation(fields: [user_id],   references: [user_id])
+  courses Courses @relation(fields: [course_id], references: [course_id])
+
   @@id([user_id, course_id])
   @@map("CARTS")
 }
 
-model Admin {
+// ─────────────────────────────────────────────
+// 사용자 선호도 (Step Form 결과, 1:1)
+// ─────────────────────────────────────────────
+model Preferences {
+  preference_id  Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  // Step 3: 거주 형태 — DORM(기숙사) / COMMUTE(통학) / NEAR(자취)
+  residence_type String   @db.VarChar(20)
+  // Step 4: 공강 요일 비트마스크 (월=1, 화=2, 수=4, 목=8, 금=16)
+  free_day_mask  Int      @default(0)
+  // Step 5: 오르막 회피 여부
+  avoid_uphill   Boolean  @default(false)
+  // Step 6: 아침 수업(1교시) 포함 여부
+  prefer_morning Boolean  @default(false)
+  // Step 6: 온라인 강의 선호 여부
+  prefer_online  Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  users Users @relation(fields: [user_id], references: [user_id])
+
+  @@map("PREFERENCES")
+}
+
+// ─────────────────────────────────────────────
+// 생성된 시간표 (Plan A / B / C)
+// ─────────────────────────────────────────────
+model Timetables {
+  timetable_id       Int      @id @default(autoincrement())
+  user_id            Int
+  plan_type          String   @db.VarChar(1)   // 'A' | 'B' | 'C'
+  ai_comment         String?  @db.Text         // LLM 자연어 설명
+  total_credits      Int      @default(0)
+  optimization_score Float    @default(0.0)    // CSP 점수
+  total_walk_minutes Int      @default(0)      // 총 이동시간(분)
+  is_selected        Boolean  @default(false)  // 최종 선택 여부
+  created_at         DateTime @default(now())
+
+  users             Users              @relation(fields: [user_id], references: [user_id])
+  timetable_courses TimetableCourses[]
+
+  @@map("TIMETABLES")
+}
+
+// ─────────────────────────────────────────────
+// 시간표 ↔ 강의 매핑
+// ─────────────────────────────────────────────
+model TimetableCourses {
+  timetable_id Int
+  course_id    Int
+
+  timetables Timetables @relation(fields: [timetable_id], references: [timetable_id])
+  courses    Courses    @relation(fields: [course_id],    references: [course_id])
+
+  @@id([timetable_id, course_id])
+  @@map("TIMETABLE_COURSES")
+}
+
+// ─────────────────────────────────────────────
+// 기수강 내역
+// ─────────────────────────────────────────────
+model TakenCourses {
+  user_id    Int
+  course_id  Int
+  created_at DateTime @default(now())
+
+  users   Users   @relation(fields: [user_id],   references: [user_id])
+  courses Courses @relation(fields: [course_id], references: [course_id])
+
+  @@id([user_id, course_id])
+  @@map("TAKEN_COURSES")
+}
+
+// ─────────────────────────────────────────────
+// 관리자
+// ─────────────────────────────────────────────
+model Admins {
   admin_id   Int      @id @default(autoincrement())
   login_id   String   @unique @db.VarChar(50)
   password   String   @db.VarChar(255)
   name       String   @db.VarChar(50)
-  role       String   @default("ADMIN") @db.VarChar(20)
   created_at DateTime @default(now())
 
-  notices    Notices[]
-  @@map("ADMINS") // 실제 DB 테이블 이름을 ADMINS로 매핑
+  notices              Notices[]
+  requested_configs    SystemConfigs[]     @relation("ConfigRequester")
+  approved_configs     SystemConfigs[]     @relation("ConfigApprover")
+  ai_prompt_templates  AiPromptTemplates[]
+
+  @@map("ADMINS")
 }
 
-model Preference {
-  pref_id             Int      @id @default(autoincrement())
-  user_id             Int      @unique // 1:1 관계를 위해 유니크 설정
-  avoid_uphill        Boolean  @default(false)
-  preferred_time      String   @default("ANY") @db.VarChar(20)
-  free_days           String?  @db.VarChar(20)
-  credit_intensity    String   @default("NORMAL") @db.VarChar(20)
-  minimize_gaps       Boolean  @default(false)
-  prioritize_required Boolean  @default(false)
-  prefer_online       Boolean  @default(false)
-  max_classes_per_day Int?
-
-  // 기존 User 모델과의 관계
-  user                Users    @relation(fields: [user_id], references: [user_id])
-  @@map("PREFERENCES")
-}
-
+// ─────────────────────────────────────────────
+// 공지사항
+// ─────────────────────────────────────────────
 model Notices {
-  notice_id      Int      @id @default(autoincrement())
-  admin_id       Int
-  title          String   @db.VarChar(200)
-  content        String   @db.Text
-  created_at     DateTime @default(now())
-  attachment_url String?  @db.VarChar(255)
+  notice_id  Int      @id @default(autoincrement())
+  admin_id   Int
+  title      String   @db.VarChar(200)
+  content    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  admin          Admin    @relation(fields: [admin_id], references: [admin_id])
+  admins Admins @relation(fields: [admin_id], references: [admin_id])
 
   @@map("NOTICES")
+}
+
+// ─────────────────────────────────────────────
+// CSP 가중치 설정 (승인 프로세스 포함)
+// ─────────────────────────────────────────────
+model SystemConfigs {
+  config_id       Int       @id @default(autoincrement())
+  config_key      String    @unique @db.VarChar(100)
+  config_value    String    @db.VarChar(500)      // 현재 적용 중인 값
+  pending_value   String?   @db.VarChar(500)      // 승인 대기 중인 값
+  description     String?   @db.VarChar(500)
+  // PENDING | APPROVED | REJECTED
+  approval_status String    @default("APPROVED") @db.VarChar(20)
+  requested_by    Int?
+  approved_by     Int?
+  requested_at    DateTime?
+  approved_at     DateTime?
+  updated_at      DateTime  @updatedAt
+
+  requester Admins? @relation("ConfigRequester", fields: [requested_by], references: [admin_id])
+  approver  Admins? @relation("ConfigApprover",  fields: [approved_by],  references: [admin_id])
+
+  @@map("SYSTEM_CONFIGS")
+}
+
+// ─────────────────────────────────────────────
+// AI 프롬프트 템플릿
+// ─────────────────────────────────────────────
+model AiPromptTemplates {
+  template_id   Int      @id @default(autoincrement())
+  template_key  String   @unique @db.VarChar(100)  // e.g. "TIMETABLE_COMMENT"
+  system_prompt String   @db.Text
+  is_active     Boolean  @default(true)
+  updated_by    Int?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  admins Admins? @relation(fields: [updated_by], references: [admin_id])
+
+  @@map("AI_PROMPT_TEMPLATES")
+}
+
+// ─────────────────────────────────────────────
+// 오류 로그
+// ─────────────────────────────────────────────
+model ErrorLogs {
+  log_id      Int      @id @default(autoincrement())
+  user_id     Int?
+  error_code  String?  @db.VarChar(50)
+  message     String   @db.Text
+  stack_trace String?  @db.Text
+  request_url String?  @db.VarChar(500)
+  method      String?  @db.VarChar(10)
+  created_at  DateTime @default(now())
+
+  users Users? @relation(fields: [user_id], references: [user_id])
+
+  @@map("ERROR_LOGS")
 }

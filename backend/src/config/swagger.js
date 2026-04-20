@@ -82,7 +82,10 @@ const options = {
       },
     },
   },
-  apis: ['./src/domains/**/*.router.js'],
+  apis: [
+    './src/domains/**/*.router.js',
+    './src/modules/**/*.router.js',
+  ],
 };
 
 module.exports = swaggerJsdoc(options);
