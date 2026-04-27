@@ -1,0 +1,32 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import "tailwindcss";
+
+
+/* --- 2순위: @theme 설정 (v4용) --- */
+@theme {
+  --font-pretendard: "Pretendard", sans-serif;
+  --color-primary: #4F7CF3;
+  --color-accent: #2EC4B6;
+}
+
+/* --- 3순위: 그 외 모든 스타일 (@layer, html, body 등) --- */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1F2937;
+  background: #ffffff;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+/* --- 만약 기존에 쓰던 1200줄의 코드가 더 있다면, 반드시 이 아래에 붙여넣으세요 --- */
