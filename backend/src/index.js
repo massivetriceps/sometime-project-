@@ -12,9 +12,10 @@ const adminRouter  = require('./domains/admin/admin.router');
 const preferenceRouter = require('./domains/preference/preference.router');
 const noticeRouter      = require('./domains/notice/notice.router');
 const adminNoticeRouter = require('./domains/notice/admin-notice.router');
-const adminStatsRouter = require('./domains/admin/admin-stats.router');
-const adminGrauationRouter = require('./domains/admin/admin-graduation.router');
+const adminStatsRouter = require('./domains/stats/admin-stats.router');
+const adminGrauationRouter = require('./domains/graduation/admin-graduation.router');
 const graduationRouter = require('./domains/graduation/graduation.router');
+const adminCampusRouter = require('./domains/campus/admin-campus.router');
 
 const app  = express();
 const PORT = process.env.PORT || 8080;
@@ -53,7 +54,7 @@ app.use('/api/admin/notices', adminNoticeRouter);
 app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/users/me/graduation', graduationRouter);
 app.use('/api/admin/graduation', adminGrauationRouter);  
-
+app.use('/api/admin/campus', adminCampusRouter);
 
 // ── 헬스체크 ───────────────────────────────────────────
 app.get('/', (req, res) => res.send('Sometime API Server is running! 🚀'));
