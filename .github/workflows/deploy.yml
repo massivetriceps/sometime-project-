@@ -29,13 +29,8 @@ jobs:
             echo "📥 최신 코드 pull..."
             git pull origin main
 
-            echo "🎨 프론트엔드 빌드..."
-            cd frontend
-            npm install --production=false
-            npm run build
-
             echo "🔧 백엔드 준비..."
-            cd ../backend
+            cd backend
             npm install --production=false
             npx prisma generate
             npx prisma migrate deploy

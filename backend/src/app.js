@@ -2,7 +2,6 @@ require('dotenv').config();
 
 const express    = require('express');
 const cors       = require('cors');
-const path       = require('path');
 const swaggerUi  = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -59,15 +58,8 @@ app.use('/api/admin/graduation',      adminGrauationRouter);
 app.use('/api/admin/campus',          adminCampusRouter);
 app.use('/api/users/me/timetables',   timetableRouter);       // 시간표 CRUD
 
-// ── React 정적 파일 서빙 ──────────────────────────────
-// /api, /api-docs 경로는 이미 위에서 처리됨 → 충돌 없음
-const frontendDist = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendDist));
-
-// React Router 처리 (/api, /api-docs 제외 모든 경로 → index.html)
-app.get(/^(?!\/api).*/, (req, res) => {
-  res.sendFile(path.join(frontendDist, 'index.html'));
-});
+// ── 헬스체크 ───────────────────────────────────────────
+app.get('/', (req, res) => res.send('Sometime API Server is running! 🚀'));
 
 // ── 글로벌 에러 미들웨어 ──────────────────────────────
 app.use((err, req, res, next) => {
