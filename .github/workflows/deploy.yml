@@ -18,8 +18,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            cd ~/sometime
 
+            # 최초 배포 시 클론, 이후엔 pull
+            if [ ! -d ~/sometime ]; then
+              echo "📦 최초 클론..."
+              git clone https://github.com/massivetriceps/sometime-project-.git ~/sometime
+            fi
+
+            cd ~/sometime
             echo "📥 최신 코드 pull..."
             git pull origin main
 
