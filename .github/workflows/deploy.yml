@@ -19,13 +19,7 @@ jobs:
           script: |
             set -e
 
-            # 최초 배포 시 클론, 이후엔 pull
-            if [ ! -d ~/sometime ]; then
-              echo "📦 최초 클론..."
-              git clone https://github.com/massivetriceps/sometime-project-.git ~/sometime
-            fi
-
-            cd ~/sometime
+            cd ~/sometime-project-
             echo "📥 최신 코드 pull..."
             git pull origin main
 
