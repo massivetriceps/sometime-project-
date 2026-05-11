@@ -9,7 +9,7 @@ const COLORS = ['#8FA8FF', '#8EDDD0', '#C3B5FF', '#F7CFA1', '#F4AFCF'];
 function TimetableGrid({ courses }) {
   const days = ['월', '화', '수', '목', '금'];
   const startHour = 9;
-  const endHour = 19;
+  const endHour = 22;
   const hourHeight = 48;
   const getTime = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
 

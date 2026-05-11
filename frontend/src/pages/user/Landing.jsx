@@ -17,7 +17,7 @@ function TimetableGrid() {
   ];
   const days = ['월', '화', '수', '목', '금'];
   const startHour = 9;
-  const endHour = 19;
+  const endHour = 22;
   const hourHeight = 55;
   const getTime = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
 
