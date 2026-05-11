@@ -33,6 +33,23 @@ const parseCSV = (text) => {
   return { headers, rows };
 };
 
+// ── 영역 → 융합교양 classification 매핑 ──────────────────────────────
+const AREA_TO_CLASS = [
+  { keywords: ['인간과 예술', '인간과예술'],   value: '융합(예술)' },
+  { keywords: ['사회와 역사', '사회와역사'],   value: '융합(사회)' },
+  { keywords: ['자연과 과학', '자연과과학'],   value: '융합(자연)' },
+  { keywords: ['세계와 언어', '세계와언어'],   value: '융합(세계)' },
+];
+
+const resolveClassification = (rawClass, area) => {
+  const areaStr = (area || '').trim();
+  if (areaStr) {
+    const matched = AREA_TO_CLASS.find(m => m.keywords.some(k => areaStr.includes(k)));
+    if (matched) return matched.value;
+  }
+  return (rawClass || '').trim();
+};
+
 // ── CSV 행 → API 포맷 변환 ─────────────────────────────────────────
 const rowToApiFormat = (row, majorMap) => {
   const major_id = majorMap[row['학과명']?.trim()];
@@ -40,7 +57,8 @@ const rowToApiFormat = (row, majorMap) => {
     course_code:    row['강의코드']?.trim()  || '',
     course_name:    row['강의명']?.trim()    || '',
     major_id:       major_id ?? null,
-    classification: row['이수구분']?.trim()  || '',
+    classification: resolveClassification(row['이수구분'], row['영역']),
+    area:           row['영역']?.trim()      || '',
     credits:        parseInt(row['학점']) || 0,
     professor:      row['담당교수']?.trim()  || null,
     capacity:       parseInt(row['정원'])  || 0,
@@ -49,15 +67,15 @@ const rowToApiFormat = (row, majorMap) => {
 
 // ── 양식 CSV 다운로드 ─────────────────────────────────────────────
 const downloadTemplate = () => {
-  const header = '강의코드,강의명,학과명,이수구분,학점,담당교수,정원';
-  const example = 'CS101,프로그래밍기초,컴퓨터공학부,전필,3,홍길동,40';
+  const header = '강의코드,강의명,학과명,이수구분,영역,학점,담당교수,정원';
+  const example = 'CS101,프로그래밍기초,컴퓨터공학부,전필,,3,홍길동,40\nLIB201,사회학의이해,가천리버럴아츠칼리지,교선,[공통선택]사회와 역사,3,홍길동,40';
   const blob = new Blob(['﻿' + header + '\n' + example], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'course_upload_template.csv'; a.click();
   URL.revokeObjectURL(url);
 };
 
-const COL_SPEC = ['강의코드', '강의명', '학과명', '이수구분', '학점', '담당교수', '정원'];
+const COL_SPEC = ['강의코드', '강의명', '학과명', '이수구분', '영역', '학점', '담당교수', '정원'];
 
 const TYPE_STYLE = {
   전필: 'bg-[#EEF2FF] text-[#4F7CF3]', 전선: 'bg-[#E6FAF8] text-[#2EC4B6]',
@@ -164,13 +182,29 @@ export default function AdminCourseUpload() {
           <h1 className="text-xl font-bold text-slate-800">강의 데이터 업로드</h1>
           <p className="text-xs text-slate-400 mt-0.5">CSV 파일로 강의 정보를 일괄 등록합니다</p>
         </div>
-        <button
-          onClick={downloadTemplate}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
-        >
-          <Download size={13} />
-          <span className="hidden sm:inline">양식 다운로드</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const res = await adminApi.get('/api/courses/export', { responseType: 'blob' });
+                const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+                const a = document.createElement('a'); a.href = url; a.download = 'courses_export.csv'; a.click();
+                URL.revokeObjectURL(url);
+              } catch { alert('내보내기 실패'); }
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-blue-200 text-sm font-medium text-blue-600 hover:bg-blue-50 shadow-sm transition-all"
+          >
+            <Download size={13} />
+            <span className="hidden sm:inline">현재 강의 내보내기</span>
+          </button>
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
+          >
+            <Download size={13} />
+            <span className="hidden sm:inline">양식 다운로드</span>
+          </button>
+        </div>
       </div>
 
       {/* ── 컬럼 안내 ── */}

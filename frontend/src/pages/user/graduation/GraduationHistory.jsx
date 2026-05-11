@@ -47,7 +47,7 @@ export default function GraduationHistory() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', credits: 3, grade: 'A+', category: '전공필수', year: '2024', semester: '1' });
+  const [form, setForm] = useState({ name: '', credits: 3, letterGrade: 'A+', category: '전공필수', gradeYear: '1', semesterNum: '1' });
 
   // 과목 자동완성
   const [query, setQuery]           = useState('');
@@ -69,12 +69,13 @@ export default function GraduationHistory() {
         ]);
         if (histRes.data.resultType === 'SUCCESS') {
           setCourses(histRes.data.success.map(c => ({
-            id: c.history_id,
-            name: c.course_name,
-            credits: c.credits,
-            grade: 'A+',
+            id:       c.history_id,
+            name:     c.course_name,
+            credits:  c.credits,
+            grade:    c.grade    ?? null,
+            semester: c.semester ?? null,
+            letterGrade: 'A+',
             category: TO_CAT[c.classification] ?? c.classification,
-            year: '2024', semester: '1',
           })));
         }
         if (reqRes.data.resultType === 'SUCCESS') setReqs(reqRes.data.success);
@@ -168,9 +169,17 @@ export default function GraduationHistory() {
 
   const addCourse = () => {
     if (!form.name.trim()) return;
-    setCourses([...courses, { ...form, id: Date.now(), credits: Number(form.credits) }]);
+    setCourses([...courses, {
+      id:          Date.now(),
+      name:        form.name,
+      credits:     Number(form.credits),
+      letterGrade: form.letterGrade,
+      category:    form.category,
+      grade:       Number(form.gradeYear) || null,
+      semester:    Number(form.semesterNum) || null,
+    }]);
     const firstCat = availableCats[0] || '전공필수';
-    setForm({ name: '', credits: 3, grade: 'A+', category: firstCat, year: '2024', semester: '1' });
+    setForm({ name: '', credits: 3, letterGrade: 'A+', category: firstCat, gradeYear: '1', semesterNum: '1' });
     setQuery('');
     setShowForm(false);
   };
@@ -272,7 +281,7 @@ export default function GraduationHistory() {
               {/* 성적 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>성적</label>
-                <select style={inp} value={form.grade} onChange={e => setForm({ ...form, grade: e.target.value })}>
+                <select style={inp} value={form.letterGrade} onChange={e => setForm({ ...form, letterGrade: e.target.value })}>
                   {GRADES.map(g => <option key={g}>{g}</option>)}
                 </select>
               </div>
@@ -285,18 +294,18 @@ export default function GraduationHistory() {
                 </select>
               </div>
 
-              {/* 년도 */}
+              {/* 학년 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>년도</label>
-                <select style={inp} value={form.year} onChange={e => setForm({ ...form, year: e.target.value })}>
-                  {['2020','2021','2022','2023','2024','2025'].map(y => <option key={y}>{y}</option>)}
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>학년</label>
+                <select style={inp} value={form.gradeYear} onChange={e => setForm({ ...form, gradeYear: e.target.value })}>
+                  {['1','2','3','4'].map(y => <option key={y} value={y}>{y}학년</option>)}
                 </select>
               </div>
 
               {/* 학기 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>학기</label>
-                <select style={inp} value={form.semester} onChange={e => setForm({ ...form, semester: e.target.value })}>
+                <select style={inp} value={form.semesterNum} onChange={e => setForm({ ...form, semesterNum: e.target.value })}>
                   <option value="1">1학기</option>
                   <option value="2">2학기</option>
                 </select>
@@ -317,31 +326,93 @@ export default function GraduationHistory() {
           </div>
         )}
 
-        {/* 과목 목록 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-          {courses.length === 0 && (
-            <div style={{ background: 'white', borderRadius: 12, border: '1px solid #E8F0FF', padding: '28px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
-              아직 입력된 수강내역이 없습니다. 과목을 추가해주세요.
-            </div>
-          )}
-          {courses.map(c => (
-            <div key={c.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #E8F0FF', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* 과목 목록 — 학기별 그룹 */}
+        {(() => {
+          // grade/semester 있는 것과 없는 것 분리
+          const withSem = courses.filter(c => c.grade && c.semester);
+          const noSem   = courses.filter(c => !c.grade || !c.semester);
+
+          // 학기별 그룹핑 및 정렬 (1-1 → 1-2 → 2-1 → ...)
+          const groups = {};
+          withSem.forEach(c => {
+            const key = `${c.grade}-${c.semester}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(c);
+          });
+          const sortedKeys = Object.keys(groups).sort((a, b) => {
+            const [ag, as] = a.split('-').map(Number);
+            const [bg, bs] = b.split('-').map(Number);
+            return ag !== bg ? ag - bg : as - bs;
+          });
+
+          const renderCourse = (c) => (
+            <div key={c.id} style={{ background: '#FAFAFA', borderRadius: 10, border: '1px solid #F0F0F0', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 4, height: 32, borderRadius: 999, background: CAT_COLOR[c.category] || '#9CA3AF', flexShrink: 0 }} />
+                <div style={{ width: 4, height: 30, borderRadius: 999, background: CAT_COLOR[c.category] || '#9CA3AF', flexShrink: 0 }} />
                 <div>
-                  <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 3px', fontSize: 14 }}>{c.name}</p>
-                  <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>{c.year}년 {c.semester}학기 · {c.category} · {c.credits}학점</p>
+                  <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 2px', fontSize: 13 }}>{c.name}</p>
+                  <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>{c.category} · {c.credits}학점</p>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#4F7CF3' }}>{c.grade}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#4F7CF3' }}>{c.letterGrade || ''}</span>
                 <button onClick={() => setCourses(courses.filter(x => x.id !== c.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D1D5DB', padding: 4 }}>
-                  <Trash2 size={15} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          );
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
+              {courses.length === 0 && (
+                <div style={{ background: 'white', borderRadius: 12, border: '1px solid #E8F0FF', padding: '28px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
+                  아직 입력된 수강내역이 없습니다. 시간표를 확정하거나 과목을 직접 추가해주세요.
+                </div>
+              )}
+
+              {sortedKeys.map(key => {
+                const [g, sem] = key.split('-');
+                const list = groups[key];
+                const semTotal = list.reduce((s, c) => s + Number(c.credits), 0);
+                return (
+                  <div key={key} style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFF', borderBottom: '1px solid #E8F0FF' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#1F2937' }}>{g}학년 {sem}학기</span>
+                        <span style={{ fontSize: 12, color: '#4F7CF3', background: '#EEF2FF', padding: '2px 8px', borderRadius: 999, fontWeight: 600 }}>{semTotal}학점</span>
+                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>{list.length}과목</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px' }}>
+                      {list.map(renderCourse)}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {noSem.length > 0 && (
+                <div style={{ background: 'white', borderRadius: 14, border: '1px solid #FED7AA', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#FFF7ED', borderBottom: '1px solid #FED7AA' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>학기 미지정</span>
+                      <span style={{ fontSize: 12, color: '#F97316', background: '#FFF7ED', padding: '2px 8px', borderRadius: 999, fontWeight: 600, border: '1px solid #FED7AA' }}>
+                        {noSem.reduce((s, c) => s + Number(c.credits), 0)}학점
+                      </span>
+                    </div>
+                    <button onClick={() => setCourses(courses.filter(c => c.grade && c.semester))}
+                      style={{ fontSize: 11, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Trash2 size={12} /> 전체 삭제
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px' }}>
+                    {noSem.map(renderCourse)}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button

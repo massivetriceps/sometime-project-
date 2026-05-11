@@ -5,8 +5,8 @@ const { handleLogin,
     handleUpdateInfo,
     handleGetAllUsers,
     handleDeleteUser,
-    handleGetMajors,
 } = require('./admin.controller');
+const { handleGetMajors } = require('../auth/auth.controller');
 const adminMiddleware = require('../../middlewares/adminMiddleware'); // 관리자 전용 미들웨어
 
 /**

@@ -82,6 +82,7 @@ export default function TimetableManage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [addingCourseId, setAddingCourseId] = useState(null);
+  const [confirming, setConfirming] = useState(false);
   const searchRef = useRef(null);
 
   const s = { fontFamily: 'Pretendard, sans-serif' };
@@ -169,6 +170,27 @@ export default function TimetableManage() {
     }
   };
 
+  const handleConfirm = async () => {
+    if (!activePlan) return;
+    setConfirming(true);
+    try {
+      const res = await api.post(`/api/users/me/timetables/${activePlan.timetable_id}/confirm`);
+      if (res.data.resultType === 'SUCCESS') {
+        const { added_count } = res.data.success;
+        alert(`이번 학기 시간표로 확정되었습니다.\n수강내역에 ${added_count}개 과목이 추가되었습니다.`);
+        setTimetables(prev => prev.map(t => ({
+          ...t,
+          is_selected: t.timetable_id === activePlan.timetable_id,
+        })));
+      }
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      alert(reason || '확정 중 오류가 발생했습니다.');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   const handleLoadComment = async () => {
     if (!activePlan) return;
     setLoadingComment(true);
@@ -187,6 +209,8 @@ export default function TimetableManage() {
   const activePlan = timetables.find(t => t.timetable_id === selectedId) || timetables[0] || null;
   const gridCourses = activePlan ? toGridCourses(activePlan.courses) : [];
   const total = activePlan?.courses.reduce((sum, c) => sum + Number(c.credits), 0) ?? 0;
+  // 시간 미배정 과목 (스케줄 없는 과목 — 사회봉사 등)
+  const noScheduleCourses = activePlan?.courses.filter(c => !c.schedules || c.schedules.length === 0) ?? [];
 
   if (loading) {
     return (
@@ -225,6 +249,9 @@ export default function TimetableManage() {
                       onClick={() => { setSelectedId(t.timetable_id); setDeleteConfirm(false); setAiComment(''); }}
                       style={{ padding: '8px 18px', borderRadius: 12, fontSize: 13, fontWeight: 600, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#4F7CF3' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
                       플랜 {t.plan_type}
+                      {t.grade && t.semester && (
+                        <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.85 }}>({t.grade}학년 {t.semester}학기)</span>
+                      )}
                     </button>
                   );
                 })}
@@ -232,6 +259,20 @@ export default function TimetableManage() {
             )}
 
             <TimetableGrid courses={gridCourses} />
+
+            {noScheduleCourses.length > 0 && (
+              <div style={{ background: 'white', borderRadius: 12, border: '1px solid #E8F0FF', padding: '12px 16px', marginBottom: 20 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', margin: '0 0 10px' }}>시간 미배정 과목</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {noScheduleCourses.map(c => (
+                    <div key={c.course_id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#F3F4F6', borderRadius: 20, fontSize: 13 }}>
+                      <span style={{ fontWeight: 600, color: '#374151' }}>{c.course_name}</span>
+                      <span style={{ color: '#9CA3AF', fontSize: 11 }}>{c.credits}학점</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {activePlan && (
               <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
@@ -241,6 +282,11 @@ export default function TimetableManage() {
                   <div>
                     <p style={{ fontWeight: 700, color: '#1F2937', margin: '0 0 4px', fontSize: 16 }}>
                       플랜 {activePlan.plan_type}
+                      {activePlan.grade && activePlan.semester && (
+                        <span style={{ marginLeft: 8, fontSize: 13, color: '#6B7280', fontWeight: 500 }}>
+                          {activePlan.grade}학년 {activePlan.semester}학기
+                        </span>
+                      )}
                       {activePlan.optimization_score != null && (
                         <span style={{ marginLeft: 8, fontSize: 12, color: '#4F7CF3', background: '#E8F0FF', padding: '2px 8px', borderRadius: 999 }}>
                           점수 {activePlan.optimization_score}
@@ -261,6 +307,11 @@ export default function TimetableManage() {
                       style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, border: '1px solid #E8F0FF', padding: '8px 14px', fontSize: 13, color: '#4F7CF3', background: 'white', cursor: 'pointer', ...s }}>
                       {loadingComment ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
                       AI 코멘트
+                    </button>
+                    <button onClick={handleConfirm} disabled={confirming || activePlan.is_selected}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, border: activePlan.is_selected ? '1px solid #bbf7d0' : '1px solid #86efac', padding: '8px 14px', fontSize: 13, fontWeight: 600, color: activePlan.is_selected ? '#6B7280' : '#16a34a', background: activePlan.is_selected ? '#f0fdf4' : 'white', cursor: activePlan.is_selected ? 'default' : 'pointer', ...s }}>
+                      {confirming ? <Loader size={13} /> : <Check size={13} />}
+                      {activePlan.is_selected ? '확정됨' : '이번 학기 시간표로 확정'}
                     </button>
                     {deleteConfirm ? (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

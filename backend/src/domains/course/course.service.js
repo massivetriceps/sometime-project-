@@ -18,6 +18,23 @@ const CLASS_MAP = {
   '자유선택': '자선',
 };
 
+// 영역 키워드 → 융합교양 classification 매핑
+const AREA_TO_CLASS = [
+  { keywords: ['인간과 예술', '인간과예술'], value: '융합(예술)' },
+  { keywords: ['사회와 역사', '사회와역사'], value: '융합(사회)' },
+  { keywords: ['자연과 과학', '자연과과학'], value: '융합(자연)' },
+  { keywords: ['세계와 언어', '세계와언어'], value: '융합(세계)' },
+];
+
+const resolveClassification = (rawClass, area) => {
+  const areaStr = (area || '').trim();
+  if (areaStr) {
+    const matched = AREA_TO_CLASS.find(m => m.keywords.some(k => areaStr.includes(k)));
+    if (matched) return matched.value;
+  }
+  return CLASS_MAP[rawClass] ?? rawClass ?? '';
+};
+
 const getCourses = async ({ keyword, classification }) => {
   const where = {};
   if (keyword) {
@@ -119,16 +136,44 @@ const uploadCourses = async (rows) => {
 
   let created = 0, updated = 0;
   for (const row of rows) {
-    const existing = await courseRepository.findCourseByCode(row.course_code);
+    // 영역 컬럼이 있으면 classification 재결정
+    const { area, ...rest } = row;
+    const normalizedRow = {
+      ...rest,
+      classification: resolveClassification(row.classification, area),
+    };
+    const existing = await courseRepository.findCourseByCode(normalizedRow.course_code);
     if (existing) {
-      await courseRepository.updateCourse(existing.course_id, row);
+      // null/undefined/빈 값은 기존 데이터 유지
+      const updateData = Object.fromEntries(
+        Object.entries(normalizedRow).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      );
+      delete updateData.course_code; // PK는 업데이트 제외
+      await courseRepository.updateCourse(existing.course_id, updateData);
       updated++;
     } else {
-      await courseRepository.createCourse(row);
+      const createData = Object.fromEntries(
+        Object.entries(normalizedRow).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      );
+      await courseRepository.createCourse(createData);
       created++;
     }
   }
   return { message: '강의 업로드 완료', created, updated };
 };
 
-module.exports = { getCourses, getMyCart, addToCart, removeFromCart, uploadCourses };
+const exportCourses = async () => {
+  const courses = await courseRepository.findCourses({});
+  return courses.map(c => ({
+    course_code:    c.course_code,
+    course_name:    c.course_name,
+    major_id:       c.major_id,
+    classification: c.classification,
+    organization:   c.organization ?? '',
+    credits:        c.credits,
+    professor:      c.professor ?? '',
+    capacity:       c.capacity,
+  }));
+};
+
+module.exports = { getCourses, getMyCart, addToCart, removeFromCart, uploadCourses, exportCourses };

@@ -10,6 +10,8 @@ const getTakenHistory = async (userId) => {
     course_name:    c.course_name,
     classification: c.classification,
     credits:        c.credits,
+    grade:          c.grade,
+    semester:       c.semester,
   }));
 };
 

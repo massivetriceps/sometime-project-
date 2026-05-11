@@ -1,6 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
 const adminService = require('./admin.service');
-const prisma = require('../../config/db.config');
 
 const handleLogin = async (req, res, next) => {
   try {
@@ -67,21 +66,10 @@ const handleDeleteUser = async (req, res, next) => {
   }
 };
 
-const handleGetMajors = async (req, res, next) => {
-  try {
-    const majors = await prisma.majors.findMany({
-      select: { major_id: true, major_name: true, college_name: true },
-      orderBy: [{ college_name: 'asc' }, { major_name: 'asc' }],
-    });
-    res.status(StatusCodes.OK).success(majors);
-  } catch (error) { next(error); }
-};
-
 module.exports = {
   handleLogin,
   handleLogout,
   handleUpdateInfo,
   handleGetAllUsers,
-  handleDeleteUser,
-  handleGetMajors,
+  handleDeleteUser
 };

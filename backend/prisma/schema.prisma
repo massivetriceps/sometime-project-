@@ -138,6 +138,8 @@ model Timetables {
   timetable_id       Int                @id @default(autoincrement())
   user_id            Int
   plan_type          String             @db.VarChar(10)
+  grade              Int?
+  semester           Int?
   is_selected        Boolean            @default(false)
   ai_comment         String?            @db.Text
   optimization_score Int                @default(0)
@@ -169,6 +171,8 @@ model TakenCourses {
   course_name    String   @db.VarChar(100)
   classification String   @db.VarChar(50)
   credits        Int
+  grade          Int?
+  semester       Int?
   created_at     DateTime @default(now()) @db.DateTime(0)
   users          Users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "TAKEN_COURSES_ibfk_1")
 

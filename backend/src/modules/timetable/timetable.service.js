@@ -160,7 +160,7 @@ const createTimetable = async (userId, body) => {
     dept, grade, dormitory,
     free_day_mask, avoid_uphill,
     allow_first, prefer_online,
-    target_credits,
+    target_credits, semester,
   } = body;
 
   // 1) 장바구니 조회
@@ -227,6 +227,8 @@ const createTimetable = async (userId, body) => {
       data: {
         user_id:            userId,
         plan_type:          plan.plan_type,
+        grade:              grade ?? null,
+        semester:           semester ?? null,
         optimization_score: plan.score ?? 0,
         ai_comment,
         is_selected:        false,
@@ -274,6 +276,8 @@ const getTimetables = async (userId) => {
   return timetables.map((t) => ({
     timetable_id:       t.timetable_id,
     plan_type:          t.plan_type,
+    grade:              t.grade,
+    semester:           t.semester,
     is_selected:        t.is_selected,
     optimization_score: t.optimization_score,
     created_at:         t.created_at,
@@ -419,10 +423,72 @@ const deleteTimetable = async (userId, timetableId) => {
   return { message: '시간표가 삭제되었습니다.' };
 };
 
+// ────────────────────────────────────────
+// 6. 시간표 확정 → 수강내역 자동 추가
+// ────────────────────────────────────────
+const confirmTimetable = async (userId, timetableId) => {
+  const timetable = await prisma.timetables.findUnique({
+    where: { timetable_id: timetableId },
+    include: { timetable_courses: { include: { courses: true } } },
+  });
+
+  if (!timetable) {
+    const err = new Error('시간표를 찾을 수 없습니다.'); err.statusCode = 404; throw err;
+  }
+  if (timetable.user_id !== userId) {
+    const err = new Error('접근 권한이 없습니다.'); err.statusCode = 403; throw err;
+  }
+
+  const { grade, semester } = timetable;
+
+  // course_id 기준 중복 제거 (같은 과목이 여러 schedule로 중복 등록된 경우 방지)
+  const uniqueCourses = Object.values(
+    Object.fromEntries(
+      timetable.timetable_courses
+        .filter(tc => tc.courses)
+        .map(tc => [tc.courses.course_id, tc.courses])
+    )
+  );
+
+  // 이번 학기(grade+semester) 수강내역 전체 교체
+  const newRecords = uniqueCourses.map(c => ({
+    user_id:        userId,
+    course_code:    c.course_code,
+    course_name:    c.course_name,
+    classification: c.classification,
+    credits:        c.credits,
+    grade:          grade ?? null,
+    semester:       semester ?? null,
+  }));
+
+  await prisma.$transaction([
+    // 이 학기 기존 수강내역 삭제 후 교체 (다른 학기는 건드리지 않음)
+    prisma.takenCourses.deleteMany({
+      where: { user_id: userId, grade: grade ?? null, semester: semester ?? null },
+    }),
+    prisma.takenCourses.createMany({ data: newRecords }),
+    // ABC 중 이 시간표만 is_selected = true, 나머지 false
+    prisma.timetables.updateMany({
+      where: { user_id: userId, timetable_id: { not: timetableId } },
+      data:  { is_selected: false },
+    }),
+    prisma.timetables.update({
+      where: { timetable_id: timetableId },
+      data:  { is_selected: true },
+    }),
+  ]);
+
+  return {
+    message: '시간표가 확정되었습니다.',
+    added_count: newRecords.length,
+  };
+};
+
 module.exports = {
   createTimetable,
   getTimetables,
   getComment,
   updateTimetable,
   deleteTimetable,
+  confirmTimetable,
 };

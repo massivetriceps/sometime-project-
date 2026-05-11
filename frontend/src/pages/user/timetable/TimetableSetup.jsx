@@ -20,11 +20,13 @@ export default function TimeTableG() {
   }, []);
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [userInfo, setUserInfo] = useState({ 
-    name: '', 
-    department: '컴퓨터공학과', 
-    studentId: '21' 
+  const [userInfo, setUserInfo] = useState({
+    name: '',
+    department: '컴퓨터공학과',
+    studentId: '21'
   });
+  const [grade, setGrade] = useState(null);
+  const [semester, setSemester] = useState(null);
   
   const [priorities, setPriorities] = useState([
     { id: 'freeDay', label: '공강 요일' },
@@ -256,6 +258,24 @@ export default function TimeTableG() {
             </div>
 
             <div style={styles.inputGroup}>
+              <label style={styles.label}>학년 / 학기</label>
+              <select
+                value={grade && semester ? `${grade}-${semester}` : ''}
+                onChange={e => {
+                  if (!e.target.value) { setGrade(null); setSemester(null); return; }
+                  const [g, s] = e.target.value.split('-').map(Number);
+                  setGrade(g); setSemester(s);
+                }}
+                style={{ ...styles.input, color: grade ? '#1e293b' : '#94A3B8', cursor: 'pointer' }}
+              >
+                <option value="">학기를 선택해주세요</option>
+                {[1,2,3,4].flatMap(g => [1,2].map(s => (
+                  <option key={`${g}-${s}`} value={`${g}-${s}`}>{g}학년 {s}학기</option>
+                )))}
+              </select>
+            </div>
+
+            <div style={styles.inputGroup}>
               <label style={styles.label}>이번 학기 목표 학점</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <button
@@ -350,6 +370,14 @@ export default function TimeTableG() {
                 })}
               </div>
 
+              {/* 학년/학기 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '12px' }}>
+                <span style={{ fontWeight: '600', color: '#155DFC', fontSize: '14px' }}>📅 학년/학기</span>
+                <span style={{ fontWeight: '700', color: '#1E40AF', fontSize: '16px' }}>
+                  {grade && semester ? `${grade}학년 ${semester}학기` : '미선택'}
+                </span>
+              </div>
+
               {/* 목표 학점 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '12px' }}>
                 <span style={{ fontWeight: '600', color: '#155DFC', fontSize: '14px' }}>🎯 목표 학점</span>
@@ -418,7 +446,8 @@ export default function TimeTableG() {
         const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
 
         await api.post('/api/users/me/timetables', {
-          grade: user?.grade ?? undefined,
+          grade: grade ?? undefined,
+          semester: semester ?? undefined,
           free_day_mask: freeDayMask,
           avoid_uphill,
           allow_first,

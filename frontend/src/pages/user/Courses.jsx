@@ -20,14 +20,10 @@ const FILTER_MAP = {
   '전공선택': '전선',
   '교양필수': '교필',
   '교양선택': '교선',
-  '융합교양': '교선',   // DB상 교선이지만 과목명 키워드로 추가 필터
   '계열교양': '계교',
   '군사학':   '군사',
   '교직':     '교직',
 };
-
-// 융합교양 판별: 가천리버럴아츠칼리지(GLAC) 개설 교선 과목
-const isGLAC = (c) => c.organization?.includes('가천리버럴아츠칼리지');
 
 export default function Courses() {
   const cart = useTimetableStore((state) => state.cart);
@@ -51,15 +47,7 @@ export default function Courses() {
 
       const res = await api.get('/api/courses', { params });
       if (res.data.resultType === 'SUCCESS') {
-        let data = res.data.success ?? [];
-        // 융합교양: 교선 중 가천리버럴아츠칼리지(GLAC) 개설 과목만
-        if (activeFilter === '융합교양') {
-          data = data.filter(isGLAC);
-        }
-        // 교양선택: 교선 중 GLAC 아닌 과목만
-        if (activeFilter === '교양선택') {
-          data = data.filter(c => !isGLAC(c));
-        }
+        const data = res.data.success ?? [];
         setCourses(data);
       } else {
         setFetchError('강의 목록을 가져오지 못했습니다.');

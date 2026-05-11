@@ -7,6 +7,7 @@ const {
   getComment,
   updateTimetable,
   deleteTimetable,
+  confirmTimetable,
 } = require('./timetable.controller');
 
 /**
@@ -256,7 +257,8 @@ router.get('/:timetable_id/comment', authMiddleware, getComment);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:timetable_id',    authMiddleware, updateTimetable);
-router.delete('/:timetable_id', authMiddleware, deleteTimetable);
+router.put('/:timetable_id',             authMiddleware, updateTimetable);
+router.delete('/:timetable_id',          authMiddleware, deleteTimetable);
+router.post('/:timetable_id/confirm',    authMiddleware, confirmTimetable);
 
 module.exports = router;

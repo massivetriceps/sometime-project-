@@ -8,6 +8,7 @@ const {
   handleAddToCart,
   handleRemoveFromCart,
   handleUploadCourses,
+  handleExportCourses,
 } = require('./course.controller');
 
 /**
@@ -207,6 +208,7 @@ router.delete('/me/cart/:courseId', isLoggedIn, handleRemoveFromCart);
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/upload', isAdmin, handleUploadCourses);
+router.post('/upload',  isAdmin, handleUploadCourses);
+router.get('/export',  isAdmin, handleExportCourses);
 
 module.exports = router;

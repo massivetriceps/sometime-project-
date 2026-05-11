@@ -49,6 +49,16 @@ const deleteTimetable = async (req, res, next) => {
   }
 };
 
+const confirmTimetable = async (req, res, next) => {
+  try {
+    const timetableId = parseInt(req.params.timetable_id);
+    const data = await timetableService.confirmTimetable(req.user.user_id, timetableId);
+    res.status(StatusCodes.OK).success(data);
+  } catch (e) {
+    next(e);
+  }
+};
+
 module.exports = {
-  createTimetable, getTimetables, getComment, updateTimetable, deleteTimetable,
+  createTimetable, getTimetables, getComment, updateTimetable, deleteTimetable, confirmTimetable,
 };
