@@ -1,19 +1,18 @@
 ﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Shield } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
-import useAuthStore from '../../store/authStore'; // ✅ 변경
+import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
-
 
 export default function Login() {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login); // ✅ 변경
+  const login = useAuthStore((state) => state.login);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   if (!form.email || !form.password) {
     setError('이메일과 비밀번호를 모두 입력해주세요.');
@@ -26,31 +25,32 @@ export default function Login() {
       password: form.password,
     });
 
-if (res.data.resultType === 'SUCCESS') {
-  const { access_token } = res.data.success;
-  
-  // 유저 상세 정보 먼저 가져오기
-  const userRes = await api.get('/api/users/me', {
-    headers: { Authorization: `Bearer ${access_token}` }
-  });
-  
-  if (userRes.data.resultType === 'SUCCESS') {
-    login(userRes.data.success, access_token); // 유저 정보 저장
-  } else {
-    login({ email: form.email }, access_token); // 실패 시 임시 저장
-  }
-  
-  navigate('/');
-}
+    if (res.data.resultType === 'SUCCESS') {
+      const { access_token } = res.data.success;
+
+      const userRes = await api.get('/api/users/me', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+
+      if (userRes.data.resultType === 'SUCCESS') {
+        login(userRes.data.success, access_token);
+      } else {
+        login({ email: form.email }, access_token);
+      }
+
+      navigate('/');
+    }
   } catch (err) {
-    console.log('에러:', err); // ✅ 추가
+    console.log('에러:', err);
     const reason = err.response?.data?.error?.reason;
     setError(reason || '로그인 중 오류가 발생했습니다.');
   }
 };
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-6 font-pretendard">
       <div className="w-full max-w-[440px]">
+
         {/* 상단 로고 및 타이틀 */}
         <div className="text-center mb-7">
           <Link to="/" className="inline-flex items-center gap-2 mb-5 no-underline">
@@ -73,12 +73,12 @@ if (res.data.resultType === 'SUCCESS') {
             {/* 이메일 입력 */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-medium text-slate-800 ml-1">이메일</label>
-              <input 
-                type="email" 
-                placeholder="이메일을 입력하세요" 
+              <input
+                type="email"
+                placeholder="이메일을 입력하세요"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                value={form.email} 
-                onChange={e => setForm({ ...form, email: e.target.value })} 
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
 
@@ -86,16 +86,16 @@ if (res.data.resultType === 'SUCCESS') {
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-medium text-slate-800 ml-1">비밀번호</label>
               <div className="relative">
-                <input 
-                  type={showPw ? 'text' : 'password'} 
-                  placeholder="비밀번호를 입력하세요" 
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="비밀번호를 입력하세요"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-4 pr-11 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                  value={form.password} 
-                  onChange={e => setForm({ ...form, password: e.target.value })} 
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPw(!showPw)} 
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -106,15 +106,17 @@ if (res.data.resultType === 'SUCCESS') {
             {/* 옵션 링크 */}
             <div className="flex justify-between items-center text-[13px] mt-1">
               <label className="flex items-center gap-2 text-slate-500 cursor-pointer">
-                <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary" /> 
+                <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary" />
                 로그인 상태 유지
               </label>
-              <Link to="/find-account" className="text-primary font-medium hover:underline">아이디/비밀번호 찾기</Link>
+              <Link to="/find-account" className="text-primary font-medium hover:underline">
+                아이디/비밀번호 찾기
+              </Link>
             </div>
 
             {/* 로그인 버튼 */}
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               로그인 <ArrowRight size={16} />
@@ -124,11 +126,22 @@ if (res.data.resultType === 'SUCCESS') {
           {/* 하단 회원가입 유도 */}
           <div className="mt-5 pt-5 border-t border-slate-100 text-center">
             <p className="text-[13px] text-slate-500 mb-2.5">계정이 없으신가요?</p>
-            <Link 
-              to="/signup" 
+            <Link
+              to="/signup"
               className="block w-full py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-slate-50/50 hover:bg-slate-100 transition-colors no-underline"
             >
               회원가입
+            </Link>
+          </div>
+
+          {/* 관리자 로그인 구분선 */}
+          <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+            <Link
+              to="/admin/login"
+              className="inline-flex items-center gap-1.5 text-[13px] text-slate-400 hover:text-slate-600 transition-colors no-underline"
+            >
+              <Shield size={13} />
+              관리자로 로그인
             </Link>
           </div>
         </div>

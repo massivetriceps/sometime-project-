@@ -1,130 +1,10 @@
-<<<<<<< HEAD
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
-
-export default App
-=======
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/global.css';
 import useAuthStore from './store/authStore';
+import useAdminStore from './store/adminStore';
 import Layout from './components/Layout';
+
+// 사용자 페이지
 import Landing             from './pages/user/Landing';
 import Login               from './pages/user/Login';
 import Signup              from './pages/user/Signup';
@@ -138,6 +18,19 @@ import TimetableManage     from './pages/user/timetable/TimetableManage';
 import GraduationHistory   from './pages/user/graduation/GraduationHistory';
 import GraduationDashboard from './pages/user/graduation/GraduationDashboard';
 
+// 관리자 페이지
+import AdminLogin          from './pages/admin/AdminLogin';
+import AdminDashboard      from './pages/admin/AdminDashboard';
+import AdminUsers          from './pages/admin/AdminUsers';
+import AdminNotice         from './pages/admin/AdminNotice';
+import AdminCourseUpload   from './pages/admin/AdminCourseUpload';
+import AdminCampusConfig   from './pages/admin/AdminCampusConfig';
+import AdminGraduationConfig from './pages/admin/AdminGraduationConfig';
+import AdminAnalytics      from './pages/admin/AdminAnalytics';
+import AdminLogs           from './pages/admin/AdminLogs';
+import AdminCSPConfig      from './pages/admin/AdminCSPConfig';
+import AdminAIPrompt       from './pages/admin/AdminAIPrompt';
+
 function PrivateRoute({ children }) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   return isLoggedIn ? children : <Navigate to="/login" replace />;
@@ -148,13 +41,21 @@ function PublicOnlyRoute({ children }) {
   return isLoggedIn ? <Navigate to="/" replace /> : children;
 }
 
+function AdminRoute({ children }) {
+  const isAuthenticated = useAdminStore((state) => state.isAuthenticated);
+  return isAuthenticated ? children : <Navigate to="/admin/login" replace />;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* 사용자 인증 */}
         <Route path="/login"        element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/signup"       element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
         <Route path="/find-account" element={<PublicOnlyRoute><FindAccount /></PublicOnlyRoute>} />
+
+        {/* 사용자 페이지 */}
         <Route element={<Layout />}>
           <Route path="/"                     element={<Landing />} />
           <Route path="/notice"               element={<Notice />} />
@@ -167,6 +68,19 @@ function App() {
           <Route path="/graduation/dashboard" element={<PrivateRoute><GraduationDashboard /></PrivateRoute>} />
         </Route>
 
+        {/* 관리자 페이지 */}
+        <Route path="/admin/login"              element={<AdminLogin />} />
+        <Route path="/admin/dashboard"          element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/users"              element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/notice"             element={<AdminRoute><AdminNotice /></AdminRoute>} />
+        <Route path="/admin/course/upload"      element={<AdminRoute><AdminCourseUpload /></AdminRoute>} />
+        <Route path="/admin/campus/config"      element={<AdminRoute><AdminCampusConfig /></AdminRoute>} />
+        <Route path="/admin/graduation/config"  element={<AdminRoute><AdminGraduationConfig /></AdminRoute>} />
+        <Route path="/admin/analytics"          element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+        <Route path="/admin/logs"               element={<AdminRoute><AdminLogs /></AdminRoute>} />
+        <Route path="/admin/csp/config"         element={<AdminRoute><AdminCSPConfig /></AdminRoute>} />
+        <Route path="/admin/ai/prompt"          element={<AdminRoute><AdminAIPrompt /></AdminRoute>} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
@@ -174,4 +88,4 @@ function App() {
 }
 
 export default App;
->>>>>>> 2efdf399020f7844078853b5e424474c43f95834
+

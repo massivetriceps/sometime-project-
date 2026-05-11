@@ -6,6 +6,18 @@ const {
   CartNotFoundError,
 } = require('../../errors/customErrors');
 
+// 프론트 → DB 약칭 매핑 (COURSES.classification 실제 저장값 기준)
+const CLASS_MAP = {
+  '전공필수': '전필',
+  '전공선택': '전선',
+  '기초교양': '기교',
+  '교양필수': '교필',
+  '교양선택': '교선',
+  '계열교양': '계교',
+  '자유교양': '자선',
+  '자유선택': '자선',
+};
+
 const getCourses = async ({ keyword, classification }) => {
   const where = {};
   if (keyword) {
@@ -15,7 +27,19 @@ const getCourses = async ({ keyword, classification }) => {
       { professor:   { contains: keyword } },
     ];
   }
-  if (classification) where.classification = classification;
+  if (classification) {
+    const mapped = CLASS_MAP[classification];
+    if (mapped) {
+      // 매핑된 약칭으로 정확 일치
+      where.classification = mapped;
+    } else if (classification === '융합교양') {
+      // 융합교양은 서브타입(융인·융사·융자·융세 등)을 포함
+      where.classification = { contains: '융합' };
+    } else {
+      // 이미 약칭이거나 알 수 없는 값 → 그대로 사용
+      where.classification = classification;
+    }
+  }
 
   const courses = await courseRepository.findCourses(where);
 
@@ -23,6 +47,7 @@ const getCourses = async ({ keyword, classification }) => {
     course_id:      c.course_id,
     course_code:    c.course_code,
     course_name:    c.course_name,
+    organization:   c.organization,
     classification: c.classification,
     credits:        c.credits,
     professor:      c.professor,

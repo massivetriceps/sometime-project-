@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { handleRegister, handleLogin, handleLogout, handleFindId, handleResetPassword } = require('./auth.controller');
+const { handleRegister, handleLogin, handleLogout, handleFindId, handleResetPassword, handleGetMajors } = require('./auth.controller');
 
 /**
  * @swagger
@@ -173,5 +173,6 @@ router.post('/findid', handleFindId);
  *         $ref: '#/components/responses/NotFound'
  */
 router.post('/findpw', handleResetPassword);
+router.get('/majors', handleGetMajors);
 
 module.exports = router;

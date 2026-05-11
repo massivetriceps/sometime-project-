@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useTimetableStore from '../store/timetableStore';
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -205,12 +206,25 @@ return (
 }
 
 export default function Layout({ children }) {
+  const isLoggedIn    = useAuthStore((state) => state.isLoggedIn);
+  const setCartFromDB = useTimetableStore((state) => state.setCartFromDB);
+  const cartLoaded    = useTimetableStore((state) => state.cartLoaded);
+
+  useEffect(() => {
+    if (!isLoggedIn || cartLoaded) return;
+    api.get('/api/users/me/cart')
+      .then(res => {
+        if (res.data.resultType === 'SUCCESS') setCartFromDB(res.data.success);
+      })
+      .catch(() => {});
+  }, [isLoggedIn, cartLoaded]);
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-    <main 
-  className="pt-16"
-  style={{ paddingTop: 'calc(64px + env(safe-area-inset-top))' }}>
+      <main
+        className="pt-16"
+        style={{ paddingTop: 'calc(64px + env(safe-area-inset-top))' }}>
         {children || <Outlet />}
       </main>
     </div>

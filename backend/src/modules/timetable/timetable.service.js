@@ -6,6 +6,98 @@ const axios  = require('axios');
 // FastAPI 미완성 → Mock으로 자동 fallback
 // TODO: FastAPI 완성 시 실제 호출로 교체
 // ────────────────────────────────────────
+// ── 시간표 충돌 검사 ──────────────────────────────────
+const hasConflict = (newSchedules, existingSchedules) => {
+  for (const ns of newSchedules) {
+    for (const es of existingSchedules) {
+      if (
+        es.day_of_week === ns.day_of_week &&
+        es.start_period <= ns.end_period &&
+        ns.start_period <= es.end_period
+      ) return true;
+    }
+  }
+  return false;
+};
+
+// ── 과목명 정규화 (수업방식 표기 제거) ───────────────────
+const normalizeCourseName = (name) =>
+  name.trim()
+    .replace(/\s*\(실시간화상강의\)/g, '')
+    .replace(/\s*\(실시간강의\)/g, '')
+    .replace(/\s*\(온라인\)/g, '')
+    .trim();
+
+// ── 배열 셔플 (plan 다양성) ───────────────────────────
+const shuffle = (arr, seed = 0) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (seed * 1234567 + i * 7654321) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// ── Mock 플랜 빌더 ────────────────────────────────────
+const buildMockPlan = (seed, courses, cartIds, constraints) => {
+  const {
+    cartCourseIds,
+    targetCredits = 18,
+    free_day_mask = 0,
+    allow_first   = false,
+    prefer_online = false,
+  } = constraints;
+
+  const DAY_BIT = { '월': 1, '화': 2, '수': 4, '목': 8, '금': 16 };
+
+  // 장바구니 과목 정보 (같은 과목명 분반 중복 제거)
+  const cartMap = Object.fromEntries(courses.map(c => [c.course_id, c]));
+  const cartDetails = cartCourseIds
+    .map(id => cartMap[id]).filter(Boolean)
+    .filter((c, idx, arr) => arr.findIndex(x => normalizeCourseName(x.course_name) === normalizeCourseName(c.course_name)) === idx);
+  const cartCredits = cartDetails.reduce((s, c) => s + c.credits, 0);
+  const cartSchedules = cartDetails.flatMap(c => c.schedules);
+
+  // 추가 가능 과목 필터링
+  const pool = shuffle(
+    courses.filter(c => {
+      if (cartCourseIds.includes(c.course_id)) return false;
+      // 오전 1교시 제한
+      if (!allow_first && c.schedules.some(s => s.start_period === 1)) return false;
+      // 공강 요일 제한
+      if (free_day_mask) {
+        const usesBlockedDay = c.schedules.some(s => (DAY_BIT[s.day_of_week] ?? 0) & free_day_mask);
+        if (usesBlockedDay) return false;
+      }
+      return true;
+    }),
+    seed
+  );
+
+  // 온라인 선호 시 온라인 강의 앞으로 정렬
+  const sorted = prefer_online
+    ? [...pool.filter(c => c.schedules.every(s => !s.building_id)), ...pool.filter(c => c.schedules.some(s => s.building_id))]
+    : pool;
+
+  // 목표 학점까지 충돌 없이 채우기
+  const selected = cartDetails.map(c => c.course_id);
+  let credits = cartCredits;
+  const usedSchedules = [...cartSchedules];
+  const usedCourseNames = new Set(cartDetails.map(c => normalizeCourseName(c.course_name)));
+
+  for (const c of sorted) {
+    if (credits >= targetCredits) break;
+    if (usedCourseNames.has(normalizeCourseName(c.course_name))) continue;
+    if (hasConflict(c.schedules, usedSchedules)) continue;
+    selected.push(c.course_id);
+    credits += c.credits;
+    usedSchedules.push(...c.schedules);
+    usedCourseNames.add(normalizeCourseName(c.course_name));
+  }
+
+  return selected;
+};
+
 const callCSPEngine = async (payload) => {
   const CSP_URL = process.env.CSP_URL || 'http://localhost:8000/csp/generate';
 
@@ -15,11 +107,11 @@ const callCSPEngine = async (payload) => {
   } catch (e) {
     // TODO: FastAPI 완성 후 아래 Mock 제거
     console.warn('[CSP] FastAPI 미연결 → Mock 사용');
-    const cartIds = payload.constraints.cartCourseIds;
+    const { courses, constraints } = payload;
     return [
-      { plan_type: 'A', course_ids: cartIds, total_walk_minutes: 0, score: 100 },
-      { plan_type: 'B', course_ids: cartIds, total_walk_minutes: 0, score: 90  },
-      { plan_type: 'C', course_ids: cartIds, total_walk_minutes: 0, score: 80  },
+      { plan_type: 'A', course_ids: buildMockPlan(1, courses, constraints.cartCourseIds, constraints), total_walk_minutes: 0, score: 100 },
+      { plan_type: 'B', course_ids: buildMockPlan(2, courses, constraints.cartCourseIds, constraints), total_walk_minutes: 0, score: 90  },
+      { plan_type: 'C', course_ids: buildMockPlan(3, courses, constraints.cartCourseIds, constraints), total_walk_minutes: 0, score: 80  },
     ];
   }
 };
@@ -68,11 +160,12 @@ const createTimetable = async (userId, body) => {
     dept, grade, dormitory,
     free_day_mask, avoid_uphill,
     allow_first, prefer_online,
+    target_credits,
   } = body;
 
   // 1) 장바구니 조회
   const carts = await prisma.carts.findMany({ where: { user_id: userId } });
-  const cartCourseIds = carts.map((c) => c.course_id);
+  const cartCourseIds = [...new Set(carts.map((c) => c.course_id))];
 
   // 2) 강의 + 스케줄 + 건물 조회
   const courses = await prisma.courses.findMany({
@@ -92,6 +185,7 @@ const createTimetable = async (userId, body) => {
       allow_first,
       prefer_online,
       cartCourseIds,
+      targetCredits: target_credits ?? 18,
     },
     courses: courses.map((c) => ({
       course_id:      c.course_id,
@@ -115,6 +209,14 @@ const createTimetable = async (userId, body) => {
     })),
   });
 
+  // 4-5) 기존 시간표 전부 삭제 후 새로 생성 (중복 방지)
+  const oldTimetables = await prisma.timetables.findMany({ where: { user_id: userId }, select: { timetable_id: true } });
+  if (oldTimetables.length > 0) {
+    const oldIds = oldTimetables.map(t => t.timetable_id);
+    await prisma.timetableCourses.deleteMany({ where: { timetable_id: { in: oldIds } } });
+    await prisma.timetables.deleteMany({ where: { timetable_id: { in: oldIds } } });
+  }
+
   // 5) Plan별 AI 코멘트 생성 + DB 저장
   const created = [];
 
@@ -125,8 +227,7 @@ const createTimetable = async (userId, body) => {
       data: {
         user_id:            userId,
         plan_type:          plan.plan_type,
-        optimization_score: plan.score,
-        total_walk_minutes: plan.total_walk_minutes,
+        optimization_score: plan.score ?? 0,
         ai_comment,
         is_selected:        false,
       },
@@ -175,15 +276,17 @@ const getTimetables = async (userId) => {
     plan_type:          t.plan_type,
     is_selected:        t.is_selected,
     optimization_score: t.optimization_score,
-    total_walk_minutes: t.total_walk_minutes,
     created_at:         t.created_at,
-    courses: t.timetable_courses.map((tc) => {
+    courses: t.timetable_courses
+      .filter((tc, idx, arr) => arr.findIndex((x) => x.course_id === tc.course_id) === idx)
+      .map((tc) => {
       const c = tc.courses;
       return {
-        course_id:   c.course_id,
-        course_name: c.course_name,
-        credits:     c.credits,
-        professor:   c.professor,
+        course_id:      c.course_id,
+        course_name:    c.course_name,
+        classification: c.classification,
+        credits:        c.credits,
+        professor:      c.professor,
         schedules:   c.course_schedules.map((s) => ({
           day_of_week:  s.day_of_week,
           start_period: s.start_period,
@@ -205,10 +308,10 @@ const getComment = async (userId, timetableId) => {
   });
 
   if (!timetable) {
-    const err = new Error('시간표를 찾을 수 없습니다.'); err.status = 404; throw err;
+    const err = new Error('시간표를 찾을 수 없습니다.'); err.statusCode = 404; throw err;
   }
   if (timetable.user_id !== userId) {
-    const err = new Error('접근 권한이 없습니다.'); err.status = 403; throw err;
+    const err = new Error('접근 권한이 없습니다.'); err.statusCode = 403; throw err;
   }
 
   return {
@@ -232,10 +335,10 @@ const updateTimetable = async (userId, timetableId, { add = [], remove = [] }) =
   });
 
   if (!timetable) {
-    const err = new Error('시간표를 찾을 수 없습니다.'); err.status = 404; throw err;
+    const err = new Error('시간표를 찾을 수 없습니다.'); err.statusCode = 404; throw err;
   }
   if (timetable.user_id !== userId) {
-    const err = new Error('접근 권한이 없습니다.'); err.status = 403; throw err;
+    const err = new Error('접근 권한이 없습니다.'); err.statusCode = 403; throw err;
   }
 
   // 추가할 강의 시간 충돌 검사
@@ -260,7 +363,7 @@ const updateTimetable = async (userId, timetableId, { add = [], remove = [] }) =
           const err = new Error(
             `${course.course_name} 강의가 기존 시간표와 충돌합니다.`
           );
-          err.status = 400;
+          err.statusCode = 400;
           throw err;
         }
       }
@@ -302,10 +405,10 @@ const deleteTimetable = async (userId, timetableId) => {
   });
 
   if (!timetable) {
-    const err = new Error('시간표를 찾을 수 없습니다.'); err.status = 404; throw err;
+    const err = new Error('시간표를 찾을 수 없습니다.'); err.statusCode = 404; throw err;
   }
   if (timetable.user_id !== userId) {
-    const err = new Error('접근 권한이 없습니다.'); err.status = 403; throw err;
+    const err = new Error('접근 권한이 없습니다.'); err.statusCode = 403; throw err;
   }
 
   await prisma.$transaction([

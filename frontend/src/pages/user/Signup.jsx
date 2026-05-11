@@ -1,23 +1,33 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import useAuthStore from '../../store/authStore';
-import api from '../../api/axios'; 
+import api from '../../api/axios';
 
 export default function Signup() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ 
-    name: '', 
-    email: '', 
-    password: '', 
-    department: '', 
-    studentId: '', 
-    grade: '1' 
+  const [majors, setMajors] = useState([]);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    majorId: '',
+    studentId: '',
+    grade: '1'
   });
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.get('/api/auth/majors').then(r => {
+      if (r.data.resultType === 'SUCCESS') {
+        setMajors(r.data.success);
+        if (r.data.success.length > 0) setForm(f => ({ ...f, majorId: String(r.data.success[0].major_id) }));
+      }
+    }).catch(() => {});
+  }, []);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -29,7 +39,7 @@ const handleSubmit = async (e) => {
       name: form.name,
       grade: Number(form.grade),
       student_id: form.studentId,
-      major_id: 1,
+      major_id: Number(form.majorId),
       email: form.email,
     });
 
@@ -91,11 +101,16 @@ const handleSubmit = async (e) => {
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_85px] gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-semibold text-slate-700 ml-1">소속 학과</label>
-                <input 
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                  type="text" placeholder="학과명" 
-                  value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} 
-                />
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all appearance-none"
+                  value={form.majorId}
+                  onChange={e => setForm({ ...form, majorId: e.target.value })}
+                  required
+                >
+                  {majors.map(m => (
+                    <option key={m.major_id} value={m.major_id}>{m.major_name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-semibold text-slate-700 ml-1">학번</label>

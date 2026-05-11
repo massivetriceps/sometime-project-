@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const isLoggedIn = require('../../middlewares/authMiddleware');
-const { handleSaveHistory, handleGetDashboard } = require('./graduation.controller');
+const { handleGetHistory, handleSaveHistory, handleGetDashboard } = require('./graduation.controller');
 
 /**
  * @swagger
@@ -50,6 +50,7 @@ const { handleSaveHistory, handleGetDashboard } = require('./graduation.controll
  *         description: 저장 성공
  */
 
+router.get('/history', isLoggedIn, handleGetHistory);
 router.post('/history', isLoggedIn, handleSaveHistory);
 
 

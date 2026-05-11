@@ -1,0 +1,38 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            cd ~/sometime-project-
+            echo "📥 최신 코드 동기화..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "🔧 백엔드 준비..."
+            cd backend
+            npm install --production=false
+            set -a && source .env && set +a
+            npx prisma generate
+            npx prisma migrate deploy
+
+            echo "🚀 서버 재시작..."
+            pm2 reload sometime-backend || pm2 start src/index.js --name sometime-backend
+            pm2 save
+
+            echo "✅ 배포 완료 $(date)"

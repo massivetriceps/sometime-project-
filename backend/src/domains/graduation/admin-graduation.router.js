@@ -1,7 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const adminMiddleware = require('../../middlewares/adminMiddleware');
-const { handleUpdateRules } = require('./admin-graduation.controller');
+const { handleGetRules, handleUpdateRules } = require('./admin-graduation.controller');
+
+/**
+ * @swagger
+ * /api/admin/graduation/rules:
+ *   get:
+ *     summary: 전체 졸업요건 조회 (관리자)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ */
+router.get('/rules', adminMiddleware, handleGetRules);
 
 /**
  * @swagger

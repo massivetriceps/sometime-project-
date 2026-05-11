@@ -28,7 +28,15 @@ const deleteTakenCoursesByUserId = async (userId) => {
   });
 };
 
+const findTakenCoursesByUserId = async (userId) => {
+  return prisma.takenCourses.findMany({
+    where: { user_id: userId },
+    orderBy: { created_at: 'asc' },
+  });
+};
+
 module.exports = {
   createTakenCourses,
-  deleteTakenCoursesByUserId
+  deleteTakenCoursesByUserId,
+  findTakenCoursesByUserId,
 };

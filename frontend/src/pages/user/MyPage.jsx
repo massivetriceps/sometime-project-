@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import { Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
@@ -8,19 +8,27 @@ import api from '../../api/axios';
 export default function MyPage() {
  const user = useAuthStore((state) => state.user);
 const logout = useAuthStore((state) => state.logout);
+const updateUser = useAuthStore((state) => state.updateUser);
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [form, setForm] = useState({
-  name: user?.name || '',
-   department: user?.major_name || '',
-  studentId: user?.student_id || '',  // ✅ student_id로 변경
-  email: user?.email || '',
-  grade: String(user?.grade || '1'),  // ✅ grade 실제값으로
-  currentPassword: '',  // ✅ 추가
-});
+    name: user?.name || '',
+    majorId: String(user?.major_id || ''),
+    studentId: user?.student_id || '',
+    email: user?.email || '',
+    grade: String(user?.grade || '1'),
+    currentPassword: '',
+  });
+  const [majors, setMajors] = useState([]);
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawPw, setWithdrawPw] = useState('');
+
+  useEffect(() => {
+    api.get('/api/auth/majors').then(r => {
+      if (r.data.resultType === 'SUCCESS') setMajors(r.data.success);
+    }).catch(() => {});
+  }, []);
 
 
   return (
@@ -81,10 +89,15 @@ const logout = useAuthStore((state) => state.logout);
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="sm:col-span-1 space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 ml-1">소속 학과</label>
-                    <input 
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                      type="text" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} 
-                    />
+                    <select
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all appearance-none"
+                      value={form.majorId}
+                      onChange={e => setForm({ ...form, majorId: e.target.value })}
+                    >
+                      {majors.map(m => (
+                        <option key={m.major_id} value={m.major_id}>{m.major_name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 ml-1">학번</label>
@@ -125,13 +138,28 @@ const logout = useAuthStore((state) => state.logout);
                 <button 
   onClick={async () => {
     try {
-   await api.put('/api/users/me', {
-  current_password: form.currentPassword,  // ✅ 추가
-  email: form.email,
-  grade: Number(form.grade),
-  student_id: form.studentId,
-  major_id: user?.major_id,
-});
+      await api.put('/api/users/me', {
+        current_password: form.currentPassword,
+        email: form.email,
+        grade: Number(form.grade),
+        student_id: form.studentId,
+        major_id: Number(form.majorId),
+      });
+      // 저장 후 최신 유저 정보 다시 불러와서 store + 폼 갱신
+      const res = await api.get('/api/users/me');
+      if (res.data.resultType === 'SUCCESS') {
+        const updated = res.data.success;
+        updateUser(updated);
+        setForm(f => ({
+          ...f,
+          name: updated.name || f.name,
+          majorId: String(updated.major_id || f.majorId),
+          studentId: updated.student_id || f.studentId,
+          email: updated.email || f.email,
+          grade: String(updated.grade || f.grade),
+          currentPassword: '',
+        }));
+      }
       alert('저장되었습니다!');
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
@@ -229,8 +257,19 @@ const logout = useAuthStore((state) => state.logout);
                     >
                       취소
                     </button>
-                    <button 
-                      onClick={() => { logout(); navigate('/'); }} 
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.delete('/api/users/me', {
+                            data: { password: withdrawPw },
+                          });
+                          logout();
+                          navigate('/');
+                        } catch (err) {
+                          const reason = err.response?.data?.error?.reason;
+                          alert(reason || '탈퇴 처리 중 오류가 발생했습니다.');
+                        }
+                      }}
                       className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
                     >
                       탈퇴 확인
