@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Shield, Lock, User } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import useAdminStore from '../../store/adminStore';
+import adminApi from '../../api/adminApi';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -13,33 +14,32 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!form.username || !form.password) {
-    setError('아이디와 비밀번호를 모두 입력해주세요.');
-    return;
-  }
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    if (!form.username || !form.password) {
+      setError('아이디와 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+    setLoading(true);
+    setError('');
 
-  // ─── 허용된 관리자 계정 목록 ───
-  const ADMIN_ACCOUNTS = [
-    { username: 'admin',  password: 'admin1234' },
-    { username: 'admin2', password: 'admin5678' },
-  ];
+    try {
+      const res = await adminApi.post('/api/admin/login', {
+        login_id: form.username,
+        password: form.password,
+      });
 
-  const matched = ADMIN_ACCOUNTS.find(
-    (a) => a.username === form.username && a.password === form.password
-  );
-
-  if (matched) {
-    setToken('dev-admin-token');
-    setAdmin({ username: form.username });
-    navigate('/admin/dashboard');
-  } else {
-    setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-  }
-
-  setLoading(false);
+      if (res.data.resultType === 'SUCCESS') {
+        const { access_token } = res.data.success;
+        setToken(access_token);
+        setAdmin({ username: form.username });
+        navigate('/admin/dashboard');
+      }
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      setError(reason || '아이디 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

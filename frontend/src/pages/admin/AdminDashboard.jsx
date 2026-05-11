@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users, Calendar, Activity, TrendingUp,
   ArrowUpRight, ArrowDownRight, RefreshCw,
@@ -9,6 +9,7 @@ import {
   Tooltip, ResponsiveContainer, BarChart, Bar, Cell
 } from 'recharts';
 import AdminLayout from '../../components/admin/AdminLayout';
+import adminApi from '../../api/adminApi';
 
 const MOCK_LINE = [
   { date: '4/22', users: 180, timetables: 320 },
@@ -76,7 +77,6 @@ const StatCard = ({ title, value, trend, sub, icon: Icon, iconBg, iconColor, acc
       <p className="text-2xl font-bold text-slate-800">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
-    {/* 하단 액센트 바 */}
     <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
       <div className={`h-full rounded-full ${accent}`} style={{ width: '60%' }} />
     </div>
@@ -85,7 +85,42 @@ const StatCard = ({ title, value, trend, sub, icon: Icon, iconBg, iconColor, acc
 
 export default function AdminDashboard() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const refresh = () => setLastUpdated(new Date());
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total_count: null,
+    daily_active_users: null,
+    total_timetables: null,
+    api_call_counts: null,
+  });
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [usageRes, usersRes] = await Promise.all([
+        adminApi.get('/api/admin/stats/usage'),
+        adminApi.get('/api/admin/users'),
+      ]);
+      const usageData = usageRes.data.success.data;
+      const usersData = usersRes.data.success;
+      setStats({
+        total_count: usersData.total_count,
+        daily_active_users: usageData.daily_active_users,
+        total_timetables: usageData.total_timetables,
+        api_call_counts: usageData.api_call_counts,
+      });
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Dashboard stats fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fmt = (val) => (loading || val === null || val === undefined ? '—' : val.toLocaleString());
 
   return (
     <AdminLayout>
@@ -99,7 +134,7 @@ export default function AdminDashboard() {
           </p>
         </div>
         <button
-          onClick={refresh}
+          onClick={fetchData}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
         >
           <RefreshCw size={13} />
@@ -111,7 +146,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <StatCard
           title="전체 사용자"
-          value="1,284"
+          value={fmt(stats.total_count)}
           trend={5.2}
           icon={Users}
           iconBg="bg-[#EEF2FF]"
@@ -120,7 +155,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="오늘 접속자"
-          value="237"
+          value={fmt(stats.daily_active_users)}
           trend={-2.1}
           icon={Activity}
           iconBg="bg-[#E6FAF8]"
@@ -129,7 +164,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="시간표 생성수"
-          value="4,520"
+          value={fmt(stats.total_timetables)}
           trend={8.4}
           icon={Calendar}
           iconBg="bg-[#F3F0FF]"
@@ -137,9 +172,8 @@ export default function AdminDashboard() {
           accent="bg-[#A78BFA]"
         />
         <StatCard
-          title="평균 세션"
-          value="12분 34초"
-          sub="전일 대비 +1분 23초"
+          title="API 호출수"
+          value={fmt(stats.api_call_counts)}
           icon={TrendingUp}
           iconBg="bg-[#FFFBEA]"
           iconColor="text-yellow-500"
@@ -228,12 +262,9 @@ export default function AdminDashboard() {
               key={i}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
             >
-              {/* 아이콘 */}
               <div className={`w-8 h-8 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0`}>
                 <item.icon size={14} className={item.iconColor} />
               </div>
-
-              {/* 내용 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] font-semibold text-slate-700">{item.type}</span>
@@ -241,8 +272,6 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5 truncate">{item.detail}</p>
               </div>
-
-              {/* 시간 */}
               <span className="text-[11px] text-slate-400 flex-shrink-0 font-medium">{item.time}</span>
             </div>
           ))}

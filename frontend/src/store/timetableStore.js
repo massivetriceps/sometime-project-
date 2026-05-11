@@ -10,11 +10,19 @@ const useTimetableStore = create((set) => ({
     additionalNotes: '',
   },
   cart: [],
+  cartLoaded: false,
   isGenerating: false,
   confirmedPlans: [],
   timetables: [],
   selectedTimetable: null,
   aiComment: '',
+
+  // DB에서 불러온 카트 데이터로 store 초기화
+  setCartFromDB: (dbItems) => set({
+    cart: dbItems.map(c => ({ courseId: c.course_id, course: c, priority: 'medium' })),
+    cartLoaded: true,
+  }),
+  clearCart: () => set({ cart: [], cartLoaded: false }),
 
   setConditions: (conditions) => set({ conditions }),
   setIsGenerating: (bool) => set({ isGenerating: bool }),

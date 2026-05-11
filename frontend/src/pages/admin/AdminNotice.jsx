@@ -1,65 +1,79 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, Pin, Search, Eye, Megaphone, X, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Pencil, Trash2, Search, Megaphone, X, AlertTriangle, AlertCircle } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import adminApi from '../../api/adminApi';
 
-const INIT_NOTICES = [
-  {
-    id: 1,
-    title: '2026-1학기 강의 데이터 업데이트 완료',
-    content: '2026-1학기 강의 데이터가 업데이트되었습니다. 총 480건의 강의가 등록되었으며 새로운 학기 시간표 생성이 가능합니다.',
-    pinned: true, views: 1280, createdAt: '2026-04-20',
-  },
-  {
-    id: 2,
-    title: '서버 점검 안내 (4/30 새벽 2~4시)',
-    content: '시스템 안정화를 위한 서버 점검이 예정되어 있습니다. 해당 시간에는 서비스 이용이 불가능합니다.',
-    pinned: true, views: 920, createdAt: '2026-04-25',
-  },
-  {
-    id: 3,
-    title: 'AI 코멘트 기능 개선 안내',
-    content: 'AI 시간표 코멘트 생성 품질이 향상되었습니다. 더욱 정확하고 상세한 동선 분석 코멘트를 확인하세요.',
-    pinned: false, views: 540, createdAt: '2026-04-15',
-  },
-  {
-    id: 4,
-    title: '졸업 요건 데이터 업데이트',
-    content: '2022학번 이후 교육과정이 반영되었습니다. 본인의 학번에 맞는 졸업 요건을 다시 확인해주세요.',
-    pinned: false, views: 380, createdAt: '2026-04-10',
-  },
-];
-
-const EMPTY_FORM = { title: '', content: '', pinned: false };
+const EMPTY_FORM = { title: '', content: '' };
 
 export default function AdminNotice() {
-  const [notices, setNotices]       = useState(INIT_NOTICES);
-  const [search, setSearch]         = useState('');
-  const [showModal, setShowModal]   = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [form, setForm]             = useState(EMPTY_FORM);
+  const [notices, setNotices]           = useState([]);
+  const [search, setSearch]             = useState('');
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
+  const [showModal, setShowModal]       = useState(false);
+  const [editTarget, setEditTarget]     = useState(null);
+  const [form, setForm]                 = useState(EMPTY_FORM);
+  const [saving, setSaving]             = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const filtered   = notices.filter((n) => n.title.includes(search) || n.content.includes(search));
-  const pinnedList = filtered.filter((n) => n.pinned);
-  const normalList = filtered.filter((n) => !n.pinned);
-
-  const openCreate = () => { setForm(EMPTY_FORM); setEditTarget(null); setShowModal(true); };
-  const openEdit   = (n) => { setForm({ title: n.title, content: n.content, pinned: n.pinned }); setEditTarget(n); setShowModal(true); };
-  const closeModal = () => { setShowModal(false); setEditTarget(null); };
-
-  const handleSave = () => {
-    if (!form.title.trim() || !form.content.trim()) return;
-    if (editTarget) {
-      setNotices(notices.map((n) => n.id === editTarget.id ? { ...n, ...form } : n));
-    } else {
-      setNotices([{ id: Date.now(), ...form, views: 0, createdAt: new Date().toISOString().slice(0, 10) }, ...notices]);
+  const fetchNotices = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await adminApi.get('/api/notices');
+      setNotices(res.data.success.content || []);
+    } catch (err) {
+      console.error('Notice fetch error:', err);
+      setError('데이터를 불러오지 못했습니다');
+    } finally {
+      setLoading(false);
     }
-    closeModal();
   };
 
-  const handleDelete = () => {
-    setNotices(notices.filter((n) => n.id !== deleteTarget.id));
-    setDeleteTarget(null);
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const filtered = notices.filter(
+    (n) => n.title.includes(search) || n.content.includes(search)
+  );
+
+  const openCreate = () => { setForm(EMPTY_FORM); setEditTarget(null); setShowModal(true); };
+  const openEdit   = (n) => { setForm({ title: n.title, content: n.content }); setEditTarget(n); setShowModal(true); };
+  const closeModal = () => { setShowModal(false); setEditTarget(null); setSaving(false); };
+
+  const handleSave = async () => {
+    if (!form.title.trim() || !form.content.trim()) return;
+    setSaving(true);
+    try {
+      if (editTarget) {
+        await adminApi.put(`/api/admin/notices/${editTarget.notice_id}`, {
+          title: form.title,
+          content: form.content,
+        });
+      } else {
+        await adminApi.post('/api/admin/notices', {
+          title: form.title,
+          content: form.content,
+        });
+      }
+      closeModal();
+      await fetchNotices();
+    } catch (err) {
+      console.error('Notice save error:', err);
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await adminApi.delete(`/api/admin/notices/${deleteTarget.notice_id}`);
+      setDeleteTarget(null);
+      await fetchNotices();
+    } catch (err) {
+      console.error('Notice delete error:', err);
+    }
   };
 
   const NoticeCard = ({ notice }) => (
@@ -67,31 +81,21 @@ export default function AdminNotice() {
       <div className="p-5">
         <div className="flex items-start gap-4">
           {/* 왼쪽 아이콘 */}
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
-            notice.pinned ? 'bg-[#EEF2FF]' : 'bg-slate-100'
-          }`}>
-            {notice.pinned
-              ? <Pin size={16} className="text-[#4F7CF3]" />
-              : <Megaphone size={16} className="text-slate-400" />}
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-slate-100">
+            <Megaphone size={16} className="text-slate-400" />
           </div>
 
           {/* 내용 */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              {notice.pinned && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F7CF3] text-[10px] font-bold uppercase tracking-wide">
-                  <Pin size={9} />상단고정
-                </span>
-              )}
               <h3 className="text-sm font-bold text-slate-800 leading-snug">{notice.title}</h3>
             </div>
             <p className="text-[12px] text-slate-500 leading-relaxed line-clamp-2 mb-3">{notice.content}</p>
             <div className="flex items-center gap-3">
-              <span className="text-[11px] text-slate-400">{notice.createdAt}</span>
-              <span className="w-1 h-1 rounded-full bg-slate-200" />
-              <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                <Eye size={11} />
-                {notice.views.toLocaleString()}회
+              <span className="text-[11px] text-slate-400">
+                {notice.created_at
+                  ? new Date(notice.created_at).toLocaleDateString('ko-KR')
+                  : '—'}
               </span>
             </div>
           </div>
@@ -127,8 +131,6 @@ export default function AdminNotice() {
           <h1 className="text-xl font-bold text-slate-800">공지사항 관리</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             전체 <span className="font-semibold text-slate-600">{notices.length}건</span>
-            <span className="mx-1.5">·</span>
-            고정 <span className="font-semibold text-[#4F7CF3]">{notices.filter(n => n.pinned).length}건</span>
           </p>
         </div>
         <button
@@ -154,42 +156,45 @@ export default function AdminNotice() {
         </div>
       </div>
 
-      {/* ── 고정 공지 ── */}
-      {pinnedList.length > 0 && (
-        <div className="mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Pin size={13} className="text-[#4F7CF3]" />
-            <span className="text-[12px] font-bold text-[#4F7CF3] uppercase tracking-wide">고정된 공지사항</span>
-            <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">{pinnedList.length}</span>
-          </div>
-          <div className="space-y-2.5">
-            {pinnedList.map((n) => <NoticeCard key={n.id} notice={n} />)}
-          </div>
+      {/* ── 에러 ── */}
+      {error && (
+        <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-4 mb-4 flex items-center gap-3">
+          <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+          <p className="text-sm text-red-600 font-medium">{error}</p>
+          <button
+            onClick={fetchNotices}
+            className="ml-auto px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-xs font-semibold hover:bg-red-200 transition-colors"
+          >
+            다시 시도
+          </button>
         </div>
       )}
 
-      {/* ── 일반 공지 ── */}
-      {normalList.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Megaphone size={13} className="text-slate-400" />
-            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wide">일반 공지사항</span>
-            <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">{normalList.length}</span>
-          </div>
-          <div className="space-y-2.5">
-            {normalList.map((n) => <NoticeCard key={n.id} notice={n} />)}
-          </div>
-        </div>
-      )}
-
-      {filtered.length === 0 && (
+      {/* ── 로딩 ── */}
+      {loading && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Search size={20} className="text-slate-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-500">검색 결과가 없습니다</p>
-          <p className="text-xs text-slate-400 mt-1">다른 검색어를 입력해보세요</p>
+          <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-400">불러오는 중...</p>
         </div>
+      )}
+
+      {/* ── 공지 목록 ── */}
+      {!loading && !error && (
+        <>
+          {filtered.length > 0 ? (
+            <div className="space-y-2.5">
+              {filtered.map((n) => <NoticeCard key={n.notice_id} notice={n} />)}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
+              <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Search size={20} className="text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">검색 결과가 없습니다</p>
+              <p className="text-xs text-slate-400 mt-1">다른 검색어를 입력해보세요</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── 작성 / 수정 모달 ── */}
@@ -245,32 +250,6 @@ export default function AdminNotice() {
                 />
               </div>
 
-              {/* 상단 고정 토글 */}
-              <div
-                onClick={() => setForm({ ...form, pinned: !form.pinned })}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  form.pinned
-                    ? 'border-[#4F7CF3]/30 bg-[#EEF2FF]'
-                    : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
-                }`}
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  form.pinned ? 'bg-[#4F7CF3]' : 'bg-slate-200'
-                }`}>
-                  <Pin size={15} className="text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-semibold ${form.pinned ? 'text-[#4F7CF3]' : 'text-slate-600'}`}>
-                    상단 고정
-                  </p>
-                  <p className="text-[11px] text-slate-400">사용자 공지사항 목록 최상단에 표시됩니다</p>
-                </div>
-                {/* 토글 */}
-                <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${form.pinned ? 'bg-[#4F7CF3]' : 'bg-slate-200'}`}>
-                  <div className={`w-4 h-4 bg-white rounded-full mt-1 transition-transform shadow-sm ${form.pinned ? 'translate-x-5' : 'translate-x-1'}`} />
-                </div>
-              </div>
-
               {/* 유효성 경고 */}
               {(!form.title.trim() || !form.content.trim()) && (form.title || form.content) && (
                 <div className="flex items-center gap-2 text-[12px] text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
@@ -290,10 +269,10 @@ export default function AdminNotice() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.title.trim() || !form.content.trim()}
+                disabled={!form.title.trim() || !form.content.trim() || saving}
                 className="flex-1 py-2.5 rounded-xl bg-[#4F7CF3] text-sm font-semibold text-white hover:bg-[#3B6AE0] transition-colors shadow-lg shadow-[#4F7CF3]/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                {editTarget ? '수정 완료' : '게시하기'}
+                {saving ? '저장 중...' : editTarget ? '수정 완료' : '게시하기'}
               </button>
             </div>
           </div>

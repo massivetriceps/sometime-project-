@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -6,26 +6,9 @@ import {
 } from 'recharts';
 import { TrendingUp, Users, Calendar, BarChart2, RefreshCw } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import adminApi from '../../api/adminApi';
 
-/* ── 데이터 ── */
-const PREFERENCE_DATA = [
-  { subject: '공강 선호',  A: 82 },
-  { subject: '아침 회피',  A: 74 },
-  { subject: '오르막 회피',A: 61 },
-  { subject: '온라인 선호',A: 55 },
-  { subject: '연강 회피',  A: 48 },
-  { subject: '특정 교수',  A: 38 },
-];
-
-const PREF_META = [
-  { label: '공강 선호',   val: 82, color: '#4F7CF3', bg: 'bg-[#EEF2FF]' },
-  { label: '아침 회피',   val: 74, color: '#2EC4B6', bg: 'bg-[#E6FAF8]' },
-  { label: '오르막 회피', val: 61, color: '#A78BFA', bg: 'bg-[#F3F0FF]' },
-  { label: '온라인 선호', val: 55, color: '#F7CFA1', bg: 'bg-[#FFFBEA]' },
-  { label: '연강 회피',   val: 48, color: '#F4AFCF', bg: 'bg-pink-50'   },
-  { label: '특정 교수',   val: 38, color: '#8FA8FF', bg: 'bg-[#EEF2FF]' },
-];
-
+/* ── mock 데이터 (API 없는 항목) ── */
 const FREEYDAY_DATA = [
   { name: '월요일', short: '월', value: 22, color: '#8FA8FF' },
   { name: '화요일', short: '화', value: 15, color: '#8EDDD0' },
@@ -48,11 +31,12 @@ const DEPT_DATA = [
   { dept: '산업경영공학과', short: 'IME', count: 150, color: '#8EDDD0' },
 ];
 
-const SUMMARY = [
-  { label: '총 시간표 생성', value: '4,520', sub: '이번 기간', icon: Calendar,  bg: 'bg-[#EEF2FF]', ic: 'text-[#4F7CF3]', vc: 'text-[#4F7CF3]' },
-  { label: '분석된 선호조건', value: '6개',  sub: '활성 조건', icon: TrendingUp, bg: 'bg-[#E6FAF8]', ic: 'text-[#2EC4B6]', vc: 'text-[#2EC4B6]' },
-  { label: '최다 선호 조건', value: '공강',  sub: '선택률 82%', icon: BarChart2, bg: 'bg-[#F3F0FF]', ic: 'text-[#A78BFA]', vc: 'text-[#A78BFA]' },
-  { label: '선호 요일',      value: '금요일',sub: '공강 44%',   icon: Users,     bg: 'bg-[#FFFBEA]', ic: 'text-yellow-500',vc: 'text-yellow-600'},
+/* ratio label 매핑 */
+const RATIO_META = [
+  { key: 'avoid_uphill_ratio',      label: '오르막 회피', color: '#A78BFA', bg: 'bg-[#F3F0FF]' },
+  { key: 'prefer_online_ratio',     label: '온라인 선호', color: '#F7CFA1', bg: 'bg-[#FFFBEA]' },
+  { key: 'minimize_gaps_ratio',     label: '연강 회피',   color: '#F4AFCF', bg: 'bg-pink-50'   },
+  { key: 'prioritize_required_ratio', label: '전공필수 우선', color: '#4F7CF3', bg: 'bg-[#EEF2FF]' },
 ];
 
 /* ── 커스텀 툴팁 ── */
@@ -73,7 +57,7 @@ const Tip = ({ active, payload, label }) => {
 };
 
 /* ── 커스텀 파이 라벨 ── */
-const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, name }) => {
+const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
   const RADIAN = Math.PI / 180;
   const r  = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x  = cx + r * Math.cos(-midAngle * RADIAN);
@@ -87,7 +71,89 @@ const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, name }) =
 };
 
 export default function AdminAnalytics() {
-  const [period, setPeriod] = useState('7d');
+  const [period, setPeriod]   = useState('7d');
+  const [loading, setLoading] = useState(true);
+  const [prefData, setPrefData] = useState(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.get('/api/admin/stats/preferences');
+      setPrefData(res.data.success.data);
+    } catch (err) {
+      console.error('Analytics preferences fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  /* ratio 값(0~1) → 퍼센트 변환 */
+  const toPercent = (val) =>
+    val === undefined || val === null ? 0 : Math.round(val * 100);
+
+  /* 레이더 차트용 데이터 */
+  const radarData = RATIO_META.map((m) => ({
+    subject: m.label,
+    A: prefData ? toPercent(prefData.ratios?.[m.key]) : 0,
+  }));
+
+  /* 바 리스트 데이터 */
+  const barListData = RATIO_META.map((m) => ({
+    ...m,
+    val: prefData ? toPercent(prefData.ratios?.[m.key]) : 0,
+  }));
+
+  /* 가장 높은 ratio label */
+  const topLabel = (() => {
+    if (!prefData?.ratios) return '—';
+    const best = RATIO_META.reduce((prev, cur) =>
+      (prefData.ratios[cur.key] || 0) > (prefData.ratios[prev.key] || 0) ? cur : prev
+    );
+    return best.label;
+  })();
+
+  const topPct = (() => {
+    if (!prefData?.ratios) return 0;
+    const best = RATIO_META.reduce((prev, cur) =>
+      (prefData.ratios[cur.key] || 0) > (prefData.ratios[prev.key] || 0) ? cur : prev
+    );
+    return toPercent(prefData.ratios[best.key]);
+  })();
+
+  const SUMMARY = [
+    {
+      label: '총 시간표 생성',
+      value: '4,520',
+      sub: '이번 기간',
+      icon: Calendar,
+      bg: 'bg-[#EEF2FF]', ic: 'text-[#4F7CF3]', vc: 'text-[#4F7CF3]',
+    },
+    {
+      label: '분석된 선호조건',
+      value: loading ? '—' : `${prefData?.total_preferences_count ?? '—'}건`,
+      sub: '활성 조건',
+      icon: TrendingUp,
+      bg: 'bg-[#E6FAF8]', ic: 'text-[#2EC4B6]', vc: 'text-[#2EC4B6]',
+    },
+    {
+      label: '최다 선호 조건',
+      value: loading ? '—' : topLabel,
+      sub: loading ? '' : `선택률 ${topPct}%`,
+      icon: BarChart2,
+      bg: 'bg-[#F3F0FF]', ic: 'text-[#A78BFA]', vc: 'text-[#A78BFA]',
+    },
+    {
+      label: '선호 요일',
+      value: '금요일',
+      sub: '공강 44%',
+      icon: Users,
+      bg: 'bg-[#FFFBEA]', ic: 'text-yellow-500', vc: 'text-yellow-600',
+    },
+  ];
 
   return (
     <AdminLayout>
@@ -118,7 +184,10 @@ export default function AdminAnalytics() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
+          >
             <RefreshCw size={12} />
             <span className="hidden sm:inline">새로고침</span>
           </button>
@@ -150,31 +219,38 @@ export default function AdminAnalytics() {
             <h3 className="text-sm font-bold text-slate-800">선호 조건 인기도</h3>
             <p className="text-[11px] text-slate-400 mt-0.5">조건별 사용자 선택 비율</p>
           </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <RadarChart data={PREFERENCE_DATA} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-              <PolarGrid stroke="#F1F5F9" />
-              <PolarAngleAxis
-                dataKey="subject"
-                tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }}
-              />
-              <Radar
-                name="선택률"
-                dataKey="A"
-                stroke="#4F7CF3"
-                fill="#4F7CF3"
-                fillOpacity={0.12}
-                strokeWidth={2.5}
-                dot={{ fill: '#4F7CF3', r: 3 }}
-              />
-              <Tooltip formatter={(v) => [`${v}%`, '선택률']} />
-            </RadarChart>
-          </ResponsiveContainer>
+
+          {loading ? (
+            <div className="h-[210px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={210}>
+              <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+                <PolarGrid stroke="#F1F5F9" />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }}
+                />
+                <Radar
+                  name="선택률"
+                  dataKey="A"
+                  stroke="#4F7CF3"
+                  fill="#4F7CF3"
+                  fillOpacity={0.12}
+                  strokeWidth={2.5}
+                  dot={{ fill: '#4F7CF3', r: 3 }}
+                />
+                <Tooltip formatter={(v) => [`${v}%`, '선택률']} />
+              </RadarChart>
+            </ResponsiveContainer>
+          )}
 
           {/* 조건별 바 리스트 */}
           <div className="space-y-2 mt-1">
-            {PREF_META.map((d) => (
+            {barListData.map((d) => (
               <div key={d.label} className="flex items-center gap-3">
-                <span className="text-[12px] text-slate-500 w-20 flex-shrink-0">{d.label}</span>
+                <span className="text-[12px] text-slate-500 w-24 flex-shrink-0">{d.label}</span>
                 <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
@@ -182,7 +258,7 @@ export default function AdminAnalytics() {
                   />
                 </div>
                 <span className="text-[12px] font-bold w-9 text-right flex-shrink-0" style={{ color: d.color }}>
-                  {d.val}%
+                  {loading ? '—' : `${d.val}%`}
                 </span>
               </div>
             ))}
@@ -251,7 +327,6 @@ export default function AdminAnalytics() {
             <p className="text-[11px] text-slate-400 mt-0.5">생성된 3개 시간표 중 최종 선택 비율</p>
           </div>
 
-          {/* 커스텀 바 (recharts 대신 CSS로 더 예쁘게) */}
           <div className="space-y-4 mb-5">
             {PLAN_DATA.map((p) => (
               <div key={p.plan}>
@@ -280,7 +355,6 @@ export default function AdminAnalytics() {
             ))}
           </div>
 
-          {/* 합계 */}
           <div className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-[12px] text-slate-500 font-medium">총 선택 횟수</span>
             <span className="text-sm font-bold text-slate-800">

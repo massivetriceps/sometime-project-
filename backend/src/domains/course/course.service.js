@@ -47,6 +47,7 @@ const getCourses = async ({ keyword, classification }) => {
     course_id:      c.course_id,
     course_code:    c.course_code,
     course_name:    c.course_name,
+    organization:   c.organization,
     classification: c.classification,
     credits:        c.credits,
     professor:      c.professor,

@@ -1,6 +1,13 @@
 const { StatusCodes } = require('http-status-codes');
 const graduationService = require('./graduation.service');
 
+const handleGetHistory = async (req, res, next) => {
+  try {
+    const result = await graduationService.getTakenHistory(req.user.user_id);
+    res.status(StatusCodes.OK).success(result);
+  } catch (error) { next(error); }
+};
+
 const handleSaveHistory = async (req, res, next) => {
   try {
     const userId = req.user.user_id; // authMiddleware에서 주입됨
@@ -23,6 +30,7 @@ const handleGetDashboard = async (req, res, next) => {
 };
 
 module.exports = {
-  handleSaveHistory, 
-  handleGetDashboard
+  handleGetHistory,
+  handleSaveHistory,
+  handleGetDashboard,
 };

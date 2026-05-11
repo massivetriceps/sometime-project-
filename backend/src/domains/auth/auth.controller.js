@@ -51,4 +51,16 @@ const handleResetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { handleRegister, handleLogin, handleLogout, handleFindId, handleResetPassword };
+const prisma = require('../../config/db.config');
+
+const handleGetMajors = async (req, res, next) => {
+  try {
+    const majors = await prisma.majors.findMany({
+      select: { major_id: true, major_name: true, college_name: true },
+      orderBy: [{ college_name: 'asc' }, { major_name: 'asc' }],
+    });
+    res.status(StatusCodes.OK).success(majors);
+  } catch (error) { next(error); }
+};
+
+module.exports = { handleRegister, handleLogin, handleLogout, handleFindId, handleResetPassword, handleGetMajors };

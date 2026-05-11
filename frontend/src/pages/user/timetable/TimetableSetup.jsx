@@ -1,11 +1,25 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../api/axios';
+import useAuthStore from '../../../store/authStore';
+const DAY_MASK = { '월요일': 1, '화요일': 2, '수요일': 4, '목요일': 8, '금요일': 16 };
+const DAY_STR  = { '월요일': '월', '화요일': '화', '수요일': '수', '목요일': '목', '금요일': '금' };
+
 export default function TimeTableG() {
   // --- [1. 상태 관리] ---
-  const [globalStep, setGlobalStep] = useState(1); 
-  const [dynamicStep, setDynamicStep] = useState(0); 
+  const [globalStep, setGlobalStep] = useState(1);
+  const [dynamicStep, setDynamicStep] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [cartCourses, setCartCourses] = useState([]);
+
+  useEffect(() => {
+    api.get('/api/users/me/cart')
+      .then((res) => { if (res.data.resultType === 'SUCCESS') setCartCourses(res.data.success); })
+      .catch(() => {});
+  }, []);
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [userInfo, setUserInfo] = useState({ 
     name: '', 
     department: '컴퓨터공학과', 
@@ -20,11 +34,12 @@ export default function TimeTableG() {
   ]);
 
   const [answers, setAnswers] = useState({
-    freeDay: [], 
+    freeDay: [],
     hills: '',
     online: '',
     morning: ''
   });
+  const [targetCredits, setTargetCredits] = useState(18);
 
   const stepLabels = ['기본 정보 입력', '우선순위 설정', '세부 조건 설정', '결과 및 분석'];
 
@@ -62,14 +77,19 @@ export default function TimeTableG() {
     setPriorities(items);
   };
   
-  const handleNext = () => {
+  const handleNext = async () => {
     if (globalStep === 3) {
       if (dynamicStep < priorities.length - 1) {
         setDynamicStep(prev => prev + 1);
       } else {
-        setGlobalStep(4); 
+        // step 4로 넘어가기 전 장바구니 로드
+        try {
+          const res = await api.get('/api/users/me/cart');
+          if (res.data.resultType === 'SUCCESS') setCartCourses(res.data.success);
+        } catch { setCartCourses([]); }
+        setGlobalStep(4);
       }
-    } else if (globalStep < 4) { 
+    } else if (globalStep < 4) {
       setGlobalStep(prev => prev + 1);
     }
   };
@@ -91,16 +111,13 @@ export default function TimeTableG() {
     const currentQ = priorities[dynamicStep].id;
     
     switch (currentQ) {
-      case 'freeDay':
-        // 🟢 3개 이상 선택 시 경고 플래그
+      case 'freeDay': {
         const isWarning = answers.freeDay.length >= 3 && !answers.freeDay.includes('난 5일 내내 학교 다닐래');
-        
         return (
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 공강 요일</h3>
             <p style={styles.desc}>
               가장 원하는 공강 요일을 선택해주세요. (복수선택 가능)<br/>
-              {/* 🟢 3개 이상 선택 시 나타나는 경고 문구 */}
               {isWarning && (
                 <span style={{ color: '#EF4444', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
                   3개 이상 선택 시 만족하는 시간표가 없거나, 연산 시간이 오래 걸릴 수 있습니다.
@@ -109,15 +126,26 @@ export default function TimeTableG() {
             </p>
             {['월요일', '화요일', '수요일', '목요일', '금요일', '난 5일 내내 학교 다닐래'].map(opt => {
               const isChecked = answers.freeDay.includes(opt);
+              const hasConflict = isChecked && cartCourses.some(c =>
+                c.schedules?.some(s => s.day_of_week === DAY_STR[opt])
+              );
               return (
-                <label key={opt} style={isChecked ? styles.radioActive : styles.radio}>
-                  <input type="checkbox" value={opt} onChange={handleCheckboxChange} checked={isChecked} style={{display:'none'}} />
-                  {opt}
-                </label>
-              )
+                <div key={opt}>
+                  <label style={isChecked ? styles.radioActive : styles.radio}>
+                    <input type="checkbox" value={opt} onChange={handleCheckboxChange} checked={isChecked} style={{display:'none'}} />
+                    {opt}
+                  </label>
+                  {hasConflict && (
+                    <p style={{ color: '#F59E0B', fontSize: '12px', margin: '-4px 0 8px 6px' }}>
+                      ⚠️ 장바구니에 {DAY_STR[opt]}요일 수업이 있어 공강이 보장되지 않을 수 있어요.
+                    </p>
+                  )}
+                </div>
+              );
             })}
           </div>
         );
+      }
       case 'hills':
         return (
           <div style={styles.card}>
@@ -144,7 +172,8 @@ export default function TimeTableG() {
             ))}
           </div>
         );
-      case 'morning':
+      case 'morning': {
+        const hasFirstPeriod = cartCourses.some(c => c.schedules?.some(s => s.start_period === 1));
         return (
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 오전 수업 선호도</h3>
@@ -155,8 +184,14 @@ export default function TimeTableG() {
                 {opt}
               </label>
             ))}
+            {answers.morning === '절대 불가 (10시 이후 시작)' && hasFirstPeriod && (
+              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
+                ⚠️ 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.
+              </p>
+            )}
           </div>
         );
+      }
       default: return null;
     }
   };
@@ -219,6 +254,39 @@ export default function TimeTableG() {
                 <input type="text" name="studentId" value={userInfo.studentId} onChange={handleUserChange} style={styles.input} />
               </div>
             </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>이번 학기 목표 학점</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setTargetCredits(v => Math.max(12, v - 1))}
+                  style={{ width: '40px', height: '40px', borderRadius: '10px', border: '1px solid #CBD5E1', background: 'white', fontSize: '20px', cursor: 'pointer', color: '#475569', lineHeight: 1 }}
+                >−</button>
+                <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                  <span style={{ fontSize: '28px', fontWeight: '700', color: '#155DFC' }}>{targetCredits}</span>
+                  <span style={{ fontSize: '14px', color: '#64748B', marginLeft: '4px' }}>학점</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTargetCredits(v => Math.min(21, v + 1))}
+                  style={{ width: '40px', height: '40px', borderRadius: '10px', border: '1px solid #CBD5E1', background: 'white', fontSize: '20px', cursor: 'pointer', color: '#475569', lineHeight: 1 }}
+                >+</button>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="range" min="12" max="21" value={targetCredits}
+                    onChange={e => setTargetCredits(Number(e.target.value))}
+                    style={{ width: '100%', accentColor: '#155DFC' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>
+                    <span>12</span><span>21</span>
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize: '12px', color: '#94A3B8', margin: '6px 0 0' }}>
+                장바구니 과목을 포함해 목표 학점에 맞춰 시간표가 구성됩니다
+              </p>
+            </div>
           </div>
         )}
 
@@ -257,36 +325,72 @@ export default function TimeTableG() {
         {globalStep === 3 && renderDynamicQuestion()}
 
         {globalStep === 4 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={styles.card}>
-              <h2 style={{ textAlign: 'center', color: '#155DFC', marginBottom: '16px' }}>시간표 생성 완료!</h2>
-              <p style={{ textAlign: 'center', color: '#475569', marginBottom: '24px' }}>
-                {userInfo.name || '사용자'}님({userInfo.department} {userInfo.studentId}학번)의 조건이 반영된 시간표입니다.
+              <h2 style={{ marginBottom: '8px', fontSize: '20px' }}>✅ 설정 완료</h2>
+              <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '24px' }}>
+                아래 조건으로 시간표 3개(플랜 A/B/C)를 생성합니다. 확인 후 버튼을 눌러주세요.
               </p>
-              <div style={styles.mockTimetable}>
-                [ Sometime 시간표 렌더링 영역 ]
+
+              {/* 우선순위 요약 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                {priorities.map((p, i) => {
+                  const val = p.id === 'freeDay'
+                    ? (answers.freeDay.length > 0 ? answers.freeDay.join(', ') : '미선택')
+                    : (answers[p.id] || '미선택');
+                  return (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                      <span style={{ fontWeight: 'bold', color: '#155DFC', fontSize: '13px', minWidth: '16px' }}>{i + 1}</span>
+                      <span style={{ fontWeight: '600', color: '#334155', fontSize: '14px', minWidth: '120px' }}>{p.label}</span>
+                      <span style={{ color: val === '미선택' ? '#94A3B8' : '#155DFC', fontSize: '13px', fontWeight: val === '미선택' ? 'normal' : '600' }}>
+                        {val}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 목표 학점 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '12px' }}>
+                <span style={{ fontWeight: '600', color: '#155DFC', fontSize: '14px' }}>🎯 목표 학점</span>
+                <span style={{ fontWeight: '700', color: '#1E40AF', fontSize: '16px' }}>{targetCredits}학점</span>
+              </div>
+
+              {/* 장바구니 과목 */}
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
+                  🛒 장바구니 담긴 과목 ({cartCourses.length}개) — 시간표에 최우선 반영
+                </p>
+                {cartCourses.length === 0 ? (
+                  <div style={{ padding: '16px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', fontSize: '13px', color: '#92400E' }}>
+                    ⚠️ 장바구니가 비어 있어요. 과목 검색에서 담아오면 시간표에 반영돼요.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {cartCourses.map((c, i) => (
+                      <div key={c.course_id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE' }}>
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#1E40AF', fontSize: '14px' }}>{c.course_name}</span>
+                          {c.professor && <span style={{ color: '#64748B', fontSize: '12px', marginLeft: '8px' }}>{c.professor}</span>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11px', background: '#DBEAFE', color: '#2563EB', padding: '2px 8px', borderRadius: '999px' }}>{c.classification}</span>
+                          <span style={{ fontSize: '12px', color: '#64748B' }}>{c.credits}학점</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: '20px', fontSize: '18px' }}>Sometime 분석 코멘트</h3>
-              <div style={{ background: '#EFF6FF', padding: '24px', borderRadius: '12px', lineHeight: '1.7', color: '#1E293B' }}>
-                <p>안녕하세요, {userInfo.name || '학우'}님!</p>
-                <ul style={{ marginTop: '16px', paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '12px' }}>
-                    <strong>1순위로 꼽으신 '{priorities[0].label}' 조건:</strong><br/>
-                    [{priorities[0].id === 'freeDay' ? (answers.freeDay.join(', ') || '미선택') : (answers[priorities[0].id] || '미선택')}] 요구사항을 반영하여 배치를 완료했습니다.
-                  </li>
-                  <li style={{ marginBottom: '12px' }}>
-                    <strong>2순위인 '{priorities[1].label}' 조건:</strong><br/>
-                    마찬가지로 [{priorities[1].id === 'freeDay' ? (answers.freeDay.join(', ') || '미선택') : (answers[priorities[1].id] || '미선택')}] 사항을 고려하여 전공 필수 과목과 겹치지 않게 조율했습니다.
-                  </li>
-                  <li>
-                    나머지 3, 4순위 조건도 CSP 엔진을 통해 최대한 반영했습니다. Sometime과 함께 편안한 한 학기 되세요!
-                  </li>
-                </ul>
+            {isGenerating && (
+              <div style={{ ...styles.card, textAlign: 'center', padding: '40px' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚙️</div>
+                <p style={{ fontWeight: '600', color: '#155DFC', marginBottom: '6px' }}>CSP 엔진으로 시간표 생성 중...</p>
+                <p style={{ color: '#64748B', fontSize: '13px' }}>잠시만 기다려주세요</p>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -299,18 +403,44 @@ export default function TimeTableG() {
             이전
           </button>
           
-       <button 
-  onClick={() => {
+       <button
+  onClick={async () => {
     if (globalStep === 4) {
-      // 데이터 연동 전이므로 바로 이동만 수행
-      navigate('/timetable/manage');
+      setIsGenerating(true);
+      try {
+        // UI 답변 → API 파라미터 매핑
+        const freeDayMask = answers.freeDay
+          .filter(d => d !== '난 5일 내내 학교 다닐래')
+          .reduce((mask, day) => mask | (DAY_MASK[day] ?? 0), 0);
+
+        const avoid_uphill = answers.hills === '무조건 평지 건물 위주로';
+        const prefer_online = answers.online !== '' && answers.online !== '난 강의실이 좋은데';
+        const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
+
+        await api.post('/api/users/me/timetables', {
+          grade: user?.grade ?? undefined,
+          free_day_mask: freeDayMask,
+          avoid_uphill,
+          allow_first,
+          prefer_online,
+          target_credits: targetCredits,
+        });
+
+        navigate('/timetable/manage');
+      } catch (err) {
+        const reason = err.response?.data?.error?.reason;
+        alert(reason || '시간표 생성 중 오류가 발생했습니다.');
+      } finally {
+        setIsGenerating(false);
+      }
     } else {
       handleNext();
     }
-  }} 
-  style={{ ...styles.btn, background: '#155DFC', color: 'white' }}
+  }}
+  disabled={isGenerating}
+  style={{ ...styles.btn, background: '#155DFC', color: 'white', opacity: isGenerating ? 0.7 : 1 }}
 >
-  {globalStep === 4 ? '시간표 저장하기' : '다음 단계로'}
+  {globalStep === 4 ? (isGenerating ? '⚙️ 생성 중...' : '🚀 지금 시간표 생성하기') : '다음 단계로 →'}
 </button>
         </div>
 

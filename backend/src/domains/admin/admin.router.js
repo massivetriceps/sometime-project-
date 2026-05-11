@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { handleLogin,
     handleLogout,
-    handleUpdateInfo, 
+    handleUpdateInfo,
     handleGetAllUsers,
-    handleDeleteUser
+    handleDeleteUser,
+    handleGetMajors,
 } = require('./admin.controller');
 const adminMiddleware = require('../../middlewares/adminMiddleware'); // 관리자 전용 미들웨어
 
@@ -222,5 +223,6 @@ router.get('/users', adminMiddleware, handleGetAllUsers);
  *         description: 해당 사용자를 찾을 수 없음
  */
 router.delete('/users/:userId', adminMiddleware, handleDeleteUser);
+router.get('/majors', adminMiddleware, handleGetMajors);
 
 module.exports = router;
