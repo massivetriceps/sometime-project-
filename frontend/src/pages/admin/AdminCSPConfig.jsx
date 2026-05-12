@@ -65,15 +65,46 @@ const Toggle = ({ on, onToggle, disabled }) => (
   </button>
 );
 
-export default function AdminCSPConfig() {
-  const [config, setConfig] = useState(INIT_CONFIG);
-  const [saved, setSaved]   = useState(false);
+const LS_KEY = 'admin_csp_config';
 
-  const setWeight  = (key, val) => setConfig({ ...config, weights: { ...config.weights, [key]: val } });
-  const toggleHard = (key)      => setConfig({ ...config, hardConstraints: { ...config.hardConstraints, [key]: !config.hardConstraints[key] } });
-  const toggleSoft = (key)      => setConfig({ ...config, softConstraints: { ...config.softConstraints, [key]: !config.softConstraints[key] } });
-  const handleSave  = ()        => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
-  const handleReset = ()        => setConfig(INIT_CONFIG);
+const loadFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+export default function AdminCSPConfig() {
+  const [config, setConfig] = useState(() => loadFromStorage() ?? INIT_CONFIG);
+  const [saved, setSaved]   = useState(false);
+  const [lastSaved, setLastSaved] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`${LS_KEY}_meta`);
+      return raw ? JSON.parse(raw).savedAt : null;
+    } catch { return null; }
+  });
+
+  const setWeight  = (key, val) => setConfig((c) => ({ ...c, weights: { ...c.weights, [key]: val } }));
+  const toggleHard = (key)      => setConfig((c) => ({ ...c, hardConstraints: { ...c.hardConstraints, [key]: !c.hardConstraints[key] } }));
+  const toggleSoft = (key)      => setConfig((c) => ({ ...c, softConstraints: { ...c.softConstraints, [key]: !c.softConstraints[key] } }));
+
+  const handleSave = () => {
+    const savedAt = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    localStorage.setItem(LS_KEY, JSON.stringify(config));
+    localStorage.setItem(`${LS_KEY}_meta`, JSON.stringify({ savedAt }));
+    setLastSaved(savedAt);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(`${LS_KEY}_meta`);
+    setConfig(INIT_CONFIG);
+    setLastSaved(null);
+  };
 
   const activeWeights = Object.values(config.weights).reduce((s, v) => s + v, 0);
   const avgWeight     = (activeWeights / Object.keys(config.weights).length).toFixed(1);
@@ -85,7 +116,10 @@ export default function AdminCSPConfig() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-bold text-slate-800">CSP 알고리즘 설정</h1>
-          <p className="text-xs text-slate-400 mt-0.5">시간표 생성 제약조건 및 가중치를 조정합니다</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            시간표 생성 제약조건 및 가중치를 조정합니다
+            {lastSaved && <span className="ml-2 text-slate-300">· 마지막 저장: {lastSaved}</span>}
+          </p>
         </div>
         <div className="flex gap-2">
           <button

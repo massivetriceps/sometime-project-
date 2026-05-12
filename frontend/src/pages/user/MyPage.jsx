@@ -14,6 +14,7 @@ const updateUser = useAuthStore((state) => state.updateUser);
   const [form, setForm] = useState({
     name: user?.name || '',
     majorId: String(user?.major_id || ''),
+    department: user?.major_name || '',
     studentId: user?.student_id || '',
     email: user?.email || '',
     grade: String(user?.grade || '1'),
@@ -27,6 +28,22 @@ const updateUser = useAuthStore((state) => state.updateUser);
   useEffect(() => {
     api.get('/api/auth/majors').then(r => {
       if (r.data.resultType === 'SUCCESS') setMajors(r.data.success);
+    }).catch(() => {});
+
+    api.get('/api/users/me').then(r => {
+      if (r.data.resultType === 'SUCCESS') {
+        const u = r.data.success;
+        updateUser(u);
+        setForm(f => ({
+          ...f,
+          name:       u.name        || f.name,
+          majorId:    String(u.major_id || f.majorId),
+          department: u.major_name  || f.department,
+          studentId:  u.student_id  || f.studentId,
+          email:      u.email       || f.email,
+          grade:      String(u.grade || f.grade),
+        }));
+      }
     }).catch(() => {});
   }, []);
 
@@ -80,9 +97,9 @@ const updateUser = useAuthStore((state) => state.updateUser);
               <div className="grid gap-5">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 ml-1">이름</label>
-                  <input 
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                    type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} 
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-500 cursor-not-allowed"
+                    type="text" value={form.name} readOnly
                   />
                 </div>
                 
@@ -92,7 +109,10 @@ const updateUser = useAuthStore((state) => state.updateUser);
                     <select
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all appearance-none"
                       value={form.majorId}
-                      onChange={e => setForm({ ...form, majorId: e.target.value })}
+                      onChange={e => {
+                        const selected = majors.find(m => String(m.major_id) === e.target.value);
+                        setForm({ ...form, majorId: e.target.value, department: selected?.major_name || form.department });
+                      }}
                     >
                       {majors.map(m => (
                         <option key={m.major_id} value={m.major_id}>{m.major_name}</option>
@@ -152,11 +172,12 @@ const updateUser = useAuthStore((state) => state.updateUser);
         updateUser(updated);
         setForm(f => ({
           ...f,
-          name: updated.name || f.name,
-          majorId: String(updated.major_id || f.majorId),
-          studentId: updated.student_id || f.studentId,
-          email: updated.email || f.email,
-          grade: String(updated.grade || f.grade),
+          name:       updated.name        || f.name,
+          majorId:    String(updated.major_id || f.majorId),
+          department: updated.major_name  || f.department,
+          studentId:  updated.student_id  || f.studentId,
+          email:      updated.email       || f.email,
+          grade:      String(updated.grade || f.grade),
           currentPassword: '',
         }));
       }

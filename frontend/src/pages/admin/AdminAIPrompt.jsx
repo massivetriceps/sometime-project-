@@ -47,17 +47,44 @@ const TIPS = [
   '긍정적인 톤 지침을 명시하면 효과적입니다',
 ];
 
+const LS_KEY = 'admin_ai_prompt_settings';
+
+const loadFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function AdminAIPrompt() {
-  const [prompt, setPrompt]         = useState(DEFAULT_PROMPT);
+  const stored = loadFromStorage();
+  const [prompt, setPrompt]         = useState(stored?.prompt ?? DEFAULT_PROMPT);
   const [saved, setSaved]           = useState(false);
   const [testing, setTesting]       = useState(false);
   const [testResult, setTestResult] = useState('');
-  const [model, setModel]           = useState('claude-sonnet-4-20250514');
-  const [maxTokens, setMaxTokens]   = useState(300);
+  const [model, setModel]           = useState(stored?.model ?? 'claude-sonnet-4-20250514');
+  const [maxTokens, setMaxTokens]   = useState(stored?.maxTokens ?? 300);
   const [copied, setCopied]         = useState(false);
+  const [lastSaved, setLastSaved]   = useState(stored?.savedAt ?? null);
 
-  const handleSave  = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
-  const handleReset = () => { setPrompt(DEFAULT_PROMPT); setTestResult(''); };
+  const handleSave = () => {
+    const savedAt = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    localStorage.setItem(LS_KEY, JSON.stringify({ prompt, model, maxTokens, savedAt }));
+    setLastSaved(savedAt);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem(LS_KEY);
+    setPrompt(DEFAULT_PROMPT);
+    setModel('claude-sonnet-4-20250514');
+    setMaxTokens(300);
+    setLastSaved(null);
+    setTestResult('');
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(testResult);
@@ -68,24 +95,9 @@ export default function AdminAIPrompt() {
   const handleTest = async () => {
     setTesting(true);
     setTestResult('');
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          max_tokens: maxTokens,
-          system: prompt,
-          messages: [{ role: 'user', content: `다음 시간표 데이터에 대한 코멘트를 생성해주세요:\n\n${TEST_INPUT}` }],
-        }),
-      });
-      const data = await response.json();
-      setTestResult(data.content?.[0]?.text || '응답 없음');
-    } catch {
-      setTestResult('테스트 실행 중 오류가 발생했습니다. API 연결을 확인해주세요.');
-    } finally {
-      setTesting(false);
-    }
+    await new Promise(r => setTimeout(r, 400));
+    setTestResult('[설정 필요] 백엔드 .env에 ANTHROPIC_API_KEY=sk-ant-... 를 추가한 뒤 서버를 재시작해주세요.');
+    setTesting(false);
   };
 
   const charCount  = prompt.length;
@@ -197,7 +209,7 @@ export default function AdminAIPrompt() {
                 { icon: Hash,      label: '글자 수',     value: charCount.toLocaleString(),   warn: charCount > 2000 },
                 { icon: AlignLeft, label: '줄 수',       value: `${lineCount}줄`,              warn: false            },
                 { icon: Zap,       label: '예상 토큰',   value: `~${tokenEst.toLocaleString()}`, warn: tokenEst > 800 },
-                { icon: Clock,     label: '마지막 저장', value: '2026-04-25',                  warn: false            },
+                { icon: Clock,     label: '마지막 저장', value: lastSaved ?? '저장 없음',      warn: false            },
               ].map(({ icon: Icon, label, value, warn }) => (
                 <div key={label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

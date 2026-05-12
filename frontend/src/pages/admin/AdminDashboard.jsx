@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users, Calendar, Activity, TrendingUp,
   ArrowUpRight, ArrowDownRight, RefreshCw,
-  AlertCircle, CheckCircle2, UserPlus, Megaphone
+  AlertCircle, CheckCircle2
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -33,13 +33,13 @@ const MOCK_BAR = [
 
 const BAR_COLORS = ['#8FA8FF','#8FA8FF','#8FA8FF','#4F7CF3','#8FA8FF','#C3B5FF','#C3B5FF'];
 
-const ACTIVITY = [
-  { time: '14:32', type: '시간표 생성', user: 'user_2041', detail: 'Plan A/B/C 생성 완료',            icon: Calendar,     bg: 'bg-[#EEF2FF]', iconColor: 'text-[#4F7CF3]' },
-  { time: '14:28', type: '강의 업로드', user: 'admin',     detail: '2026-1학기 강의 480건 업로드',    icon: CheckCircle2, bg: 'bg-[#E6FAF8]', iconColor: 'text-[#2EC4B6]' },
-  { time: '14:15', type: '오류 발생',   user: 'system',    detail: 'CSP 엔진 타임아웃 (500ms 초과)',  icon: AlertCircle,  bg: 'bg-red-50',    iconColor: 'text-red-400'   },
-  { time: '13:57', type: '회원가입',    user: 'user_2847', detail: '신규 사용자 등록',                icon: UserPlus,     bg: 'bg-[#F3F0FF]', iconColor: 'text-[#A78BFA]' },
-  { time: '13:40', type: '공지사항',    user: 'admin',     detail: '2026-1학기 시작 안내 게시',       icon: Megaphone,    bg: 'bg-[#FFFBEA]', iconColor: 'text-yellow-500' },
-];
+const fmtTime = (iso) => {
+  try {
+    return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return '';
+  }
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -92,22 +92,26 @@ export default function AdminDashboard() {
     total_timetables: null,
     api_call_counts: null,
   });
+  const [errorLogs, setErrorLogs] = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usageRes, usersRes] = await Promise.all([
+      const [usageRes, usersRes, errorRes] = await Promise.all([
         adminApi.get('/api/admin/stats/usage'),
         adminApi.get('/api/admin/users'),
+        adminApi.get('/api/admin/stats/error?page=1&limit=5'),
       ]);
       const usageData = usageRes.data.success.data;
       const usersData = usersRes.data.success;
+      const errorData = errorRes.data.success.data;
       setStats({
         total_count: usersData.total_count,
         daily_active_users: usageData.daily_active_users,
         total_timetables: usageData.total_timetables,
         api_call_counts: usageData.api_call_counts,
       });
+      setErrorLogs(errorData.content ?? []);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Dashboard stats fetch error:', err);
@@ -244,35 +248,44 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── 최근 활동 ── */}
+      {/* ── 최근 오류 로그 ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-bold text-slate-800">최근 시스템 활동</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">오늘 기준</p>
+            <h2 className="text-sm font-bold text-slate-800">최근 오류 로그</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">최근 5건 기준</p>
           </div>
           <span className="text-[11px] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
-            {ACTIVITY.length}건
+            {loading ? '—' : `${errorLogs.length}건`}
           </span>
         </div>
 
         <div className="space-y-1">
-          {ACTIVITY.map((item, i) => (
+          {loading && (
+            <div className="py-8 text-center text-[12px] text-slate-400">불러오는 중...</div>
+          )}
+          {!loading && errorLogs.length === 0 && (
+            <div className="py-8 text-center text-[12px] text-slate-400">
+              <CheckCircle2 size={20} className="mx-auto mb-2 text-emerald-400" />
+              최근 오류 기록이 없습니다
+            </div>
+          )}
+          {!loading && errorLogs.map((log) => (
             <div
-              key={i}
+              key={log.log_id}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
             >
-              <div className={`w-8 h-8 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                <item.icon size={14} className={item.iconColor} />
+              <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                <AlertCircle size={14} className="text-red-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold text-slate-700">{item.type}</span>
-                  <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">{item.user}</span>
+                  <span className="text-[12px] font-semibold text-slate-700">{log.error_type}</span>
+                  <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">system</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 truncate">{item.detail}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5 truncate">{log.error_message}</p>
               </div>
-              <span className="text-[11px] text-slate-400 flex-shrink-0 font-medium">{item.time}</span>
+              <span className="text-[11px] text-slate-400 flex-shrink-0 font-medium">{fmtTime(log.created_at)}</span>
             </div>
           ))}
         </div>

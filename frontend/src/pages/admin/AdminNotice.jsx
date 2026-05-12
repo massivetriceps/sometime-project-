@@ -21,7 +21,9 @@ export default function AdminNotice() {
     setError(null);
     try {
       const res = await adminApi.get('/api/notices');
-      setNotices(res.data.success.content || []);
+      if (res.data.resultType === 'SUCCESS') {
+        setNotices(res.data.success?.content ?? []);
+      }
     } catch (err) {
       console.error('Notice fetch error:', err);
       setError('데이터를 불러오지 못했습니다');
@@ -184,6 +186,14 @@ export default function AdminNotice() {
           {filtered.length > 0 ? (
             <div className="space-y-2.5">
               {filtered.map((n) => <NoticeCard key={n.notice_id} notice={n} />)}
+            </div>
+          ) : notices.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
+              <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Megaphone size={20} className="text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">등록된 공지사항이 없습니다</p>
+              <p className="text-xs text-slate-400 mt-1">상단 버튼으로 공지사항을 작성해보세요</p>
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">

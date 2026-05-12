@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../api/axios';
 import useAuthStore from '../../../store/authStore';
 const DAY_MASK = { '월요일': 1, '화요일': 2, '수요일': 4, '목요일': 8, '금요일': 16 };
+const DAY_EN = { '월요일': 'MON', '화요일': 'TUE', '수요일': 'WED', '목요일': 'THU', '금요일': 'FRI' };
 const DAY_STR  = { '월요일': '월', '화요일': '화', '수요일': '수', '목요일': '목', '금요일': '금' };
 
 export default function TimeTableG() {
@@ -444,6 +445,21 @@ export default function TimeTableG() {
         const avoid_uphill = answers.hills === '무조건 평지 건물 위주로';
         const prefer_online = answers.online !== '' && answers.online !== '난 강의실이 좋은데';
         const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
+
+        const selectedDays = answers.freeDay
+          .filter(d => d !== '난 5일 내내 학교 다닐래' && DAY_EN[d])
+          .map(d => DAY_EN[d]);
+        const free_days = selectedDays.length > 0 ? selectedDays.join(',') : null;
+
+        try {
+          await api.post('/api/users/me/preferences', {
+            avoid_uphill,
+            prefer_online,
+            ...(free_days !== null && { free_days }),
+          });
+        } catch {
+          // 선호조건 저장 실패는 시간표 생성을 막지 않음
+        }
 
         await api.post('/api/users/me/timetables', {
           grade: grade ?? undefined,
