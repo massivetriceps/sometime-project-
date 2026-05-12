@@ -5,8 +5,21 @@ import {
   ChevronDown, AlertTriangle
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import adminApi from '../../api/adminApi';
 
-const BUILDINGS = ['공학관A', '공학관B', '비전타워', '바이오나노관', '예술체육관', '중앙도서관', '학생회관', '인문관'];
+// 건물명 → DB building_id 매핑 (BUILDINGS 테이블 삽입 순서 기준)
+const BUILDING_MAP = {
+  '공학관A':    1,
+  '공학관B':    2,
+  '비전타워':   3,
+  '바이오나노관': 4,
+  '예술체육관': 5,
+  '중앙도서관': 6,
+  '학생회관':   7,
+  '인문관':     8,
+};
+
+const BUILDINGS = Object.keys(BUILDING_MAP);
 
 const INIT_MATRIX = {
   '공학관A-공학관B':     { distance: 120, slope: 2  },
@@ -38,6 +51,8 @@ export default function AdminCampusConfig() {
   const [editKey, setEditKey]   = useState(null);
   const [editForm, setEditForm] = useState({ distance: 0, slope: 0 });
   const [saved, setSaved]       = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [showAdd, setShowAdd]   = useState(false);
   const [newRoute, setNewRoute] = useState({ from: '', to: '', distance: '', slope: '' });
   const [filterSlope, setFilterSlope] = useState('all');
@@ -66,7 +81,35 @@ export default function AdminCampusConfig() {
     setNewRoute({ from: '', to: '', distance: '', slope: '' });
     setShowAdd(false);
   };
-  const handleSaveAll = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  // distance(m) → time_minutes, slope(°) → is_uphill 변환 후 API 호출
+  const handleSaveAll = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const distances = Object.entries(matrix)
+        .map(([key, val]) => {
+          const dashIdx = key.indexOf('-');
+          const from = key.slice(0, dashIdx);
+          const to   = key.slice(dashIdx + 1);
+          return {
+            from_building_id: BUILDING_MAP[from],
+            to_building_id:   BUILDING_MAP[to],
+            time_minutes: Math.max(1, Math.round(val.distance / 80)),
+            is_uphill: val.slope >= 5,
+          };
+        })
+        .filter((d) => d.from_building_id && d.to_building_id);
+
+      await adminApi.put('/api/admin/campus/distance', { distances });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -87,7 +130,8 @@ export default function AdminCampusConfig() {
           </button>
           <button
             onClick={handleSaveAll}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all ${
+            disabled={saving}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
               saved
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                 : 'bg-[#4F7CF3] text-white shadow-[#4F7CF3]/25 hover:bg-[#3B6AE0]'
@@ -95,10 +139,23 @@ export default function AdminCampusConfig() {
           >
             {saved
               ? <><CheckCircle2 size={14} />저장됨</>
-              : <><Save size={14} />저장</>}
+              : saving
+                ? <><Save size={14} className="animate-spin" />저장 중...</>
+                : <><Save size={14} />저장</>}
           </button>
         </div>
       </div>
+
+      {/* ── 에러 알림 ── */}
+      {saveError && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertTriangle size={14} className="flex-shrink-0" />
+          {saveError}
+          <button onClick={() => setSaveError(null)} className="ml-auto text-red-400 hover:text-red-600">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── 요약 카드 4개 ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">

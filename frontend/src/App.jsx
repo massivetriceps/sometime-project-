@@ -30,6 +30,7 @@ import AdminAnalytics      from './pages/admin/AdminAnalytics';
 import AdminLogs           from './pages/admin/AdminLogs';
 import AdminCSPConfig      from './pages/admin/AdminCSPConfig';
 import AdminAIPrompt       from './pages/admin/AdminAIPrompt';
+import AdminProfile        from './pages/admin/AdminProfile';
 
 function PrivateRoute({ children }) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -80,6 +81,7 @@ function App() {
         <Route path="/admin/logs"               element={<AdminRoute><AdminLogs /></AdminRoute>} />
         <Route path="/admin/csp/config"         element={<AdminRoute><AdminCSPConfig /></AdminRoute>} />
         <Route path="/admin/ai/prompt"          element={<AdminRoute><AdminAIPrompt /></AdminRoute>} />
+        <Route path="/admin/profile"            element={<AdminRoute><AdminProfile /></AdminRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
