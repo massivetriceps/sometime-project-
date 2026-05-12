@@ -101,12 +101,58 @@ const buildMockPlan = (seed, courses, cartIds, constraints) => {
 const callCSPEngine = async (payload) => {
   const CSP_URL = process.env.CSP_URL || 'http://localhost:8000/csp/generate';
 
+  const DAY_BITS = [
+    { bit: 1,  day: '월' }, { bit: 2,  day: '화' }, { bit: 4,  day: '수' },
+    { bit: 8,  day: '목' }, { bit: 16, day: '금' },
+  ];
+
   try {
-    const res = await axios.post(CSP_URL, payload, { timeout: 10000 });
-    return res.data.plans;
+    const { userId, constraints } = payload;
+    const {
+      dept, grade, free_day_mask, avoid_uphill, prefer_online,
+      cartCourseIds, targetCredits, takenCourseCodes = [],
+    } = constraints;
+
+    const free_days = DAY_BITS.filter(d => (free_day_mask ?? 0) & d.bit).map(d => d.day);
+
+    let credit_intensity = 'NORMAL';
+    if (targetCredits <= 16)     credit_intensity = 'RELAXED';
+    else if (targetCredits >= 19) credit_intensity = 'INTENSIVE';
+
+    const aiPayload = {
+      user_id:             userId,
+      major_id:            dept,
+      grade,
+      apply_year:          String(grade),
+      cart_course_ids:     cartCourseIds,
+      taken_course_codes:  takenCourseCodes,
+      priority_order:      ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
+      preferred_time:      'ANY',
+      free_days,
+      credit_intensity,
+      avoid_uphill:        avoid_uphill ?? false,
+      prefer_online:       prefer_online ?? false,
+    };
+
+    const res = await axios.post(CSP_URL, aiPayload, { timeout: 30000 });
+    const data = res.data;
+
+    if (data.result_code === 'NO_SOLUTION') {
+      console.error('[CSP] NO_SOLUTION:', JSON.stringify(data.conflict_info));
+      throw new Error('NO_SOLUTION');
+    }
+
+    return ['plan_a', 'plan_b', 'plan_c']
+      .map(key => data[key])
+      .filter(Boolean)
+      .map(plan => ({
+        plan_type:           plan.plan_type,
+        course_ids:          [...new Set(plan.schedules.map(s => s.course_id))],
+        score:               plan.optimization_score,
+        total_walk_minutes:  0,
+      }));
   } catch (e) {
-    // TODO: FastAPI 완성 후 아래 Mock 제거
-    console.warn('[CSP] FastAPI 미연결 → Mock 사용');
+    console.warn('[CSP] FastAPI 미연결 → Mock 사용', e.message);
     const { courses, constraints } = payload;
     return [
       { plan_type: 'A', course_ids: buildMockPlan(1, courses, constraints.cartCourseIds, constraints), total_walk_minutes: 0, score: 100 },
@@ -163,9 +209,20 @@ const createTimetable = async (userId, body) => {
     target_credits, semester,
   } = body;
 
+  // 0) 유저 major_id 조회
+  const userInfo = await prisma.users.findUnique({
+    where: { user_id: userId },
+    select: { major_id: true },
+  });
+  const majorId = userInfo?.major_id;
+
   // 1) 장바구니 조회
   const carts = await prisma.carts.findMany({ where: { user_id: userId } });
   const cartCourseIds = [...new Set(carts.map((c) => c.course_id))];
+
+  // 1-1) 기수강 과목 조회
+  const takenCourses = await prisma.takenCourses.findMany({ where: { user_id: userId } });
+  const takenCourseCodes = takenCourses.map(tc => tc.course_code);
 
   // 2) 강의 + 스케줄 + 건물 조회
   const courses = await prisma.courses.findMany({
@@ -179,12 +236,13 @@ const createTimetable = async (userId, body) => {
   const plans = await callCSPEngine({
     userId,
     constraints: {
-      dept, grade, dormitory,
+      dept: majorId, grade, dormitory,
       free_day_mask,
       avoid_uphill,
       allow_first,
       prefer_online,
       cartCourseIds,
+      takenCourseCodes,
       targetCredits: target_credits ?? 18,
     },
     courses: courses.map((c) => ({
