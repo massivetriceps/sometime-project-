@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Megaphone, Upload, MapPin,
   GraduationCap, BarChart2, PieChart, FileText, Sliders,
-  Bot, LogOut, Menu, X, ChevronRight, Bell
+  Bot, LogOut, Menu, X, ChevronRight, Bell, UserCog
 } from 'lucide-react';
 import useAdminStore from '../../store/adminStore';
+import adminApi from '../../api/adminApi';
 
 const navItems = [
   { section: '대시보드' },
@@ -22,6 +23,8 @@ const navItems = [
   { section: '엔진 관리' },
   { label: 'CSP 알고리즘 설정', icon: Sliders, path: '/admin/csp/config' },
   { label: 'AI 프롬프트 관리', icon: Bot, path: '/admin/ai/prompt' },
+  { section: '계정' },
+  { label: '계정 설정', icon: UserCog, path: '/admin/profile' },
 ];
 
 export default function AdminLayout({ children }) {
@@ -30,9 +33,15 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const logout = useAdminStore((s) => s.logout);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/admin/login');
+  const handleLogout = async () => {
+    try {
+      await adminApi.post('/api/admin/logout');
+    } catch {
+      // 서버 오류여도 로컬 세션은 항상 초기화
+    } finally {
+      logout();
+      navigate('/admin/login');
+    }
   };
 
   const SidebarContent = () => (
