@@ -165,12 +165,19 @@ def filter_candidates(all_courses: list, request: CSPRequest) -> list:
     taken_codes = set(request.taken_course_codes)
     candidates = []
 
+    cart_ids = set(request.cart_course_ids)
+
     for c in all_courses:
         if c["course_code"] in taken_codes:
             continue
         if len(c["schedules"]) == 0:
             continue
         if is_foreign_student_course(c):
+            continue
+
+        # 장바구니 강의는 필터 없이 무조건 포함
+        if c["course_id"] in cart_ids:
+            candidates.append(c)
             continue
 
         grade_ok = (not c["grades"] or request.grade in c["grades"])
