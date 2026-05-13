@@ -31,6 +31,17 @@ const DEPT_DATA = [
   { dept: '산업경영공학과', short: 'IME', count: 150, color: '#8EDDD0' },
 ];
 
+/* free_days DB 값(영문 약어) → 한국어 매핑 */
+const FREE_DAY_MAP = {
+  MON: { label: '월요일', short: '월', color: '#8FA8FF' },
+  TUE: { label: '화요일', short: '화', color: '#8EDDD0' },
+  WED: { label: '수요일', short: '수', color: '#C3B5FF' },
+  THU: { label: '목요일', short: '목', color: '#F4AFCF' },
+  FRI: { label: '금요일', short: '금', color: '#F7CFA1' },
+  SAT: { label: '토요일', short: '토', color: '#8EDDD0' },
+  SUN: { label: '일요일', short: '일', color: '#8FA8FF' },
+};
+
 /* ratio label 매핑 */
 const RATIO_META = [
   { key: 'avoid_uphill_ratio',      label: '오르막 회피', color: '#A78BFA', bg: 'bg-[#F3F0FF]' },
@@ -71,17 +82,22 @@ const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
 };
 
 export default function AdminAnalytics() {
-  const [period, setPeriod]   = useState('7d');
-  const [loading, setLoading] = useState(true);
-  const [prefData, setPrefData] = useState(null);
+  const [period, setPeriod]       = useState('7d');
+  const [loading, setLoading]     = useState(true);
+  const [prefData, setPrefData]   = useState(null);
+  const [usageStats, setUsageStats] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await adminApi.get('/api/admin/stats/preferences');
-      setPrefData(res.data.success.data);
+      const [prefRes, usageRes] = await Promise.all([
+        adminApi.get('/api/admin/stats/preferences'),
+        adminApi.get('/api/admin/stats/usage'),
+      ]);
+      setPrefData(prefRes.data.success.data);
+      setUsageStats(usageRes.data.success.data);
     } catch (err) {
-      console.error('Analytics preferences fetch error:', err);
+      console.error('Analytics fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -107,6 +123,13 @@ export default function AdminAnalytics() {
     val: prefData ? toPercent(prefData.ratios?.[m.key]) : 0,
   }));
 
+  /* top_free_day(영문) → 한국어 정보 */
+  const topFreeDayInfo = (() => {
+    const raw = prefData?.top_choices?.top_free_day;
+    if (!raw) return null;
+    return FREE_DAY_MAP[raw] ?? { label: raw, short: raw[0] ?? '?', color: '#F7CFA1' };
+  })();
+
   /* 가장 높은 ratio label */
   const topLabel = (() => {
     if (!prefData?.ratios) return '—';
@@ -127,8 +150,8 @@ export default function AdminAnalytics() {
   const SUMMARY = [
     {
       label: '총 시간표 생성',
-      value: '4,520',
-      sub: '이번 기간',
+      value: loading ? '—' : (usageStats?.total_timetables?.toLocaleString() ?? '—'),
+      sub: '누적 생성',
       icon: Calendar,
       bg: 'bg-[#EEF2FF]', ic: 'text-[#4F7CF3]', vc: 'text-[#4F7CF3]',
     },
@@ -148,8 +171,8 @@ export default function AdminAnalytics() {
     },
     {
       label: '선호 요일',
-      value: '금요일',
-      sub: '공강 44%',
+      value: loading ? '—' : (topFreeDayInfo?.label ?? '—'),
+      sub: topFreeDayInfo ? '공강 1위 요일' : '',
       icon: Users,
       bg: 'bg-[#FFFBEA]', ic: 'text-yellow-500', vc: 'text-yellow-600',
     },
@@ -308,12 +331,24 @@ export default function AdminAnalytics() {
           </div>
 
           {/* 최다 요일 강조 */}
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-[#FFFBEA] rounded-xl border border-yellow-100">
-            <div className="w-5 h-5 rounded-lg bg-[#F7CFA1] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">금</div>
-            <p className="text-[12px] font-semibold text-yellow-700">
-              금요일 공강 선호가 44%로 가장 높습니다
-            </p>
-          </div>
+          {!loading && topFreeDayInfo && (
+            <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-[#FFFBEA] rounded-xl border border-yellow-100">
+              <div
+                className="w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                style={{ background: topFreeDayInfo.color }}
+              >
+                {topFreeDayInfo.short}
+              </div>
+              <p className="text-[12px] font-semibold text-yellow-700">
+                {topFreeDayInfo.label} 공강 선호가 가장 높습니다
+              </p>
+            </div>
+          )}
+          {!loading && !topFreeDayInfo && (
+            <div className="mt-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-[12px] text-slate-400">공강 선호 요일 데이터가 없습니다</p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -47,7 +47,7 @@ export default function GraduationHistory() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', credits: 3, letterGrade: 'A+', category: '전공필수', gradeYear: '1', semesterNum: '1' });
+  const [form, setForm] = useState({ name: '', course_code: '', credits: 3, letterGrade: 'A+', category: '전공필수', gradeYear: '1', semesterNum: '1' });
 
   // 과목 자동완성
   const [query, setQuery]           = useState('');
@@ -69,13 +69,14 @@ export default function GraduationHistory() {
         ]);
         if (histRes.data.resultType === 'SUCCESS') {
           setCourses(histRes.data.success.map(c => ({
-            id:       c.history_id,
-            name:     c.course_name,
-            credits:  c.credits,
-            grade:    c.grade    ?? null,
-            semester: c.semester ?? null,
+            id:          c.history_id,
+            course_code: c.course_code,
+            name:        c.course_name,
+            credits:     c.credits,
+            grade:       c.grade    ?? null,
+            semester:    c.semester ?? null,
             letterGrade: 'A+',
-            category: TO_CAT[c.classification] ?? c.classification,
+            category:    TO_CAT[c.classification] ?? c.classification,
           })));
         }
         if (reqRes.data.resultType === 'SUCCESS') setReqs(reqRes.data.success);
@@ -100,7 +101,7 @@ export default function GraduationHistory() {
   /* ── 과목 검색 (debounce 300ms) ── */
   const handleQueryChange = useCallback((val) => {
     setQuery(val);
-    setForm(f => ({ ...f, name: val }));
+    setForm(f => ({ ...f, name: val, course_code: '' }));
     clearTimeout(debounceRef.current);
     if (!val.trim() || val.length < 1) { setSuggestions([]); setShowSugg(false); return; }
     debounceRef.current = setTimeout(async () => {
@@ -117,7 +118,7 @@ export default function GraduationHistory() {
   /* ── 과목 선택 → 자동완성 ── */
   const selectSuggestion = (c) => {
     const cat = TO_CAT[c.classification] ?? '자유선택';
-    setForm(f => ({ ...f, name: c.course_name, credits: c.credits, category: cat }));
+    setForm(f => ({ ...f, name: c.course_name, course_code: c.course_code, credits: c.credits, category: cat }));
     setQuery(c.course_name);
     setShowSugg(false);
   };
@@ -171,6 +172,7 @@ export default function GraduationHistory() {
     if (!form.name.trim()) return;
     setCourses([...courses, {
       id:          Date.now(),
+      course_code: form.course_code,
       name:        form.name,
       credits:     Number(form.credits),
       letterGrade: form.letterGrade,
@@ -179,7 +181,7 @@ export default function GraduationHistory() {
       semester:    Number(form.semesterNum) || null,
     }]);
     const firstCat = availableCats[0] || '전공필수';
-    setForm({ name: '', credits: 3, letterGrade: 'A+', category: firstCat, gradeYear: '1', semesterNum: '1' });
+    setForm({ name: '', course_code: '', credits: 3, letterGrade: 'A+', category: firstCat, gradeYear: '1', semesterNum: '1' });
     setQuery('');
     setShowForm(false);
   };
@@ -426,7 +428,7 @@ export default function GraduationHistory() {
               try {
                 await api.post('/api/users/me/graduation/history', {
                   courses: courses.map(c => ({
-                    course_code: c.name.replace(/\s+/g, '_').toUpperCase(),
+                    course_code: c.course_code || c.name.trim().replace(/\s+/g, '_'),
                     course_name: c.name,
                     classification: CLASS_MAP[c.category] ?? c.category,
                     credits: Number(c.credits),
