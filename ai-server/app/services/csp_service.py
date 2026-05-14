@@ -239,6 +239,10 @@ def build_base_model(
     # 제약 5: 이동시간 10분 초과 차단
     _add_travel_time_constraint(model, variables, candidates, distance_map)
 
+    # 제약 6: 온라인 강의 최소 개수
+    if request.min_online_count > 0:
+        _add_min_online_constraint(model, variables, candidates, request.min_online_count)
+
     return model, variables
 
 
@@ -293,6 +297,16 @@ def _add_section_duplicate_constraint(model, variables, candidates):
     for name, cids in name_groups.items():
         if len(cids) > 1:
             model.Add(sum(variables[cid] for cid in cids) <= 1)
+
+
+def _add_min_online_constraint(model, variables, candidates, min_count):
+    """온라인 강의 최소 개수 하드 제약"""
+    online_vars = [
+        variables[c["course_id"]] for c in candidates
+        if all(s.get("building_id") is None for s in c["schedules"])
+    ]
+    if online_vars:
+        model.Add(sum(online_vars) >= min_count)
 
 
 def _add_travel_time_constraint(model, variables, candidates, distance_map):
@@ -365,14 +379,22 @@ def build_objective(
     if request.avoid_uphill:
         _add_uphill_penalty(model, variables, candidates, distance_map, uphill_w, objective_terms)
 
-    # 온라인 강의 선호 보너스
+    # 온라인 강의 선호 보너스 (min_online_count까지만 보상, 초과분은 추가 보상 없음)
     online_w = weights.get("PREFER_ONLINE", 1)
     if request.prefer_online:
-        for course in candidates:
-            cid = course["course_id"]
-            is_online = all(s.get("building_id") is None for s in course["schedules"])
-            if is_online:
-                objective_terms.append(online_w * 3 * variables[cid])
+        threshold = max(request.min_online_count, 1)
+        online_courses = [
+            c for c in candidates
+            if all(s.get("building_id") is None for s in c["schedules"])
+        ]
+        if online_courses:
+            online_count_var = model.NewIntVar(0, len(online_courses), "online_count")
+            model.Add(online_count_var == sum(variables[c["course_id"]] for c in online_courses))
+            # threshold까지만 보상 (capped): 그 이상 온라인을 택해도 추가 점수 없음
+            capped = model.NewIntVar(0, threshold, "online_capped")
+            threshold_const = model.NewIntVar(threshold, threshold, "online_threshold")
+            model.AddMinEquality(capped, [online_count_var, threshold_const])
+            objective_terms.append(online_w * 10 * capped)
 
     # 오전/오후 선호 보너스
     morning_w = weights.get("PREFER_MORNING", 1)

@@ -109,7 +109,7 @@ const callCSPEngine = async (payload) => {
   try {
     const { userId, constraints } = payload;
     const {
-      dept, grade, free_day_mask, avoid_uphill, prefer_online,
+      dept, grade, free_day_mask, avoid_uphill, prefer_online, min_online_count = 0,
       cartCourseIds, targetCredits, takenCourseCodes = [],
     } = constraints;
 
@@ -132,6 +132,7 @@ const callCSPEngine = async (payload) => {
       credit_intensity,
       avoid_uphill:        avoid_uphill ?? false,
       prefer_online:       prefer_online ?? false,
+      min_online_count:    min_online_count ?? 0,
     };
 
     const res = await axios.post(CSP_URL, aiPayload, { timeout: 30000 });
@@ -205,7 +206,7 @@ const createTimetable = async (userId, body) => {
   const {
     dept, grade, dormitory,
     free_day_mask, avoid_uphill,
-    allow_first, prefer_online,
+    allow_first, prefer_online, min_online_count,
     target_credits, semester,
   } = body;
 
@@ -241,6 +242,7 @@ const createTimetable = async (userId, body) => {
       avoid_uphill,
       allow_first,
       prefer_online,
+      min_online_count: min_online_count ?? 0,
       cartCourseIds,
       takenCourseCodes,
       targetCredits: target_credits ?? 18,

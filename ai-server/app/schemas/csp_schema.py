@@ -33,6 +33,7 @@ class CSPRequest(BaseModel):
     credit_intensity: str = "NORMAL"      # RELAXED / NORMAL / INTENSIVE
     avoid_uphill: bool = False
     prefer_online: bool = False
+    min_online_count: int = 0   # 온라인 강의 최소 개수 (1 또는 2)
  
     class Config:
         json_schema_extra = {

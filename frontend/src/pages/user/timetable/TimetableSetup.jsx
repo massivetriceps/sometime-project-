@@ -473,7 +473,8 @@ export default function TimeTableG() {
           .reduce((mask, day) => mask | (DAY_MASK[day] ?? 0), 0);
 
         const avoid_uphill = answers.hills === '무조건 평지 건물 위주로';
-        const prefer_online = answers.online !== '' && answers.online !== '난 강의실이 좋은데';
+        const min_online_count = answers.online === '2개 이상' ? 2 : answers.online === '최소 1개는 무조건 포함' ? 1 : 0;
+        const prefer_online = min_online_count > 0;
         const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
 
         const selectedDays = answers.freeDay
@@ -498,6 +499,7 @@ export default function TimeTableG() {
           avoid_uphill,
           allow_first,
           prefer_online,
+          min_online_count,
           target_credits: targetCredits,
         });
 
