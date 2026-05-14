@@ -239,8 +239,13 @@ def build_base_model(
     # 제약 5: 이동시간 10분 초과 차단
     _add_travel_time_constraint(model, variables, candidates, distance_map)
 
-    # 제약 6: 온라인 강의 최소 개수
-    if request.min_online_count > 0:
+    # 제약 6: 온라인 강의 수 제어
+    if not request.prefer_online:
+        # 강의실 선호 → 온라인 강의 완전 제외
+        for course in candidates:
+            if all(s.get("building_id") is None for s in course["schedules"]):
+                model.Add(variables[course["course_id"]] == 0)
+    elif request.min_online_count > 0:
         _add_min_online_constraint(model, variables, candidates, request.min_online_count)
 
     return model, variables

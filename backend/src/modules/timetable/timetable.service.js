@@ -62,6 +62,8 @@ const buildMockPlan = (seed, courses, cartIds, constraints) => {
   const pool = shuffle(
     courses.filter(c => {
       if (cartCourseIds.includes(c.course_id)) return false;
+      // 강의실 선호 → 온라인 강의 제외
+      if (!prefer_online && c.schedules.every(s => !s.building_id)) return false;
       // 오전 1교시 제한
       if (!allow_first && c.schedules.some(s => s.start_period === 1)) return false;
       // 공강 요일 제한
