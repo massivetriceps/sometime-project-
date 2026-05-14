@@ -125,7 +125,7 @@ const callCSPEngine = async (payload) => {
       user_id:             userId,
       major_id:            dept,
       grade,
-      apply_year:          String(grade),
+      apply_year:          applyYear,
       cart_course_ids:     cartCourseIds,
       taken_course_codes:  takenCourseCodes,
       priority_order:      ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
@@ -217,9 +217,10 @@ const createTimetable = async (userId, body) => {
   // 0) 유저 major_id 조회
   const userInfo = await prisma.users.findUnique({
     where: { user_id: userId },
-    select: { major_id: true },
+    select: { major_id: true, student_id: true },
   });
   const majorId = userInfo?.major_id;
+  const applyYear = userInfo?.student_id ? String(userInfo.student_id).substring(0, 4) : "";
   const majorInfo = majorId
     ? await prisma.majors.findUnique({ where: { major_id: majorId }, select: { major_name: true } })
     : null;
