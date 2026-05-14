@@ -135,6 +135,8 @@ const callCSPEngine = async (payload) => {
       avoid_uphill:        avoid_uphill ?? false,
       prefer_online:       prefer_online ?? false,
       min_online_count:    min_online_count ?? 0,
+      semester:            semester ?? 1,
+      major_name:          majorName,
     };
 
     const res = await axios.post(CSP_URL, aiPayload, { timeout: 30000 });
@@ -218,6 +220,10 @@ const createTimetable = async (userId, body) => {
     select: { major_id: true },
   });
   const majorId = userInfo?.major_id;
+  const majorInfo = majorId
+    ? await prisma.majors.findUnique({ where: { major_id: majorId }, select: { major_name: true } })
+    : null;
+  const majorName = majorInfo?.major_name ?? "";
 
   // 1) 장바구니 조회
   const carts = await prisma.carts.findMany({ where: { user_id: userId } });

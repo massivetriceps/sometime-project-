@@ -34,6 +34,8 @@ class CSPRequest(BaseModel):
     avoid_uphill: bool = False
     prefer_online: bool = False
     min_online_count: int = 0   # 온라인 강의 최소 개수 (1 또는 2)
+    semester: int = 1           # 현재 학기 (1 또는 2)
+    major_name: str = ""        # 학과명 (교육과정 매칭용)
  
     class Config:
         json_schema_extra = {

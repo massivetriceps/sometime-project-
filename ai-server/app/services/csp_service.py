@@ -23,6 +23,7 @@ import re
 from ortools.sat.python import cp_model
 
 from app.services.data_loader import load_courses, load_distances
+from app.services.curriculum import get_curriculum_courses
 from app.schemas.csp_schema import (
     CSPRequest, CSPResponse, TimetablePlan, ScheduleItem, ConflictInfo
 )
@@ -411,6 +412,19 @@ def build_objective(
                 objective_terms.append(morning_w * 2 * variables[cid])
             elif request.preferred_time == "AFTERNOON" and not is_morning:
                 objective_terms.append(morning_w * 2 * variables[cid])
+
+    # 교육과정 일치 보너스
+    curriculum = get_curriculum_courses(
+        request.apply_year, request.major_name, request.grade, request.semester
+    )
+    if curriculum:
+        for course in candidates:
+            cid = course["course_id"]
+            normalized = re.sub(r"\s*\(.*?\)", "", course["course_name"]).strip()
+            if normalized in curriculum.get("전필", []):
+                objective_terms.append(30 * variables[cid])
+            elif normalized in curriculum.get("전선", []) or normalized in curriculum.get("계교", []):
+                objective_terms.append(10 * variables[cid])
 
     # 학점 최대화 (기본 보너스, 모든 plan 공통)
     for course in candidates:
