@@ -210,6 +210,35 @@ export default function TimeTableG() {
       }
     }
 
+    // 8. 오전 선호인데 연속 장바구니 강의 이동시간(5~10분)이 오전 배치를 제한
+    const preferMorning = answers.morning === '아침형 인간 (1교시 환영)';
+    if (preferMorning && distances.length > 0) {
+      for (let i = 0; i < cartCourses.length; i++) {
+        for (let j = i + 1; j < cartCourses.length; j++) {
+          const a = cartCourses[i], b = cartCourses[j];
+          for (const sa of (a.schedules || [])) {
+            for (const sb of (b.schedules || [])) {
+              if (sa.day_of_week !== sb.day_of_week) continue;
+              const isConsec = sa.end_period + 1 === sb.start_period || sb.end_period + 1 === sa.start_period;
+              if (!isConsec) continue;
+              const bidA = sa.building_id, bidB = sb.building_id;
+              if (!bidA || !bidB || bidA === bidB) continue;
+              const key = sa.end_period + 1 === sb.start_period ? `${bidA}_${bidB}` : `${bidB}_${bidA}`;
+              const dist = distMap[key];
+              if (dist && dist.time_minutes > 5 && dist.time_minutes <= 10) {
+                warns.push({
+                  type: 'WARN_MORNING_TRAVEL_CONFLICT',
+                  color: '#F59E0B',
+                  msg: `⚠️ 오전 선호 충돌 — '${a.course_name}'→'${b.course_name}' 이동에 ${dist.time_minutes}분이 소요돼 오전 시간대 배치가 제한돼요.`,
+                  sub: '시간표는 생성되지만 오전 선호와 이동시간 제약이 충돌해 최적화가 제한될 수 있어요.',
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     return warns;
   }, [cartCourses, takenCourses, distances, answers, targetCredits]);
 

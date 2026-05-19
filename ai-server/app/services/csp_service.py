@@ -163,9 +163,11 @@ def validate_request(candidates: list, request: CSPRequest, distance_map: dict) 
         conflicts.extend(_check_morning_pref_vs_cart(cart_courses, request))
         conflicts.extend(_check_uphill_vs_cart(cart_courses, request, distance_map))
         conflicts.extend(_check_online_pref_vs_cart(cart_courses, request))
+        conflicts.extend(_check_morning_pref_vs_travel_time(cart_courses, request, distance_map))
 
     # 학점 가능성 검증 (장바구니 유무 무관하게 항상 실행)
     conflicts.extend(_check_credit_feasibility(candidates, request))
+    conflicts.extend(_check_free_day_credit_infeasibility(candidates, request))
 
     return conflicts
 
@@ -487,6 +489,90 @@ def _check_credit_feasibility(candidates: list, request: CSPRequest) -> list[Con
         ))
 
     return conflicts
+
+def _check_free_day_credit_infeasibility(candidates: list, request: CSPRequest) -> list[ConflictInfo]:
+    """공강 요일 3개↑일 때 남은 후보 학점이 목표 학점에 미달하는지 경고 (Soft vs Hard)"""
+    conflicts = []
+    free_days = set(request.free_days or [])
+    if len(free_days) < 3:
+        return conflicts
+
+    cart_id_set = set(request.cart_course_ids)
+
+    # 공강 요일에 수업이 있는 강의 제외 (장바구니는 무조건 포함)
+    available_credits = sum(
+        c["credits"] for c in candidates
+        if c["course_id"] in cart_id_set
+        or not any(s["day_of_week"] in free_days for s in c["schedules"])
+    )
+
+    intensity_target = {
+        "RELAXED": 14,
+        "NORMAL": 18,
+        "INTENSIVE": 21,
+    }.get(request.credit_intensity, 18)
+
+    if available_credits < intensity_target:
+        conflicts.append(ConflictInfo(
+            conflict_type="WARN_FREE_DAY_CREDIT_INFEASIBLE",
+            message=(
+                f"공강 {len(free_days)}개 요일 설정 시 배치 가능한 학점({available_credits}학점)이 "
+                f"목표 학점({intensity_target}학점)에 미달할 수 있어요."
+            ),
+            suggestion="공강 요일 수를 줄이거나 학점 강도를 낮게 조정해보세요."
+        ))
+
+    return conflicts
+
+
+def _check_morning_pref_vs_travel_time(cart_courses: list, request: CSPRequest, distance_map: dict) -> list[ConflictInfo]:
+    """오전 수업 선호인데 연속 장바구니 강의 간 이동시간(5~10분)이 오전 배치를 제한하는 경우 경고 (Soft vs Hard)"""
+    conflicts = []
+
+    if request.preferred_time != "MORNING":
+        return conflicts
+
+    for i, course_a in enumerate(cart_courses):
+        for course_b in cart_courses[i + 1:]:
+            for sched_a in course_a["schedules"]:
+                for sched_b in course_b["schedules"]:
+                    if sched_a["day_of_week"] != sched_b["day_of_week"]:
+                        continue
+
+                    is_consecutive = (
+                        sched_a["end_period"] + 1 == sched_b["start_period"] or
+                        sched_b["end_period"] + 1 == sched_a["start_period"]
+                    )
+                    if not is_consecutive:
+                        continue
+
+                    bid_a = sched_a.get("building_id")
+                    bid_b = sched_b.get("building_id")
+                    if bid_a is None or bid_b is None or bid_a == bid_b:
+                        continue
+
+                    if sched_a["end_period"] + 1 == sched_b["start_period"]:
+                        dist = distance_map.get((bid_a, bid_b))
+                    else:
+                        dist = distance_map.get((bid_b, bid_a))
+
+                    # 5분 초과 ~ 10분 이하: 하드 차단은 아니지만 오전 배치를 제한
+                    if not dist or not (5 < dist["time_minutes"] <= 10):
+                        continue
+
+                    name_a = course_a["course_name"].strip()
+                    name_b = course_b["course_name"].strip()
+                    conflicts.append(ConflictInfo(
+                        conflict_type="WARN_MORNING_TRAVEL_CONFLICT",
+                        message=(
+                            f"오전 수업을 선호하지만 '{name_a}'→'{name_b}' 이동에 "
+                            f"{dist['time_minutes']}분이 소요돼 오전 시간대 배치가 제한돼요."
+                        ),
+                        suggestion="시간표는 생성되지만 오전 선호와 이동시간 제약이 충돌해 최적화가 제한될 수 있어요."
+                    ))
+
+    return conflicts
+
 
 def is_foreign_student_course(course: dict) -> bool:
     """가천리버럴아츠칼리지의 한국어 강의 = 외국인 유학생용"""
@@ -1089,101 +1175,4 @@ def _generate_characteristics(courses: list) -> list[str]:
 
 
 
-"""
-제약 모순 예외처리 피드백
-======================
-CSP에서 사용자가 입력한 조건들이 서로 충돌하거나 만족할 수 없을 때,
-에러 메시지를 통해 사용자에게 알려주는 기능.
-"""
-
-# ==========================================================
-# 사전 검증 (Validation)
-# ==========================================================
-
-def validate_request(candidates: list, request: CSPRequest) -> list[ConflictInfo]:
-    """솔버 실행 전 모순 케이스 검증.
-    
-    충돌이 발견되면 ConflictInfo 리스트를 반환.
-    충돌 없으면 빈 리스트.
-    """
-    conflicts = []
-    
-    # 장바구니에 있는 강의 정보를 dict로 미리 변환 (조회 빠르게)
-    cart_courses = _get_cart_courses(candidates, request.cart_course_ids)
-    
-    if cart_courses:
-        conflicts.extend(_check_cart_vs_free_day(cart_courses, request))
-        conflicts.extend(_check_cart_internal_conflict(cart_courses))
-    
-    return conflicts
-
-
-def _get_cart_courses(candidates: list, cart_ids: list[int]) -> list[dict]:
-    """장바구니 강의 ID -> 실제 강의 dict 리스트로 변환"""
-    cart_id_set = set(cart_ids)
-    return [c for c in candidates if c["course_id"] in cart_id_set]
-
-
-def _check_cart_vs_free_day(cart_courses: list, request: CSPRequest) -> list[ConflictInfo]:
-    """장바구니 강의가 사용자 공강 요일과 충돌하는지 검증"""
-    conflicts = []
-    free_day_set = set(request.free_days or [])
-    
-    if not free_day_set:
-        return conflicts
-    
-    for course in cart_courses:
-        # 이 강의의 모든 schedule 중 공강 요일에 걸리는 게 있는지
-        conflicting_days = set()
-        for sched in course["schedules"]:
-            if sched["day_of_week"] in free_day_set:
-                conflicting_days.add(sched["day_of_week"])
-        
-        if conflicting_days:
-            days_str = ", ".join(sorted(conflicting_days))
-            course_name = course["course_name"].strip()
-            conflicts.append(ConflictInfo(
-                conflict_type="CART_FREE_DAY_CONFLICT",
-                message=f"장바구니 강의 '{course_name}'가 공강 요일({days_str})에 수업이 있어요.",
-                suggestion=f"공강 요일에서 '{days_str}'을(를) 빼거나, '{course_name}'을(를) 장바구니에서 제거하세요."
-            ))
-    
-    return conflicts
-
-
-def _check_cart_internal_conflict(cart_courses: list) -> list[ConflictInfo]:
-    """장바구니 강의들끼리 시간이 겹치는지 검증"""
-    conflicts = []
-    
-    # 모든 쌍 비교
-    for i, course_a in enumerate(cart_courses):
-        for course_b in cart_courses[i+1:]:
-            overlap = _find_time_overlap(course_a, course_b)
-            if overlap:
-                day, period = overlap
-                name_a = course_a["course_name"].strip()
-                name_b = course_b["course_name"].strip()
-                conflicts.append(ConflictInfo(
-                    conflict_type="CART_INTERNAL_CONFLICT",
-                    message=f"장바구니의 '{name_a}'와 '{name_b}'가 {day}요일 {period}교시에 시간이 겹쳐요.",
-                    suggestion=f"두 강의 중 하나를 장바구니에서 제거하거나, 다른 분반으로 변경하세요."
-                ))
-    
-    return conflicts
-
-
-def _find_time_overlap(course_a: dict, course_b: dict) -> tuple | None:
-    """두 강의의 시간이 겹치는지 확인. 겹치면 (요일, 교시) 반환, 아니면 None"""
-    for sched_a in course_a["schedules"]:
-        for sched_b in course_b["schedules"]:
-            if sched_a["day_of_week"] != sched_b["day_of_week"]:
-                continue
-            # 교시 범위가 겹치는지
-            a_start, a_end = sched_a["start_period"], sched_a["end_period"]
-            b_start, b_end = sched_b["start_period"], sched_b["end_period"]
-            if a_start <= b_end and b_start <= a_end:
-                # 겹치는 첫 교시 반환
-                overlap_period = max(a_start, b_start)
-                return (sched_a["day_of_week"], overlap_period)
-    return None
 
