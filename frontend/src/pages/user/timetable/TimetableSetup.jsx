@@ -239,6 +239,41 @@ export default function TimeTableG() {
       }
     }
 
+    // 9. (이미 위에서 처리) WARN_MORNING_TRAVEL_CONFLICT
+
+    // 10. 공강 요일에 장바구니 강의 존재 (CART_FREE_DAY_CONFLICT) — Soft vs Hard
+    const freeDayList = answers.freeDay.filter(d => d !== '난 5일 내내 학교 다닐래');
+    const seenFreeDayConflicts = new Set();
+    freeDayList.forEach(day => {
+      const dayShort = DAY_STR[day];
+      if (!dayShort) return;
+      cartCourses.forEach(c => {
+        if (c.schedules?.some(s => s.day_of_week === dayShort)) {
+          const key = `${c.course_name}_${dayShort}`;
+          if (!seenFreeDayConflicts.has(key)) {
+            seenFreeDayConflicts.add(key);
+            warns.push({
+              type: 'CART_FREE_DAY_CONFLICT',
+              color: '#F59E0B',
+              msg: `⚠️ 공강 요일 충돌 — '${c.course_name}'이 공강 설정한 ${dayShort}요일에 수업이 있어요.`,
+              sub: `시간표는 생성되지만 ${dayShort}요일 공강이 보장되지 않을 수 있어요.`,
+            });
+          }
+        }
+      });
+    });
+
+    // 11. 공강 3개↑ + 학점 범위 충돌 (WARN_FREE_DAY_CREDIT_INFEASIBLE) — Soft vs Hard
+    const freeDayCount = freeDayList.length;
+    if (freeDayCount >= 3) {
+      warns.push({
+        type: 'WARN_FREE_DAY_CREDIT_INFEASIBLE',
+        color: '#F59E0B',
+        msg: `⚠️ 공강-학점 충돌 — 공강 ${freeDayCount}개 요일 설정 시 목표 학점(${targetCredits}학점)을 채울 강의가 부족해질 수 있어요.`,
+        sub: '시간표는 생성되지만 공강과 학점 목표가 충돌해 최적화가 제한될 수 있어요.',
+      });
+    }
+
     return warns;
   }, [cartCourses, takenCourses, distances, answers, targetCredits]);
 
@@ -387,6 +422,7 @@ export default function TimeTableG() {
       }
       case 'morning': {
         const hasFirstPeriod = cartCourses.some(c => c.schedules?.some(s => s.start_period === 1));
+        const morningTravelWarn = cartWarnings.find(w => w.type === 'WARN_MORNING_TRAVEL_CONFLICT');
         return (
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 오전 수업 선호도</h3>
@@ -400,6 +436,11 @@ export default function TimeTableG() {
             {answers.morning === '절대 불가 (10시 이후 시작)' && hasFirstPeriod && (
               <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
                 ⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.
+              </p>
+            )}
+            {answers.morning === '아침형 인간 (1교시 환영)' && morningTravelWarn && (
+              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
+                {morningTravelWarn.msg}<br/><span style={{ color: '#64748B' }}>{morningTravelWarn.sub}</span>
               </p>
             )}
           </div>
