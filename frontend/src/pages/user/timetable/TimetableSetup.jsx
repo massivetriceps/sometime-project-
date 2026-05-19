@@ -71,8 +71,8 @@ export default function TimeTableG() {
               warns.push({
                 type: 'CART_INTERNAL_CONFLICT',
                 color: '#EF4444',
-                msg: `⛔ '${a.course_name}'와 '${b.course_name}'가 ${sa.day_of_week}요일 ${Math.max(sa.start_period, sb.start_period)}교시에 시간이 겹쳐요.`,
-                sub: '두 강의 중 하나를 장바구니에서 제거하거나, 다른 분반으로 변경하세요.',
+                msg: `⛔ 시간 충돌 — '${a.course_name}'과 '${b.course_name}'이 ${sa.day_of_week} ${Math.max(sa.start_period, sb.start_period)}교시에 겹쳐요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나 다른 분반으로 변경하세요.',
               });
             }
           }
@@ -92,8 +92,8 @@ export default function TimeTableG() {
         warns.push({
           type: 'CART_SECTION_DUPLICATE',
           color: '#EF4444',
-          msg: `⛔ 장바구니에 '${key}' 분반이 ${names.length}개 담겨 있어요. (${names.join(', ')})`,
-          sub: `'${key}' 분반 중 하나만 남기고 나머지는 제거하세요.`,
+          msg: `⛔ 분반 중복 — '${key}' 강의가 ${names.length}개 분반으로 담겨 있어요. (${names.join(', ')})`,
+          sub: '한 분반만 남기고 나머지는 장바구니에서 제거하세요.',
         });
       }
     });
@@ -105,8 +105,8 @@ export default function TimeTableG() {
         warns.push({
           type: 'CART_TAKEN_COURSE',
           color: '#EF4444',
-          msg: `⛔ '${c.course_name}'은(는) 이미 수강한 과목이에요.`,
-          sub: `장바구니에서 '${c.course_name}'을(를) 제거하세요.`,
+          msg: `⛔ 기수강 과목 — '${c.course_name}'은(는) 이미 수강 완료한 과목이에요.`,
+          sub: '해당 과목을 장바구니에서 제거하세요.',
         });
       }
     });
@@ -130,8 +130,8 @@ export default function TimeTableG() {
               warns.push({
                 type: 'CART_TRAVEL_TIME_CONFLICT',
                 color: '#EF4444',
-                msg: `⛔ '${a.course_name}'→'${b.course_name}' 이동시간이 ${dist.time_minutes}분이라 연속 수업이 불가해요.`,
-                sub: '두 강의 중 하나를 장바구니에서 제거하거나, 같은 건물 분반으로 변경하세요.',
+                msg: `⛔ 이동 불가 — '${a.course_name}'→'${b.course_name}' 이동에 ${dist.time_minutes}분이 소요돼 연속 수업이 불가해요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나 같은 건물 분반으로 변경하세요.',
               });
             }
           }
@@ -145,8 +145,8 @@ export default function TimeTableG() {
       warns.push({
         type: 'CREDIT_INFEASIBLE',
         color: '#EF4444',
-        msg: `⛔ 장바구니 과목의 총 학점(${totalCartCredits}학점)이 목표 학점(${targetCredits}학점)을 초과해요.`,
-        sub: `장바구니에서 일부 과목을 제거하거나, 목표 학점을 ${totalCartCredits}학점 이상으로 올려주세요.`,
+        msg: `⛔ 학점 초과 — 장바구니 총 학점(${totalCartCredits}학점)이 목표 학점(${targetCredits}학점)을 초과해요.`,
+        sub: `일부 과목을 장바구니에서 제거하거나 목표 학점을 ${totalCartCredits}학점 이상으로 올려주세요.`,
       });
     }
 
@@ -160,7 +160,7 @@ export default function TimeTableG() {
           warns.push({
             type: 'WARN_MORNING_CART_CONFLICT',
             color: '#F59E0B',
-            msg: `⚠️ 오전 수업 회피를 선택했지만 '${c.course_name}'은(는) 오후에만 수업이 있어요.`,
+            msg: `⚠️ 오전 회피 충돌 — '${c.course_name}'은(는) 오후에만 수업이 있어 오전 회피가 제한돼요.`,
             sub: '시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.',
           });
         }
@@ -186,7 +186,7 @@ export default function TimeTableG() {
                 warns.push({
                   type: 'WARN_UPHILL_CART_CONFLICT',
                   color: '#F59E0B',
-                  msg: `⚠️ 오르막 회피를 선택했지만 '${a.course_name}'→'${b.course_name}' 이동 경로가 오르막이에요.`,
+                  msg: `⚠️ 오르막 회피 충돌 — '${a.course_name}'→'${b.course_name}' 이동 경로가 오르막이에요.`,
                   sub: '시간표는 생성되지만 오르막 회피 최적화가 제한될 수 있어요.',
                 });
               }
@@ -204,8 +204,8 @@ export default function TimeTableG() {
         warns.push({
           type: 'WARN_ONLINE_CART_CONFLICT',
           color: '#F59E0B',
-          msg: `⚠️ 온라인 강의를 선호하지만 장바구니의 모든 강의가 오프라인이에요.`,
-          sub: '장바구니에 온라인 강의를 추가하거나, 온라인 선호 설정을 해제하세요.',
+          msg: `⚠️ 온라인 선호 충돌 — 장바구니의 모든 강의가 오프라인이에요.`,
+          sub: '시간표는 생성되지만 온라인 선호 최적화가 제한될 수 있어요.',
         });
       }
     }
@@ -290,7 +290,7 @@ export default function TimeTableG() {
               가장 원하는 공강 요일을 선택해주세요. (복수선택 가능)<br/>
               {isWarning && (
                 <span style={{ color: '#F59E0B', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
-                  ⚠️ 3개 이상 선택 시 만족하는 시간표가 없거나, 연산 시간이 오래 걸릴 수 있습니다.
+                  ⚠️ 공강 3개↑ 충돌 — 만족하는 시간표가 없거나 연산 시간이 오래 걸릴 수 있어요.
                 </span>
               )}
             </p>
@@ -307,7 +307,7 @@ export default function TimeTableG() {
                   </label>
                   {hasConflict && (
                     <p style={{ color: '#F59E0B', fontSize: '12px', margin: '-4px 0 8px 6px' }}>
-                      ⚠️ 장바구니에 {DAY_STR[opt]}요일 수업이 있어 공강이 보장되지 않을 수 있어요.
+                      ⚠️ 공강 요일 충돌 — {DAY_STR[opt]}요일 장바구니 강의가 있어 공강이 보장되지 않을 수 있어요.
                     </p>
                   )}
                 </div>
@@ -370,7 +370,7 @@ export default function TimeTableG() {
             ))}
             {answers.morning === '절대 불가 (10시 이후 시작)' && hasFirstPeriod && (
               <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                ⚠️ 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.
+                ⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.
               </p>
             )}
           </div>

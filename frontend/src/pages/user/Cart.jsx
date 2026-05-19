@@ -69,8 +69,8 @@ export default function Cart() {
               warns.push({
                 type: 'CART_INTERNAL_CONFLICT',
                 hard: true,
-                msg: `⛔ '${a.course_name}'와 '${b.course_name}'가 ${sa.day_of_week}요일 ${Math.max(sa.start_period, sb.start_period)}교시에 겹쳐요.`,
-                sub: '두 강의 중 하나를 제거하거나, 다른 분반으로 변경하세요.',
+                msg: `⛔ 시간 충돌 — '${a.course_name}'과 '${b.course_name}'이 ${sa.day_of_week} ${Math.max(sa.start_period, sb.start_period)}교시에 겹쳐요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나 다른 분반으로 변경하세요.',
                 ids: [a.course_id, b.course_id],
               });
             }
@@ -91,8 +91,8 @@ export default function Cart() {
         warns.push({
           type: 'CART_SECTION_DUPLICATE',
           hard: true,
-          msg: `⛔ '${key}' 분반이 ${list.length}개 담겨 있어요. (${list.map(l => l.name).join(', ')})`,
-          sub: `분반 중 하나만 남기고 나머지는 제거하세요.`,
+          msg: `⛔ 분반 중복 — '${key}' 강의가 ${list.length}개 분반으로 담겨 있어요. (${list.map(l => l.name).join(', ')})`,
+          sub: '한 분반만 남기고 나머지는 장바구니에서 제거하세요.',
           ids: list.map(l => l.id),
         });
       }
@@ -105,8 +105,8 @@ export default function Cart() {
         warns.push({
           type: 'CART_TAKEN_COURSE',
           hard: true,
-          msg: `⛔ '${c.course_name}'은(는) 이미 수강한 과목이에요.`,
-          sub: '장바구니에서 제거하세요.',
+          msg: `⛔ 기수강 과목 — '${c.course_name}'은(는) 이미 수강 완료한 과목이에요.`,
+          sub: '해당 과목을 장바구니에서 제거하세요.',
           ids: [c.course_id],
         });
       }
@@ -118,8 +118,8 @@ export default function Cart() {
       warns.push({
         type: 'CREDIT_INFEASIBLE',
         hard: true,
-        msg: `⛔ 장바구니 과목의 총 학점이 ${totalCredits}학점으로, 최대 이수 가능 학점(21학점)을 초과해요.`,
-        sub: '시간표 생성이 불가합니다. 장바구니에서 일부 과목을 제거해 21학점 이하로 맞춰주세요.',
+        msg: `⛔ 학점 초과 — 장바구니 총 학점(${totalCredits}학점)이 최대 이수 학점(21학점)을 초과해요.`,
+        sub: '일부 과목을 장바구니에서 제거해 21학점 이하로 맞춰주세요.',
         ids: [],
       });
     }
@@ -143,8 +143,8 @@ export default function Cart() {
               warns.push({
                 type: 'CART_TRAVEL_TIME_CONFLICT',
                 hard: true,
-                msg: `⛔ '${a.course_name}'→'${b.course_name}' 이동시간이 ${dist.time_minutes}분으로 연속 수업이 불가해요.`,
-                sub: '두 강의 중 하나를 제거하거나, 같은 건물 분반으로 변경하세요.',
+                msg: `⛔ 이동 불가 — '${a.course_name}'→'${b.course_name}' 이동에 ${dist.time_minutes}분이 소요돼 연속 수업이 불가해요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나 같은 건물 분반으로 변경하세요.',
                 ids: [a.course_id, b.course_id],
               });
             }
