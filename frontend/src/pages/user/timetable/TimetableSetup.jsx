@@ -289,8 +289,8 @@ export default function TimeTableG() {
             <p style={styles.desc}>
               가장 원하는 공강 요일을 선택해주세요. (복수선택 가능)<br/>
               {isWarning && (
-                <span style={{ color: '#EF4444', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
-                  3개 이상 선택 시 만족하는 시간표가 없거나, 연산 시간이 오래 걸릴 수 있습니다.
+                <span style={{ color: '#F59E0B', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
+                  ⚠️ 3개 이상 선택 시 만족하는 시간표가 없거나, 연산 시간이 오래 걸릴 수 있습니다.
                 </span>
               )}
             </p>
@@ -574,6 +574,7 @@ export default function TimeTableG() {
                       padding: '12px 14px', borderRadius: '10px',
                       background: w.color === '#EF4444' ? '#FEF2F2' : '#FFFBEB',
                       border: `1px solid ${w.color === '#EF4444' ? '#FECACA' : '#FDE68A'}`,
+                      borderLeft: `4px solid ${w.color}`,
                     }}>
                       <p style={{ fontSize: '13px', fontWeight: '600', color: w.color, margin: '0 0 4px' }}>{w.msg}</p>
                       <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>{w.sub}</p>

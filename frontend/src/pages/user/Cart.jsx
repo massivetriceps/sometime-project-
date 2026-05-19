@@ -204,7 +204,7 @@ export default function Cart() {
             {cartConflicts.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                 {cartConflicts.map((w, i) => (
-                  <div key={i} style={{ background: '#FEF2F2', borderRadius: 12, border: '1px solid #FECACA', padding: '12px 16px' }}>
+                  <div key={i} style={{ background: '#FEF2F2', borderRadius: 12, border: '1px solid #FECACA', borderLeft: '4px solid #EF4444', padding: '12px 16px' }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#EF4444', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 6 }}>
                       {w.msg}
                     </p>
