@@ -33,7 +33,95 @@ export default function Courses() {
   const [filter, setFilter] = useState('전체');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [cartItems, setCartItems] = useState([]);        // 장바구니 전체 데이터 (충돌 검사용)
+  const [takenCourses, setTakenCourses] = useState([]);  // 기수강 과목
+  const [distances, setDistances] = useState([]);        // 건물 간 이동시간
+  const [conflictErrors, setConflictErrors] = useState({}); // { [course_id]: { msg, sub } }
   const s = { fontFamily: 'Pretendard, sans-serif' };
+
+  // 장바구니·기수강·이동시간 데이터 초기 로드
+  useEffect(() => {
+    api.get('/api/users/me/cart')
+      .then(r => { if (r.data.resultType === 'SUCCESS') setCartItems(r.data.success); })
+      .catch(() => {});
+    api.get('/api/graduation/history')
+      .then(r => { if (r.data.resultType === 'SUCCESS') setTakenCourses(r.data.success); })
+      .catch(() => {});
+    api.get('/api/admin/campus/distances')
+      .then(r => { if (r.data.resultType === 'SUCCESS') setDistances(r.data.success); })
+      .catch(() => {});
+  }, []);
+
+  // ── 강한 제약 충돌 사전 검사 (5가지) ──────────────────────────
+  const checkHardConflicts = (newCourse) => {
+    // 1. 기수강 과목
+    const takenCodes = new Set(takenCourses.map(t => t.course_code));
+    if (takenCodes.has(newCourse.course_code)) {
+      return {
+        msg: `⛔ 기수강 과목 — '${newCourse.course_name}'은(는) 이미 수강 완료한 과목이에요.`,
+        sub: '이미 이수한 과목은 장바구니에 담을 수 없어요.',
+      };
+    }
+
+    // 2. 분반 중복
+    const newKey = newCourse.course_name.replace(/\s*\(.*?\)/g, '').trim();
+    const dup = cartItems.find(c => c.course_name.replace(/\s*\(.*?\)/g, '').trim() === newKey);
+    if (dup) {
+      return {
+        msg: `⛔ 분반 중복 — '${newKey}' 강의가 이미 장바구니에 담겨 있어요. (${dup.course_name})`,
+        sub: '기존 분반을 장바구니에서 제거한 뒤 다시 담아주세요.',
+      };
+    }
+
+    // 3. 시간 충돌
+    for (const cartCourse of cartItems) {
+      for (const sa of (newCourse.schedules || [])) {
+        for (const sb of (cartCourse.schedules || [])) {
+          if (sa.day_of_week === sb.day_of_week &&
+              sa.start_period <= sb.end_period && sb.start_period <= sa.end_period) {
+            return {
+              msg: `⛔ 시간 충돌 — '${newCourse.course_name}'과 '${cartCourse.course_name}'이 ${sa.day_of_week} ${Math.max(sa.start_period, sb.start_period)}교시에 겹쳐요.`,
+              sub: '이미 담긴 강의와 시간이 겹쳐요. 다른 분반으로 변경하거나 기존 강의를 제거해주세요.',
+            };
+          }
+        }
+      }
+    }
+
+    // 4. 학점 초과 (21학점 한도)
+    const totalCredits = cartItems.reduce((sum, c) => sum + (c.credits || 0), 0) + (newCourse.credits || 0);
+    if (totalCredits > 21) {
+      return {
+        msg: `⛔ 학점 초과 — 담으면 총 학점(${totalCredits}학점)이 최대 이수 학점(21학점)을 초과해요.`,
+        sub: '장바구니에서 일부 과목을 제거한 뒤 다시 담아주세요.',
+      };
+    }
+
+    // 5. 이동시간 10분 초과 (연속 교시)
+    const distMap = {};
+    distances.forEach(d => { distMap[`${d.from_building_id}_${d.to_building_id}`] = d; });
+    for (const cartCourse of cartItems) {
+      for (const sa of (newCourse.schedules || [])) {
+        for (const sb of (cartCourse.schedules || [])) {
+          if (sa.day_of_week !== sb.day_of_week) continue;
+          const isConsec = sa.end_period + 1 === sb.start_period || sb.end_period + 1 === sa.start_period;
+          if (!isConsec) continue;
+          const bidA = sa.building_id, bidB = sb.building_id;
+          if (!bidA || !bidB || bidA === bidB) continue;
+          const key = sa.end_period + 1 === sb.start_period ? `${bidA}_${bidB}` : `${bidB}_${bidA}`;
+          const dist = distMap[key];
+          if (dist && dist.time_minutes > 10) {
+            return {
+              msg: `⛔ 이동 불가 — '${newCourse.course_name}'→'${cartCourse.course_name}' 이동에 ${dist.time_minutes}분이 소요돼 연속 수업이 불가해요.`,
+              sub: '같은 건물 분반으로 변경하거나 기존 강의를 제거해주세요.',
+            };
+          }
+        }
+      }
+    }
+
+    return null; // 충돌 없음
+  };
 
   // API로 강의 목록 가져오기
   const fetchCourses = async (overrideFilter) => {
@@ -71,15 +159,34 @@ export default function Courses() {
   const isInCart = (id) => cart.some(item => item.courseId === id);
 
   const handleAdd = async (course) => {
+    // ── 강한 제약 충돌 사전 검사 ──
+    const conflict = checkHardConflicts(course);
+    if (conflict) {
+      setConflictErrors(prev => ({ ...prev, [course.course_id]: conflict }));
+      // 6초 후 자동 해제
+      setTimeout(() => {
+        setConflictErrors(prev => {
+          const next = { ...prev };
+          delete next[course.course_id];
+          return next;
+        });
+      }, 6000);
+      return; // 담기 거부
+    }
+
     try {
-    await api.post('/api/users/me/cart', {
-      course_id: course.course_id,
-    });
-    addToCart({ id: course.course_id, name: course.course_name }, 'medium');
-  } catch (err) {
-    console.error('장바구니 담기 실패', err);
-  }
-};
+      await api.post('/api/users/me/cart', { course_id: course.course_id });
+      addToCart({ id: course.course_id, name: course.course_name }, 'medium');
+      setCartItems(prev => [...prev, course]); // 로컬 동기화
+      setConflictErrors(prev => {             // 혹시 남은 에러 제거
+        const next = { ...prev };
+        delete next[course.course_id];
+        return next;
+      });
+    } catch (err) {
+      console.error('장바구니 담기 실패', err);
+    }
+  };
 
   // 시간표 포맷 변환
   const formatSchedule = (schedules) => {
@@ -156,30 +263,42 @@ export default function Courses() {
               <p style={{ margin: 0, fontSize: 14 }}>검색 결과가 없습니다</p>
             </div>
           ) : (
-            courses.map(course => (
-              <div key={course.course_id} style={{ background: 'white', borderRadius: 14, border: isInCart(course.course_id) ? '1px solid #BFD4FF' : '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 18px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 500, background: TC[course.classification]?.bg, color: TC[course.classification]?.color }}>{course.classification}</span>
-                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.credits}학점</span>
-                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.major}</span>
+            courses.map(course => {
+              const err = conflictErrors[course.course_id];
+              return (
+                <div key={course.course_id}>
+                  <div style={{ background: 'white', borderRadius: err ? '14px 14px 0 0' : 14, border: isInCart(course.course_id) ? '1px solid #BFD4FF' : err ? '1px solid #FECACA' : '1px solid #E8F0FF', borderBottom: err ? 'none' : undefined, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 500, background: TC[course.classification]?.bg, color: TC[course.classification]?.color }}>{course.classification}</span>
+                          <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.credits}학점</span>
+                          <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.major}</span>
+                        </div>
+                        <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 4px', fontSize: 15 }}>{course.course_name}</p>
+                        <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 3px' }}>{course.professor} · {formatRoom(course.schedules)}</p>
+                        <p style={{ fontSize: 12, color: '#9CA3AF', margin: 0 }}>{formatSchedule(course.schedules)}</p>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                        <button
+                          onClick={() => !isInCart(course.course_id) && handleAdd(course)}
+                          disabled={isInCart(course.course_id)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', cursor: isInCart(course.course_id) ? 'default' : 'pointer', background: isInCart(course.course_id) ? '#E8F0FF' : '#4F7CF3', color: isInCart(course.course_id) ? '#4F7CF3' : 'white', ...s }}>
+                          {isInCart(course.course_id) ? <><Check size={13} />담김</> : <><Plus size={13} />담기</>}
+                        </button>
+                      </div>
                     </div>
-                    <p style={{ fontWeight: 600, color: '#1F2937', margin: '0 0 4px', fontSize: 15 }}>{course.course_name}</p>
-                    <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 3px' }}>{course.professor} · {formatRoom(course.schedules)}</p>
-                    <p style={{ fontSize: 12, color: '#9CA3AF', margin: 0 }}>{formatSchedule(course.schedules)}</p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                    <button
-                      onClick={() => !isInCart(course.course_id) && handleAdd(course)}
-                      disabled={isInCart(course.course_id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', cursor: isInCart(course.course_id) ? 'default' : 'pointer', background: isInCart(course.course_id) ? '#E8F0FF' : '#4F7CF3', color: isInCart(course.course_id) ? '#4F7CF3' : 'white', ...s }}>
-                      {isInCart(course.course_id) ? <><Check size={13} />담김</> : <><Plus size={13} />담기</>}
-                    </button>
-                  </div>
+                  {/* 강한 제약 충돌 오류 — 카드 바로 아래 */}
+                  {err && (
+                    <div style={{ background: '#FEF2F2', borderRadius: '0 0 14px 14px', border: '1px solid #FECACA', borderTop: 'none', borderLeft: '4px solid #EF4444', padding: '10px 18px' }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#EF4444', margin: '0 0 3px' }}>{err.msg}</p>
+                      <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{err.sub}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
