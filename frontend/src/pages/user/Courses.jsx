@@ -154,14 +154,6 @@ export default function Courses() {
     const conflict = checkHardConflicts(course);
     if (conflict) {
       setConflictErrors(prev => ({ ...prev, [course.course_id]: conflict }));
-      // 6초 후 자동 해제
-      setTimeout(() => {
-        setConflictErrors(prev => {
-          const next = { ...prev };
-          delete next[course.course_id];
-          return next;
-        });
-      }, 6000);
       return; // 담기 거부
     }
 
@@ -282,9 +274,16 @@ export default function Courses() {
                   </div>
                   {/* 강한 제약 충돌 오류 — 카드 바로 아래 */}
                   {err && (
-                    <div style={{ background: '#FEF2F2', borderRadius: '0 0 14px 14px', border: '1px solid #FECACA', borderTop: 'none', borderLeft: '4px solid #EF4444', padding: '10px 18px' }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#EF4444', margin: '0 0 3px' }}>{err.msg}</p>
-                      <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{err.sub}</p>
+                    <div style={{ background: '#FEF2F2', borderRadius: '0 0 14px 14px', border: '1px solid #FECACA', borderTop: 'none', borderLeft: '4px solid #EF4444', padding: '10px 18px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#EF4444', margin: '0 0 3px' }}>{err.msg}</p>
+                        <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{err.sub}</p>
+                      </div>
+                      <button
+                        onClick={() => setConflictErrors(prev => { const next = { ...prev }; delete next[course.course_id]; return next; })}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                        title="닫기"
+                      >✕</button>
                     </div>
                   )}
                 </div>
