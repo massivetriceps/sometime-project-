@@ -14,11 +14,18 @@ export default function TimeTableG() {
   const [dynamicStep, setDynamicStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [cartCourses, setCartCourses] = useState([]);
+  const [takenCourses, setTakenCourses] = useState([]);
+  const [distances, setDistances] = useState([]);
 
   useEffect(() => {
-    // 장바구니 로드
     api.get('/api/users/me/cart')
       .then(res => { if (res.data.resultType === 'SUCCESS') setCartCourses(res.data.success); })
+      .catch(() => {});
+    api.get('/api/graduation/history')
+      .then(res => { if (res.data.resultType === 'SUCCESS') setTakenCourses(res.data.success); })
+      .catch(() => {});
+    api.get('/api/admin/campus/distances')
+      .then(res => { if (res.data.resultType === 'SUCCESS') setDistances(res.data.success); })
       .catch(() => {});
   }, []);
   const navigate = useNavigate();
@@ -47,6 +54,153 @@ export default function TimeTableG() {
   const [targetCredits, setTargetCredits] = useState(18);
 
   const stepLabels = ['기본 정보 입력', '우선순위 설정', '세부 조건 설정', '결과 및 분석'];
+
+  // ── 제약 충돌 사전 검증 ──────────────────────────────────────
+  const cartWarnings = React.useMemo(() => {
+    const warns = [];
+    if (!cartCourses.length) return warns;
+
+    // 1. 장바구니 강의끼리 시간 충돌
+    for (let i = 0; i < cartCourses.length; i++) {
+      for (let j = i + 1; j < cartCourses.length; j++) {
+        const a = cartCourses[i], b = cartCourses[j];
+        for (const sa of (a.schedules || [])) {
+          for (const sb of (b.schedules || [])) {
+            if (sa.day_of_week === sb.day_of_week &&
+                sa.start_period <= sb.end_period && sb.start_period <= sa.end_period) {
+              warns.push({
+                type: 'CART_INTERNAL_CONFLICT',
+                color: '#EF4444',
+                msg: `⛔ '${a.course_name}'와 '${b.course_name}'가 ${sa.day_of_week}요일 ${Math.max(sa.start_period, sb.start_period)}교시에 시간이 겹쳐요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나, 다른 분반으로 변경하세요.',
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 2. 같은 과목 분반 중복
+    const nameMap = {};
+    cartCourses.forEach(c => {
+      const key = c.course_name.replace(/\s*\(.*?\)/g, '').trim();
+      nameMap[key] = nameMap[key] || [];
+      nameMap[key].push(c.course_name);
+    });
+    Object.entries(nameMap).forEach(([key, names]) => {
+      if (names.length >= 2) {
+        warns.push({
+          type: 'CART_SECTION_DUPLICATE',
+          color: '#EF4444',
+          msg: `⛔ 장바구니에 '${key}' 분반이 ${names.length}개 담겨 있어요. (${names.join(', ')})`,
+          sub: `'${key}' 분반 중 하나만 남기고 나머지는 제거하세요.`,
+        });
+      }
+    });
+
+    // 3. 기수강 과목 장바구니에 존재
+    const takenCodes = new Set(takenCourses.map(t => t.course_code));
+    cartCourses.forEach(c => {
+      if (takenCodes.has(c.course_code)) {
+        warns.push({
+          type: 'CART_TAKEN_COURSE',
+          color: '#EF4444',
+          msg: `⛔ '${c.course_name}'은(는) 이미 수강한 과목이에요.`,
+          sub: `장바구니에서 '${c.course_name}'을(를) 제거하세요.`,
+        });
+      }
+    });
+
+    // 4. 이동시간 10분 초과 (장바구니 연속 교시)
+    const distMap = {};
+    distances.forEach(d => { distMap[`${d.from_building_id}_${d.to_building_id}`] = d; });
+    for (let i = 0; i < cartCourses.length; i++) {
+      for (let j = i + 1; j < cartCourses.length; j++) {
+        const a = cartCourses[i], b = cartCourses[j];
+        for (const sa of (a.schedules || [])) {
+          for (const sb of (b.schedules || [])) {
+            if (sa.day_of_week !== sb.day_of_week) continue;
+            const isConsec = sa.end_period + 1 === sb.start_period || sb.end_period + 1 === sa.start_period;
+            if (!isConsec) continue;
+            const bidA = sa.building_id, bidB = sb.building_id;
+            if (!bidA || !bidB || bidA === bidB) continue;
+            const key = sa.end_period + 1 === sb.start_period ? `${bidA}_${bidB}` : `${bidB}_${bidA}`;
+            const dist = distMap[key];
+            if (dist && dist.time_minutes > 10) {
+              warns.push({
+                type: 'CART_TRAVEL_TIME_CONFLICT',
+                color: '#EF4444',
+                msg: `⛔ '${a.course_name}'→'${b.course_name}' 이동시간이 ${dist.time_minutes}분이라 연속 수업이 불가해요.`,
+                sub: '두 강의 중 하나를 장바구니에서 제거하거나, 같은 건물 분반으로 변경하세요.',
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 5. 오전 선호인데 오후 전용 강의 고정
+    const avoidMorning = answers.morning === '절대 불가 (10시 이후 시작)';
+    if (avoidMorning) {
+      cartCourses.forEach(c => {
+        const isAfternoonOnly = c.schedules?.length > 0 && c.schedules.every(s => s.start_period >= 5);
+        // 이미 hasFirstPeriod가 1교시를 커버하므로, 오후 전용만 추가 경고
+        if (isAfternoonOnly) {
+          warns.push({
+            type: 'WARN_MORNING_CART_CONFLICT',
+            color: '#F59E0B',
+            msg: `⚠️ 오전 수업 회피를 선택했지만 '${c.course_name}'은(는) 오후에만 수업이 있어요.`,
+            sub: '시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.',
+          });
+        }
+      });
+    }
+
+    // 6. 오르막 회피인데 장바구니에 오르막 연속 강의
+    const avoidUphill = answers.hills === '무조건 평지 건물 위주로';
+    if (avoidUphill && distances.length > 0) {
+      for (let i = 0; i < cartCourses.length; i++) {
+        for (let j = i + 1; j < cartCourses.length; j++) {
+          const a = cartCourses[i], b = cartCourses[j];
+          for (const sa of (a.schedules || [])) {
+            for (const sb of (b.schedules || [])) {
+              if (sa.day_of_week !== sb.day_of_week) continue;
+              const isConsec = sa.end_period + 1 === sb.start_period || sb.end_period + 1 === sa.start_period;
+              if (!isConsec) continue;
+              const bidA = sa.building_id, bidB = sb.building_id;
+              if (!bidA || !bidB || bidA === bidB) continue;
+              const key = sa.end_period + 1 === sb.start_period ? `${bidA}_${bidB}` : `${bidB}_${bidA}`;
+              const dist = distMap[key];
+              if (dist?.is_uphill) {
+                warns.push({
+                  type: 'WARN_UPHILL_CART_CONFLICT',
+                  color: '#F59E0B',
+                  msg: `⚠️ 오르막 회피를 선택했지만 '${a.course_name}'→'${b.course_name}' 이동 경로가 오르막이에요.`,
+                  sub: '시간표는 생성되지만 오르막 회피 최적화가 제한될 수 있어요.',
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 7. 온라인 선호인데 장바구니 전부 오프라인
+    const preferOnline = answers.online === '최소 1개는 무조건 포함' || answers.online === '2개 이상';
+    if (preferOnline) {
+      const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
+      if (allOffline) {
+        warns.push({
+          type: 'WARN_ONLINE_CART_CONFLICT',
+          color: '#F59E0B',
+          msg: `⚠️ 온라인 강의를 선호하지만 장바구니의 모든 강의가 오프라인이에요.`,
+          sub: '장바구니에 온라인 강의를 추가하거나, 온라인 선호 설정을 해제하세요.',
+        });
+      }
+    }
+
+    return warns;
+  }, [cartCourses, takenCourses, distances, answers]);
 
   // --- [2. 핸들러 함수] ---
   const handleUserChange = (e) => setUserInfo({ ...userInfo, [e.target.name]: e.target.value });
@@ -151,7 +305,8 @@ export default function TimeTableG() {
           </div>
         );
       }
-      case 'hills':
+      case 'hills': {
+        const uphillWarn = cartWarnings.find(w => w.type === 'WARN_UPHILL_CART_CONFLICT');
         return (
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 오르막 회피</h3>
@@ -162,9 +317,16 @@ export default function TimeTableG() {
                 {opt}
               </label>
             ))}
+            {uphillWarn && (
+              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
+                {uphillWarn.msg}<br/><span style={{ color: '#64748B' }}>{uphillWarn.sub}</span>
+              </p>
+            )}
           </div>
         );
-      case 'online':
+      }
+      case 'online': {
+        const onlineWarn = cartWarnings.find(w => w.type === 'WARN_ONLINE_CART_CONFLICT');
         return (
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 싸강(온라인) 선호도</h3>
@@ -175,8 +337,14 @@ export default function TimeTableG() {
                 {opt}
               </label>
             ))}
+            {onlineWarn && (
+              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
+                {onlineWarn.msg}<br/><span style={{ color: '#64748B' }}>{onlineWarn.sub}</span>
+              </p>
+            )}
           </div>
         );
+      }
       case 'morning': {
         const hasFirstPeriod = cartCourses.some(c => c.schedules?.some(s => s.start_period === 1));
         return (
@@ -386,6 +554,22 @@ export default function TimeTableG() {
                 <span style={{ fontWeight: '600', color: '#155DFC', fontSize: '14px' }}>🎯 목표 학점</span>
                 <span style={{ fontWeight: '700', color: '#1E40AF', fontSize: '16px' }}>{targetCredits}학점</span>
               </div>
+
+              {/* 제약 충돌 경고 */}
+              {cartWarnings.length > 0 && (
+                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {cartWarnings.map((w, i) => (
+                    <div key={i} style={{
+                      padding: '12px 14px', borderRadius: '10px',
+                      background: w.color === '#EF4444' ? '#FEF2F2' : '#FFFBEB',
+                      border: `1px solid ${w.color === '#EF4444' ? '#FECACA' : '#FDE68A'}`,
+                    }}>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: w.color, margin: '0 0 4px' }}>{w.msg}</p>
+                      <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>{w.sub}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 장바구니 과목 */}
               <div>

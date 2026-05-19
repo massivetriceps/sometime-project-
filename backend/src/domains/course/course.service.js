@@ -101,6 +101,7 @@ const getMyCart = async (userId) => {
         end_period:   s.end_period,
         room_name:    s.room_name,
         building:     s.buildings?.building_name ?? '온라인',
+        building_id:  s.buildings?.building_id ?? null,
       })),
     };
   });

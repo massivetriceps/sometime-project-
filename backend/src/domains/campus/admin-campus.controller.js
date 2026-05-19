@@ -1,6 +1,15 @@
 const { StatusCodes } = require('http-status-codes');
 const adminCampusService = require('./admin-campus.service');
 
+const handleGetDistances = async (req, res, next) => {
+  try {
+    const result = await adminCampusService.getDistances();
+    res.status(200).success(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const handleUpdateDistances = async (req, res, next) => {
   try {
     // 바디가 비어있는지 체크
@@ -20,4 +29,4 @@ const handleUpdateDistances = async (req, res, next) => {
   }
 };
 
-module.exports = { handleUpdateDistances };
+module.exports = { handleGetDistances, handleUpdateDistances };

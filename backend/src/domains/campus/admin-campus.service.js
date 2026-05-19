@@ -53,4 +53,21 @@ const updateDistances = async (distances) => {
   };
 };
 
-module.exports = { updateDistances };
+const getDistances = async () => {
+  const rows = await prisma.distances.findMany({
+    include: {
+      buildings_distances_from_building_idTobuildings: { select: { building_name: true } },
+      buildings_distances_to_building_idTobuildings:   { select: { building_name: true } },
+    },
+  });
+  return rows.map(r => ({
+    from_building_id:   r.from_building_id,
+    to_building_id:     r.to_building_id,
+    from_building_name: r.buildings_distances_from_building_idTobuildings?.building_name ?? '',
+    to_building_name:   r.buildings_distances_to_building_idTobuildings?.building_name   ?? '',
+    time_minutes:       r.time_minutes,
+    is_uphill:          r.is_uphill,
+  }));
+};
+
+module.exports = { updateDistances, getDistances };

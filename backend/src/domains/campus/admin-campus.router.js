@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminMiddleware = require('../../middlewares/adminMiddleware');
-const { handleUpdateDistances } = require('./admin-campus.controller');
+const { handleGetDistances, handleUpdateDistances } = require('./admin-campus.controller');
 
 /**
  * @swagger
@@ -45,6 +45,7 @@ const { handleUpdateDistances } = require('./admin-campus.controller');
  *       200:
  *         description: 갱신 성공
  */
+router.get('/distances', handleGetDistances);
 router.put('/distance', adminMiddleware, handleUpdateDistances);
 
 module.exports = router;
