@@ -561,6 +561,21 @@ export default function TimeTableG() {
               <p style={{ fontSize: '12px', color: '#94A3B8', margin: '6px 0 0' }}>
                 장바구니 과목을 포함해 목표 학점에 맞춰 시간표가 구성됩니다
               </p>
+              {/* 학점 초과 실시간 경고 */}
+              {(() => {
+                const totalCartCredits = cartCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
+                if (totalCartCredits === 0 || totalCartCredits <= targetCredits) return null;
+                return (
+                  <div style={{ marginTop: '10px', background: '#FEF2F2', borderRadius: '10px', border: '1px solid #FECACA', borderLeft: '4px solid #EF4444', padding: '10px 14px' }}>
+                    <p style={{ fontSize: '13px', fontWeight: '600', color: '#EF4444', margin: '0 0 3px' }}>
+                      ⛔ 학점 초과 — 장바구니 총 학점({totalCartCredits}학점)이 목표 학점({targetCredits}학점)을 초과해요.
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+                      일부 과목을 장바구니에서 제거하거나 목표 학점을 {totalCartCredits}학점 이상으로 올려주세요.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
