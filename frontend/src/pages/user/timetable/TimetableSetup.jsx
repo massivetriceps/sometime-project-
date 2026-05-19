@@ -230,7 +230,7 @@ export default function TimeTableG() {
                   type: 'WARN_MORNING_TRAVEL_CONFLICT',
                   color: '#F59E0B',
                   msg: `⚠️ 오전 선호 충돌 — '${a.course_name}'→'${b.course_name}' 이동에 ${dist.time_minutes}분이 소요돼 오전 시간대 배치가 제한돼요.`,
-                  sub: '시간표는 생성되지만 오전 선호와 이동시간 제약이 충돌해 최적화가 제한될 수 있어요.',
+                  sub: '시간표는 생성되지만 오전 선호 최적화가 제한될 수 있어요.',
                 });
               }
             }
@@ -256,7 +256,7 @@ export default function TimeTableG() {
               type: 'CART_FREE_DAY_CONFLICT',
               color: '#F59E0B',
               msg: `⚠️ 공강 요일 충돌 — '${c.course_name}'이 공강 설정한 ${dayShort}요일에 수업이 있어요.`,
-              sub: `시간표는 생성되지만 ${dayShort}요일 공강이 보장되지 않을 수 있어요.`,
+              sub: '시간표는 생성되지만 공강 요일 최적화가 제한될 수 있어요.',
             });
           }
         }
@@ -270,7 +270,7 @@ export default function TimeTableG() {
         type: 'WARN_FREE_DAY_CREDIT_INFEASIBLE',
         color: '#F59E0B',
         msg: `⚠️ 공강-학점 충돌 — 공강 ${freeDayCount}개 요일 설정 시 목표 학점(${targetCredits}학점)을 채울 강의가 부족해질 수 있어요.`,
-        sub: '시간표는 생성되지만 공강과 학점 목표가 충돌해 최적화가 제한될 수 있어요.',
+        sub: '시간표는 생성되지만 공강-학점 최적화가 제한될 수 있어요.',
       });
     }
 
@@ -354,7 +354,8 @@ export default function TimeTableG() {
               가장 원하는 공강 요일을 선택해주세요. (복수선택 가능)<br/>
               {isWarning && (
                 <span style={{ color: '#F59E0B', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
-                  ⚠️ 공강 3개↑ 충돌 — 만족하는 시간표가 없거나 연산 시간이 오래 걸릴 수 있어요.
+                  ⚠️ 공강 3개↑ 충돌 — 만족하는 시간표가 없거나 연산 시간이 오래 걸릴 수 있어요.<br/>
+                  <span style={{ color: '#64748B', fontWeight: 'normal' }}>시간표는 생성되지만 공강-학점 최적화가 제한될 수 있어요.</span>
                 </span>
               )}
             </p>
@@ -371,7 +372,8 @@ export default function TimeTableG() {
                   </label>
                   {hasConflict && (
                     <p style={{ color: '#F59E0B', fontSize: '12px', margin: '-4px 0 8px 6px' }}>
-                      ⚠️ 공강 요일 충돌 — {DAY_STR[opt]}요일 장바구니 강의가 있어 공강이 보장되지 않을 수 있어요.
+                      ⚠️ 공강 요일 충돌 — {DAY_STR[opt]}요일 장바구니 강의가 있어 공강이 보장되지 않을 수 있어요.<br/>
+                      <span style={{ color: '#64748B' }}>시간표는 생성되지만 공강 요일 최적화가 제한될 수 있어요.</span>
                     </p>
                   )}
                 </div>
@@ -435,7 +437,8 @@ export default function TimeTableG() {
             ))}
             {answers.morning === '절대 불가 (10시 이후 시작)' && hasFirstPeriod && (
               <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                ⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.
+                ⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.<br/>
+                <span style={{ color: '#64748B' }}>시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.</span>
               </p>
             )}
             {answers.morning === '아침형 인간 (1교시 환영)' && morningTravelWarn && (
