@@ -112,7 +112,19 @@ export default function Cart() {
       }
     });
 
-    // 4. 연속 교시 이동시간 10분 초과
+    // 4. 장바구니 총 학점이 최대 이수 가능 학점(21학점) 초과
+    const totalCredits = items.reduce((sum, c) => sum + (c.credits || 0), 0);
+    if (totalCredits > 21) {
+      warns.push({
+        type: 'CREDIT_INFEASIBLE',
+        hard: true,
+        msg: `⛔ 장바구니 과목의 총 학점이 ${totalCredits}학점으로, 최대 이수 가능 학점(21학점)을 초과해요.`,
+        sub: '시간표 생성이 불가합니다. 장바구니에서 일부 과목을 제거해 21학점 이하로 맞춰주세요.',
+        ids: [],
+      });
+    }
+
+    // 5. 연속 교시 이동시간 10분 초과
     const distMap = {};
     distances.forEach(d => { distMap[`${d.from_building_id}_${d.to_building_id}`] = d; });
     for (let i = 0; i < items.length; i++) {

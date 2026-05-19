@@ -139,7 +139,18 @@ export default function TimeTableG() {
       }
     }
 
-    // 5. 오전 선호인데 오후 전용 강의 고정
+    // 5. 장바구니 총 학점이 목표 학점 초과
+    const totalCartCredits = cartCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
+    if (totalCartCredits > targetCredits) {
+      warns.push({
+        type: 'CREDIT_INFEASIBLE',
+        color: '#EF4444',
+        msg: `⛔ 장바구니 과목의 총 학점(${totalCartCredits}학점)이 목표 학점(${targetCredits}학점)을 초과해요.`,
+        sub: `장바구니에서 일부 과목을 제거하거나, 목표 학점을 ${totalCartCredits}학점 이상으로 올려주세요.`,
+      });
+    }
+
+    // 6. 오전 선호인데 오후 전용 강의 고정
     const avoidMorning = answers.morning === '절대 불가 (10시 이후 시작)';
     if (avoidMorning) {
       cartCourses.forEach(c => {
@@ -200,7 +211,7 @@ export default function TimeTableG() {
     }
 
     return warns;
-  }, [cartCourses, takenCourses, distances, answers]);
+  }, [cartCourses, takenCourses, distances, answers, targetCredits]);
 
   // --- [2. 핸들러 함수] ---
   const handleUserChange = (e) => setUserInfo({ ...userInfo, [e.target.name]: e.target.value });
