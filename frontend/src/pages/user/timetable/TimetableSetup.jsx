@@ -353,10 +353,10 @@ export default function TimeTableG() {
             <p style={styles.desc}>
               가장 원하는 공강 요일을 선택해주세요. (복수선택 가능)<br/>
               {isWarning && (
-                <span style={{ color: '#F59E0B', fontSize: '13px', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
-                  ⚠️ 공강 3개↑ 충돌 — 만족하는 시간표가 없거나 연산 시간이 오래 걸릴 수 있어요.<br/>
-                  <span style={{ color: '#64748B', fontWeight: 'normal' }}>시간표는 생성되지만 공강-학점 최적화가 제한될 수 있어요.</span>
-                </span>
+                <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>⚠️ 공강 3개↑ 충돌 — 만족하는 시간표가 없거나 연산 시간이 오래 걸릴 수 있어요.</p>
+                  <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>시간표는 생성되지만 공강-학점 최적화가 제한될 수 있어요.</p>
+                </div>
               )}
             </p>
             {['월요일', '화요일', '수요일', '목요일', '금요일', '난 5일 내내 학교 다닐래'].map(opt => {
@@ -371,10 +371,10 @@ export default function TimeTableG() {
                     {opt}
                   </label>
                   {hasConflict && (
-                    <p style={{ color: '#F59E0B', fontSize: '12px', margin: '-4px 0 8px 6px' }}>
-                      ⚠️ 공강 요일 충돌 — {DAY_STR[opt]}요일 장바구니 강의가 있어 공강이 보장되지 않을 수 있어요.<br/>
-                      <span style={{ color: '#64748B' }}>시간표는 생성되지만 공강 요일 최적화가 제한될 수 있어요.</span>
-                    </p>
+                    <div style={{ margin: '-4px 0 8px 0', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>⚠️ 공강 요일 충돌 — {DAY_STR[opt]}요일 장바구니 강의가 있어 공강이 보장되지 않을 수 있어요.</p>
+                      <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>시간표는 생성되지만 공강 요일 최적화가 제한될 수 있어요.</p>
+                    </div>
                   )}
                 </div>
               );
@@ -395,9 +395,10 @@ export default function TimeTableG() {
               </label>
             ))}
             {uphillWarn && (
-              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                {uphillWarn.msg}<br/><span style={{ color: '#64748B' }}>{uphillWarn.sub}</span>
-              </p>
+              <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>{uphillWarn.msg}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>{uphillWarn.sub}</p>
+              </div>
             )}
           </div>
         );
@@ -415,9 +416,10 @@ export default function TimeTableG() {
               </label>
             ))}
             {onlineWarn && (
-              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                {onlineWarn.msg}<br/><span style={{ color: '#64748B' }}>{onlineWarn.sub}</span>
-              </p>
+              <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>{onlineWarn.msg}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>{onlineWarn.sub}</p>
+              </div>
             )}
           </div>
         );
@@ -436,15 +438,16 @@ export default function TimeTableG() {
               </label>
             ))}
             {answers.morning === '절대 불가 (10시 이후 시작)' && hasFirstPeriod && (
-              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                ⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.<br/>
-                <span style={{ color: '#64748B' }}>시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.</span>
-              </p>
+              <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>⚠️ 오전 회피 충돌 — 장바구니에 1교시 수업이 있어 아침 수업 회피가 보장되지 않을 수 있어요.</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.</p>
+              </div>
             )}
             {answers.morning === '아침형 인간 (1교시 환영)' && morningTravelWarn && (
-              <p style={{ color: '#F59E0B', fontSize: '12px', marginTop: '8px' }}>
-                {morningTravelWarn.msg}<br/><span style={{ color: '#64748B' }}>{morningTravelWarn.sub}</span>
-              </p>
+              <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>{morningTravelWarn.msg}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>{morningTravelWarn.sub}</p>
+              </div>
             )}
           </div>
         );
