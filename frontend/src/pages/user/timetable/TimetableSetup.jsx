@@ -20,34 +20,6 @@ export default function TimeTableG() {
     api.get('/api/users/me/cart')
       .then(res => { if (res.data.resultType === 'SUCCESS') setCartCourses(res.data.success); })
       .catch(() => {});
-
-    // 이전에 저장된 선호 설정 로드 → 폼 초기값 복원
-    api.get('/api/users/me/preferences')
-      .then(res => {
-        if (res.data.resultType !== 'SUCCESS' || !res.data.success) return;
-        const pref = res.data.success;
-
-        // free_days: "FRI" / "MON,FRI" → KR 요일 배열
-        const restoredFreeDays = pref.free_days
-          ? pref.free_days.split(',').map(d => DAY_EN_TO_KR[d.trim()]).filter(Boolean)
-          : [];
-
-        setAnswers(prev => ({
-          ...prev,
-          freeDay: restoredFreeDays.length > 0 ? restoredFreeDays : prev.freeDay,
-          hills: pref.avoid_uphill != null
-            ? (pref.avoid_uphill ? '무조건 평지 건물 위주로' : '운동삼아 오르막도 감수함')
-            : prev.hills,
-          online: pref.prefer_online != null
-            ? (pref.prefer_online ? '최소 1개는 무조건 포함' : '난 강의실이 좋은데')
-            : prev.online,
-        }));
-
-        // credit_intensity → 목표 학점 역매핑
-        if (pref.credit_intensity === 'RELAXED')   setTargetCredits(14);
-        if (pref.credit_intensity === 'INTENSIVE')  setTargetCredits(20);
-      })
-      .catch(() => {});
   }, []);
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -473,7 +445,8 @@ export default function TimeTableG() {
           .reduce((mask, day) => mask | (DAY_MASK[day] ?? 0), 0);
 
         const avoid_uphill = answers.hills === '무조건 평지 건물 위주로';
-        const prefer_online = answers.online !== '' && answers.online !== '난 강의실이 좋은데';
+        const min_online_count = answers.online === '2개 이상' ? 2 : answers.online === '최소 1개는 무조건 포함' ? 1 : 0;
+        const prefer_online = min_online_count > 0;
         const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
 
         const selectedDays = answers.freeDay
@@ -498,6 +471,7 @@ export default function TimeTableG() {
           avoid_uphill,
           allow_first,
           prefer_online,
+          min_online_count,
           target_credits: targetCredits,
         });
 

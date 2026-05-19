@@ -22,31 +22,32 @@ FALLBACK_COMMENTS = {
     "C": "이 시간표는 세 번째 대안입니다. 다양한 시간표를 비교해보고 자신에게 맞는 것을 골라보세요!",
 }
 
-
 @router.post("/comment", response_model=LLMResponse)
 def generate_comment(request: LLMRequest):
     """
     AI 코멘트 생성 API
 
     시간표 결과 정보를 받아서 맞춤형 코멘트를 생성.
-
-    [현재 상태: fallback 코멘트]
-    - 11주차: LLM API 연동
-    - 12주차: System Prompt 고도화 + 에러 핸들링
+    - GPT-4o-mini 호출 성공 → SUCCESS
+    - API 키 없거나 실패 → FALLBACK
     """
+    import os
 
-    # ============================================
-    # TODO: 여기에 LLM API 호출 로직 구현 (11주차~)
-    # from app.services.llm_service import generate_ai_comment
-    # result = generate_ai_comment(request)
-    # return result
-    # ============================================
+    # API 키가 없으면 fallback
+    if not os.getenv("OPENAI_API_KEY"):
+        comment = FALLBACK_COMMENTS.get(
+            request.plan_type,
+            "시간표가 생성되었습니다. 자세한 내용을 확인해보세요!"
+        )
+        return LLMResponse(
+            result_code="FALLBACK",
+            comment=comment,
+            model_used=None,
+        )
 
-    # Fallback 코멘트 반환
-    comment = FALLBACK_COMMENTS.get(
-        request.plan_type,
-        "시간표가 생성되었습니다. 자세한 내용을 확인해보세요!"
-    )
+    # GPT 호출
+    from app.services.llm_service import generate_ai_comment
+    return generate_ai_comment(request)
 
     return LLMResponse(
         result_code="FALLBACK",

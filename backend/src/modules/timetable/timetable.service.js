@@ -62,6 +62,8 @@ const buildMockPlan = (seed, courses, cartIds, constraints) => {
   const pool = shuffle(
     courses.filter(c => {
       if (cartCourseIds.includes(c.course_id)) return false;
+      // 강의실 선호 → 온라인 강의 제외
+      if (!prefer_online && c.schedules.every(s => !s.building_id)) return false;
       // 오전 1교시 제한
       if (!allow_first && c.schedules.some(s => s.start_period === 1)) return false;
       // 공강 요일 제한
@@ -109,7 +111,7 @@ const callCSPEngine = async (payload) => {
   try {
     const { userId, constraints } = payload;
     const {
-      dept, grade, free_day_mask, avoid_uphill, prefer_online,
+      dept, grade, free_day_mask, avoid_uphill, prefer_online, min_online_count = 0,
       cartCourseIds, targetCredits, takenCourseCodes = [],
     } = constraints;
 
@@ -123,7 +125,7 @@ const callCSPEngine = async (payload) => {
       user_id:             userId,
       major_id:            dept,
       grade,
-      apply_year:          String(grade),
+      apply_year:          applyYear,
       cart_course_ids:     cartCourseIds,
       taken_course_codes:  takenCourseCodes,
       priority_order:      ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
@@ -132,6 +134,9 @@ const callCSPEngine = async (payload) => {
       credit_intensity,
       avoid_uphill:        avoid_uphill ?? false,
       prefer_online:       prefer_online ?? false,
+      min_online_count:    min_online_count ?? 0,
+      semester:            semester ?? 1,
+      major_name:          majorName,
     };
 
     const res = await axios.post(CSP_URL, aiPayload, { timeout: 30000 });
@@ -205,16 +210,21 @@ const createTimetable = async (userId, body) => {
   const {
     dept, grade, dormitory,
     free_day_mask, avoid_uphill,
-    allow_first, prefer_online,
+    allow_first, prefer_online, min_online_count,
     target_credits, semester,
   } = body;
 
   // 0) 유저 major_id 조회
   const userInfo = await prisma.users.findUnique({
     where: { user_id: userId },
-    select: { major_id: true },
+    select: { major_id: true, student_id: true },
   });
   const majorId = userInfo?.major_id;
+  const applyYear = userInfo?.student_id ? String(userInfo.student_id).substring(0, 4) : "";
+  const majorInfo = majorId
+    ? await prisma.majors.findUnique({ where: { major_id: majorId }, select: { major_name: true } })
+    : null;
+  const majorName = majorInfo?.major_name ?? "";
 
   // 1) 장바구니 조회
   const carts = await prisma.carts.findMany({ where: { user_id: userId } });
@@ -241,6 +251,7 @@ const createTimetable = async (userId, body) => {
       avoid_uphill,
       allow_first,
       prefer_online,
+      min_online_count: min_online_count ?? 0,
       cartCourseIds,
       takenCourseCodes,
       targetCredits: target_credits ?? 18,
