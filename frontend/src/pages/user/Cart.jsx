@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, ArrowRight, AlertCircle, BookOpen, Clock } from 'lucide-react';
 import useTimetableStore from '../../store/timetableStore';
@@ -22,8 +22,10 @@ const formatSchedule = (schedules) => {
 };
 
 export default function Cart() {
-  const [items, setItems]     = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [takenCourses, setTaken]  = useState([]);
+  const [distances, setDistances] = useState([]);
   const removeFromCart = useTimetableStore((state) => state.removeFromCart);
   const setCartFromDB  = useTimetableStore((state) => state.setCartFromDB);
 
@@ -34,7 +36,7 @@ export default function Cart() {
         if (res.data.resultType === 'SUCCESS') {
           const data = res.data.success;
           setItems(data);
-          setCartFromDB(data); // store 동기화 (시간표 생성 시 활용)
+          setCartFromDB(data);
         }
       } catch (err) {
         console.error('장바구니 조회 실패', err);
@@ -43,7 +45,104 @@ export default function Cart() {
       }
     };
     fetchCart();
+    api.get('/api/graduation/history')
+      .then(r => { if (r.data.resultType === 'SUCCESS') setTaken(r.data.success); })
+      .catch(() => {});
+    api.get('/api/admin/campus/distances')
+      .then(r => { if (r.data.resultType === 'SUCCESS') setDistances(r.data.success); })
+      .catch(() => {});
   }, []);
+
+  // ── 장바구니 충돌 사전 감지 ─────────────────────────────────
+  const cartConflicts = useMemo(() => {
+    const warns = [];
+    if (items.length < 1) return warns;
+
+    // 1. 장바구니 강의끼리 시간 충돌
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i], b = items[j];
+        for (const sa of (a.schedules || [])) {
+          for (const sb of (b.schedules || [])) {
+            if (sa.day_of_week === sb.day_of_week &&
+                sa.start_period <= sb.end_period && sb.start_period <= sa.end_period) {
+              warns.push({
+                type: 'CART_INTERNAL_CONFLICT',
+                hard: true,
+                msg: `⛔ '${a.course_name}'와 '${b.course_name}'가 ${sa.day_of_week}요일 ${Math.max(sa.start_period, sb.start_period)}교시에 겹쳐요.`,
+                sub: '두 강의 중 하나를 제거하거나, 다른 분반으로 변경하세요.',
+                ids: [a.course_id, b.course_id],
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 2. 같은 과목 분반 중복
+    const nameMap = {};
+    items.forEach(c => {
+      const key = c.course_name.replace(/\s*\(.*?\)/g, '').trim();
+      nameMap[key] = nameMap[key] || [];
+      nameMap[key].push({ id: c.course_id, name: c.course_name });
+    });
+    Object.entries(nameMap).forEach(([key, list]) => {
+      if (list.length >= 2) {
+        warns.push({
+          type: 'CART_SECTION_DUPLICATE',
+          hard: true,
+          msg: `⛔ '${key}' 분반이 ${list.length}개 담겨 있어요. (${list.map(l => l.name).join(', ')})`,
+          sub: `분반 중 하나만 남기고 나머지는 제거하세요.`,
+          ids: list.map(l => l.id),
+        });
+      }
+    });
+
+    // 3. 기수강 과목
+    const takenCodes = new Set(takenCourses.map(t => t.course_code));
+    items.forEach(c => {
+      if (takenCodes.has(c.course_code)) {
+        warns.push({
+          type: 'CART_TAKEN_COURSE',
+          hard: true,
+          msg: `⛔ '${c.course_name}'은(는) 이미 수강한 과목이에요.`,
+          sub: '장바구니에서 제거하세요.',
+          ids: [c.course_id],
+        });
+      }
+    });
+
+    // 4. 연속 교시 이동시간 10분 초과
+    const distMap = {};
+    distances.forEach(d => { distMap[`${d.from_building_id}_${d.to_building_id}`] = d; });
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i], b = items[j];
+        for (const sa of (a.schedules || [])) {
+          for (const sb of (b.schedules || [])) {
+            if (sa.day_of_week !== sb.day_of_week) continue;
+            const isConsec = sa.end_period + 1 === sb.start_period || sb.end_period + 1 === sa.start_period;
+            if (!isConsec) continue;
+            const bidA = sa.building_id, bidB = sb.building_id;
+            if (!bidA || !bidB || bidA === bidB) continue;
+            const key = sa.end_period + 1 === sb.start_period ? `${bidA}_${bidB}` : `${bidB}_${bidA}`;
+            const dist = distMap[key];
+            if (dist && dist.time_minutes > 10) {
+              warns.push({
+                type: 'CART_TRAVEL_TIME_CONFLICT',
+                hard: true,
+                msg: `⛔ '${a.course_name}'→'${b.course_name}' 이동시간이 ${dist.time_minutes}분으로 연속 수업이 불가해요.`,
+                sub: '두 강의 중 하나를 제거하거나, 같은 건물 분반으로 변경하세요.',
+                ids: [a.course_id, b.course_id],
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return warns;
+  }, [items, takenCourses, distances]);
 
   const handleRemove = async (courseId) => {
     try {
@@ -88,6 +187,20 @@ export default function Cart() {
                 장바구니에 담긴 <strong>{items.length}개</strong> 강의가 시간표 생성 시 우선 배치됩니다.
               </p>
             </div>
+
+            {/* 충돌 경고 배너 */}
+            {cartConflicts.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                {cartConflicts.map((w, i) => (
+                  <div key={i} style={{ background: '#FEF2F2', borderRadius: 12, border: '1px solid #FECACA', padding: '12px 16px' }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#EF4444', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {w.msg}
+                    </p>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{w.sub}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* 강의 카드 목록 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
