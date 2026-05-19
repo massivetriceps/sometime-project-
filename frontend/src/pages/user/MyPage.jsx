@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import { Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
+import studentLogo from '../../assets/student-logo.png';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
 
@@ -56,7 +57,7 @@ const updateUser = useAuthStore((state) => state.updateUser);
         <div className="flex items-center gap-4 mb-8 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl overflow-hidden">
             {/* 실제 이미지가 있다면 img 태그 사용, 아니면 이름 첫 글자 대체 가능 */}
-            <img src="/src/assets/student-logo.png" alt="프로필" className="w-full h-full object-cover" />
+            <img src={studentLogo} alt="프로필" className="w-full h-full object-cover" />
           </div>
           <div>
             <h3 className="font-bold text-lg text-slate-800 mb-0.5">{form.name}</h3>
