@@ -88,16 +88,7 @@ export default function Courses() {
       }
     }
 
-    // 4. 학점 초과 (21학점 한도)
-    const totalCredits = cartItems.reduce((sum, c) => sum + (c.credits || 0), 0) + (newCourse.credits || 0);
-    if (totalCredits > 21) {
-      return {
-        msg: `⛔ 학점 초과 — 담으면 총 학점(${totalCredits}학점)이 최대 이수 학점(21학점)을 초과해요.`,
-        sub: '장바구니에서 일부 과목을 제거한 뒤 다시 담아주세요.',
-      };
-    }
-
-    // 5. 이동시간 10분 초과 (연속 교시)
+    // 4. 이동시간 10분 초과 (연속 교시)
     const distMap = {};
     distances.forEach(d => { distMap[`${d.from_building_id}_${d.to_building_id}`] = d; });
     for (const cartCourse of cartItems) {
