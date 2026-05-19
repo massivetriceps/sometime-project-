@@ -152,12 +152,20 @@ def validate_request(candidates: list, request: CSPRequest, distance_map: dict) 
     cart_courses = _get_cart_courses(candidates, request.cart_course_ids)
 
     if cart_courses:
+        # Hard Constraint 충돌
         conflicts.extend(_check_cart_vs_free_day(cart_courses, request))
         conflicts.extend(_check_cart_internal_conflict(cart_courses))
         conflicts.extend(_check_cart_travel_time(cart_courses, distance_map))
+        conflicts.extend(_check_cart_section_duplicate(cart_courses))
+        conflicts.extend(_check_cart_taken_courses(cart_courses, request))
+
+        # Soft Constraint 충돌 (경고)
+        conflicts.extend(_check_morning_pref_vs_cart(cart_courses, request))
+        conflicts.extend(_check_uphill_vs_cart(cart_courses, request, distance_map))
+        conflicts.extend(_check_online_pref_vs_cart(cart_courses, request))
 
     # 학점 가능성 검증 (장바구니 유무 무관하게 항상 실행)
-    conflicts.extend(_check_credit_feasibility(candidates, request))  # ← 추가
+    conflicts.extend(_check_credit_feasibility(candidates, request))
 
     return conflicts
 
@@ -292,6 +300,135 @@ def _find_travel_time_issue(course_a: dict, course_b: dict, distance_map: dict) 
     return None
 
 
+def _check_cart_section_duplicate(cart_courses: list) -> list[ConflictInfo]:
+    """장바구니에 같은 과목의 두 분반이 동시에 담겨있는지 검증"""
+    conflicts = []
+    name_groups: dict[str, list[str]] = {}
+
+    for course in cart_courses:
+        clean_name = re.sub(r"\s*\(.*?\)", "", course["course_name"]).strip()
+        name_groups.setdefault(clean_name, []).append(course["course_name"].strip())
+
+    for clean_name, course_names in name_groups.items():
+        if len(course_names) >= 2:
+            names_str = ", ".join(course_names)
+            conflicts.append(ConflictInfo(
+                conflict_type="CART_SECTION_DUPLICATE",
+                message=f"장바구니에 같은 과목 '{clean_name}'의 분반이 {len(course_names)}개 담겨 있어요. ({names_str})",
+                suggestion=f"'{clean_name}' 분반 중 하나만 남기고 나머지는 장바구니에서 제거하세요."
+            ))
+
+    return conflicts
+
+
+def _check_cart_taken_courses(cart_courses: list, request: CSPRequest) -> list[ConflictInfo]:
+    """장바구니에 이미 수강한 과목이 담겨있는지 검증"""
+    conflicts = []
+    taken_codes = set(request.taken_course_codes)
+
+    for course in cart_courses:
+        if course["course_code"] in taken_codes:
+            course_name = course["course_name"].strip()
+            conflicts.append(ConflictInfo(
+                conflict_type="CART_TAKEN_COURSE",
+                message=f"장바구니의 '{course_name}'은(는) 이미 수강한 과목이에요.",
+                suggestion=f"'{course_name}'을(를) 장바구니에서 제거하세요."
+            ))
+
+    return conflicts
+
+
+def _check_morning_pref_vs_cart(cart_courses: list, request: CSPRequest) -> list[ConflictInfo]:
+    """오전 수업 선호인데 장바구니에 오후 강의만 있는 경우 경고"""
+    conflicts = []
+
+    if request.preferred_time != "MORNING":
+        return conflicts
+
+    afternoon_only_courses = []
+    for course in cart_courses:
+        # 모든 스케줄이 오후(5교시 이상)인 경우
+        if course["schedules"] and all(s["start_period"] >= 5 for s in course["schedules"]):
+            afternoon_only_courses.append(course["course_name"].strip())
+
+    if afternoon_only_courses:
+        names_str = ", ".join(afternoon_only_courses)
+        conflicts.append(ConflictInfo(
+            conflict_type="WARN_MORNING_CART_CONFLICT",
+            message=f"오전 수업을 선호하지만 장바구니의 '{names_str}'은(는) 오후에만 수업이 있어요.",
+            suggestion="해당 강의를 장바구니에서 제거하거나, 선호 시간대를 '무관'으로 변경하세요."
+        ))
+
+    return conflicts
+
+
+def _check_uphill_vs_cart(cart_courses: list, request: CSPRequest, distance_map: dict) -> list[ConflictInfo]:
+    """오르막 회피 설정인데 장바구니 연속 교시 강의가 오르막 이동을 포함하는 경우 경고"""
+    conflicts = []
+
+    if not request.avoid_uphill:
+        return conflicts
+
+    for i, course_a in enumerate(cart_courses):
+        for course_b in cart_courses[i + 1:]:
+            for sched_a in course_a["schedules"]:
+                for sched_b in course_b["schedules"]:
+                    if sched_a["day_of_week"] != sched_b["day_of_week"]:
+                        continue
+
+                    is_consecutive = (
+                        sched_a["end_period"] + 1 == sched_b["start_period"] or
+                        sched_b["end_period"] + 1 == sched_a["start_period"]
+                    )
+                    if not is_consecutive:
+                        continue
+
+                    bid_a = sched_a.get("building_id")
+                    bid_b = sched_b.get("building_id")
+                    if bid_a is None or bid_b is None or bid_a == bid_b:
+                        continue
+
+                    if sched_a["end_period"] + 1 == sched_b["start_period"]:
+                        dist = distance_map.get((bid_a, bid_b))
+                    else:
+                        dist = distance_map.get((bid_b, bid_a))
+
+                    if dist and dist.get("is_uphill"):
+                        name_a = course_a["course_name"].strip()
+                        name_b = course_b["course_name"].strip()
+                        conflicts.append(ConflictInfo(
+                            conflict_type="WARN_UPHILL_CART_CONFLICT",
+                            message=f"오르막 회피를 선호하지만 '{name_a}'→'{name_b}' 이동 경로가 오르막이에요.",
+                            suggestion="해당 강의 중 하나를 장바구니에서 제거하거나, 오르막 회피 설정을 해제하세요."
+                        ))
+
+    return conflicts
+
+
+def _check_online_pref_vs_cart(cart_courses: list, request: CSPRequest) -> list[ConflictInfo]:
+    """온라인 강의 선호인데 장바구니 강의가 전부 오프라인인 경우 경고"""
+    conflicts = []
+
+    if not request.prefer_online:
+        return conflicts
+
+    offline_courses = [
+        course["course_name"].strip()
+        for course in cart_courses
+        if not all(s.get("building_id") is None for s in course["schedules"])
+    ]
+
+    if len(offline_courses) == len(cart_courses) and offline_courses:
+        names_str = ", ".join(offline_courses)
+        conflicts.append(ConflictInfo(
+            conflict_type="WARN_ONLINE_CART_CONFLICT",
+            message=f"온라인 강의를 선호하지만 장바구니의 모든 강의({names_str})가 오프라인이에요.",
+            suggestion="장바구니에 온라인 강의를 추가하거나, 온라인 선호 설정을 해제하세요."
+        ))
+
+    return conflicts
+
+
 def _check_credit_feasibility(candidates: list, request: CSPRequest) -> list[ConflictInfo]:
     """수강 가능한 학점 합이 최소 학점에 도달하는지 검증"""
     conflicts = []
@@ -379,16 +516,17 @@ def filter_candidates(all_courses: list, request: CSPRequest) -> list:
     cart_ids = set(request.cart_course_ids)
 
     for c in all_courses:
-        if c["course_code"] in taken_codes:
-            continue
         if len(c["schedules"]) == 0:
             continue
         if is_foreign_student_course(c):
             continue
 
-        # 장바구니 강의는 필터 없이 무조건 포함
+        # 장바구니 강의는 기수강 여부 무관하게 무조건 포함 (검증은 validate_request에서)
         if c["course_id"] in cart_ids:
             candidates.append(c)
+            continue
+
+        if c["course_code"] in taken_codes:
             continue
 
         grade_ok = (not c["grades"] or request.grade in c["grades"])
@@ -789,23 +927,16 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
             )]
         )
 
-<<<<<<< Updated upstream
     # 사전 모순 검증
     conflicts = validate_request(candidates, request, distance_map)
-=======
-    conflicts = validate_request(candidates, request)
->>>>>>> Stashed changes
     if conflicts:
         return CSPResponse(
             result_code="NO_SOLUTION",
             found_count=0,
             conflict_info=conflicts,
         )
-<<<<<<< Updated upstream
 
-=======
-    
->>>>>>> Stashed changes
+
     # 3) Plan profile 생성
     profiles = get_plan_profiles(request)
 
