@@ -45,7 +45,7 @@ export default function Cart() {
       }
     };
     fetchCart();
-    api.get('/api/graduation/history')
+    api.get('/api/users/me/graduation/history')
       .then(r => { if (r.data.resultType === 'SUCCESS') setTaken(r.data.success); })
       .catch(() => {});
     api.get('/api/admin/campus/distances')

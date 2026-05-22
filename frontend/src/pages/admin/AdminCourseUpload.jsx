@@ -186,7 +186,7 @@ export default function AdminCourseUpload() {
           <button
             onClick={async () => {
               try {
-                const res = await adminApi.get('/api/courses/export', { responseType: 'blob' });
+                const res = await adminApi.get('/api/admin/courses/export', { responseType: 'blob' });
                 const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
                 const a = document.createElement('a'); a.href = url; a.download = 'courses_export.csv'; a.click();
                 URL.revokeObjectURL(url);

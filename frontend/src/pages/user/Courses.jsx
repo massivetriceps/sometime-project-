@@ -44,7 +44,7 @@ export default function Courses() {
     api.get('/api/users/me/cart')
       .then(r => { if (r.data.resultType === 'SUCCESS') setCartItems(r.data.success); })
       .catch(() => {});
-    api.get('/api/graduation/history')
+    api.get('/api/users/me/graduation/history')
       .then(r => { if (r.data.resultType === 'SUCCESS') setTakenCourses(r.data.success); })
       .catch(() => {});
     api.get('/api/admin/campus/distances')

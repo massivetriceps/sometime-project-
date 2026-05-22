@@ -21,11 +21,32 @@ export default function TimeTableG() {
     api.get('/api/users/me/cart')
       .then(res => { if (res.data.resultType === 'SUCCESS') setCartCourses(res.data.success); })
       .catch(() => {});
-    api.get('/api/graduation/history')
+    api.get('/api/users/me/graduation/history')
       .then(res => { if (res.data.resultType === 'SUCCESS') setTakenCourses(res.data.success); })
       .catch(() => {});
     api.get('/api/admin/campus/distances')
       .then(res => { if (res.data.resultType === 'SUCCESS') setDistances(res.data.success); })
+      .catch(() => {});
+    // 이전 저장된 선호 조건 복원
+    api.get('/api/users/me/preferences')
+      .then(res => {
+        if (res.data.resultType === 'SUCCESS') {
+          const pref = res.data.success;
+          if (!pref || pref.message) return; // 설정값 없으면 무시
+          setAnswers(prev => ({
+            ...prev,
+            hills: pref.avoid_uphill === true
+              ? '무조건 평지 건물 위주로'
+              : pref.avoid_uphill === false ? '운동삼아 오르막도 감수함' : prev.hills,
+            online: pref.prefer_online === true
+              ? '최소 1개는 무조건 포함'
+              : pref.prefer_online === false ? '난 강의실이 좋은데' : prev.online,
+            freeDay: pref.free_days
+              ? pref.free_days.split(',').map(d => DAY_EN_TO_KR[d]).filter(Boolean)
+              : prev.freeDay,
+          }));
+        }
+      })
       .catch(() => {});
   }, []);
   const navigate = useNavigate();
