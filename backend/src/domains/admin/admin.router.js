@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { handleLogin,
-    handleLogout,
-    handleUpdateInfo,
-    handleGetAllUsers,
-    handleDeleteUser,
+const {
+  handleLogin,
+  handleLogout,
+  handleUpdateInfo,
+  handleGetAllUsers,
+  handleDeleteUser,
+  handleGetCSPConfig,
+  handleSaveCSPConfig,
+  handleGetAIPromptConfig,
+  handleSaveAIPromptConfig,
+  handleTestAIPrompt,
 } = require('./admin.controller');
 const { handleGetMajors } = require('../auth/auth.controller');
 const adminMiddleware = require('../../middlewares/adminMiddleware'); // 관리자 전용 미들웨어
@@ -224,5 +230,14 @@ router.get('/users', adminMiddleware, handleGetAllUsers);
  */
 router.delete('/users/:userId', adminMiddleware, handleDeleteUser);
 router.get('/majors', adminMiddleware, handleGetMajors);
+
+/* ── 관리자 설정: CSP 알고리즘 ── */
+router.get('/settings/csp',  adminMiddleware, handleGetCSPConfig);
+router.put('/settings/csp',  adminMiddleware, handleSaveCSPConfig);
+
+/* ── 관리자 설정: AI 프롬프트 ── */
+router.get('/settings/ai-prompt',       adminMiddleware, handleGetAIPromptConfig);
+router.put('/settings/ai-prompt',       adminMiddleware, handleSaveAIPromptConfig);
+router.post('/settings/ai-prompt/test', adminMiddleware, handleTestAIPrompt);
 
 module.exports = router;

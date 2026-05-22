@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Save, CheckCircle2, RotateCcw, PlayCircle,
   Bot, Sparkles, ChevronDown, Hash, AlignLeft,
   Clock, Zap, Copy, Check
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import adminApi from '../../api/adminApi';
 
 const DEFAULT_PROMPT = `당신은 대학교 시간표 분석 전문가입니다. 주어진 시간표 데이터를 분석하여 학생에게 유익한 맞춤형 코멘트를 생성해주세요.
 
@@ -47,43 +48,65 @@ const TIPS = [
   '긍정적인 톤 지침을 명시하면 효과적입니다',
 ];
 
-const LS_KEY = 'admin_ai_prompt_settings';
-
-const loadFromStorage = () => {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
 export default function AdminAIPrompt() {
-  const stored = loadFromStorage();
-  const [prompt, setPrompt]         = useState(stored?.prompt ?? DEFAULT_PROMPT);
+  const [prompt, setPrompt]         = useState(DEFAULT_PROMPT);
   const [saved, setSaved]           = useState(false);
+  const [saving, setSaving]         = useState(false);
   const [testing, setTesting]       = useState(false);
   const [testResult, setTestResult] = useState('');
-  const [model, setModel]           = useState(stored?.model ?? 'claude-sonnet-4-20250514');
-  const [maxTokens, setMaxTokens]   = useState(stored?.maxTokens ?? 300);
+  const [testIsError, setTestIsError] = useState(false);
+  const [model, setModel]           = useState('claude-sonnet-4-20250514');
+  const [maxTokens, setMaxTokens]   = useState(300);
   const [copied, setCopied]         = useState(false);
-  const [lastSaved, setLastSaved]   = useState(stored?.savedAt ?? null);
+  const [lastSaved, setLastSaved]   = useState(null);
 
-  const handleSave = () => {
-    const savedAt = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    localStorage.setItem(LS_KEY, JSON.stringify({ prompt, model, maxTokens, savedAt }));
-    setLastSaved(savedAt);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  /* 서버에서 저장된 설정 불러오기 */
+  useEffect(() => {
+    adminApi.get('/api/admin/settings/ai-prompt')
+      .then((res) => {
+        if (res.data?.resultType === 'SUCCESS' && res.data.success) {
+          const cfg = res.data.success;
+          if (cfg.prompt)    setPrompt(cfg.prompt);
+          if (cfg.model)     setModel(cfg.model);
+          if (cfg.maxTokens) setMaxTokens(cfg.maxTokens);
+          if (cfg.savedAt)   setLastSaved(cfg.savedAt);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await adminApi.put('/api/admin/settings/ai-prompt', { prompt, model, maxTokens });
+      if (res.data?.resultType === 'SUCCESS') {
+        setLastSaved(res.data.success.savedAt);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch {
+      /* 서버 연결 실패 시 조용히 무시 */
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReset = () => {
-    localStorage.removeItem(LS_KEY);
+  const handleReset = async () => {
     setPrompt(DEFAULT_PROMPT);
     setModel('claude-sonnet-4-20250514');
     setMaxTokens(300);
     setLastSaved(null);
     setTestResult('');
+    setTestIsError(false);
+    try {
+      await adminApi.put('/api/admin/settings/ai-prompt', {
+        prompt: DEFAULT_PROMPT,
+        model: 'claude-sonnet-4-20250514',
+        maxTokens: 300,
+      });
+    } catch {
+      /* 서버 연결 실패 시 조용히 무시 */
+    }
   };
 
   const handleCopy = () => {
@@ -95,9 +118,30 @@ export default function AdminAIPrompt() {
   const handleTest = async () => {
     setTesting(true);
     setTestResult('');
-    await new Promise(r => setTimeout(r, 400));
-    setTestResult('[설정 필요] 백엔드 .env에 ANTHROPIC_API_KEY=sk-ant-... 를 추가한 뒤 서버를 재시작해주세요.');
-    setTesting(false);
+    setTestIsError(false);
+    try {
+      const res = await adminApi.post('/api/admin/settings/ai-prompt/test', {
+        prompt,
+        model,
+        maxTokens,
+        testInput: TEST_INPUT,
+      });
+      if (res.data?.resultType === 'SUCCESS') {
+        const { result, error } = res.data.success;
+        if (error) {
+          setTestResult(error);
+          setTestIsError(true);
+        } else {
+          setTestResult(result ?? '(응답 없음)');
+          setTestIsError(false);
+        }
+      }
+    } catch (e) {
+      setTestResult(`[요청 실패] ${e.message}`);
+      setTestIsError(true);
+    } finally {
+      setTesting(false);
+    }
   };
 
   const charCount  = prompt.length;
@@ -124,13 +168,14 @@ export default function AdminAIPrompt() {
           </button>
           <button
             onClick={handleSave}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all ${
+            disabled={saving}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all disabled:opacity-60 ${
               saved
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                 : 'bg-[#4F7CF3] text-white shadow-[#4F7CF3]/25 hover:bg-[#3B6AE0]'
             }`}
           >
-            {saved ? <><CheckCircle2 size={14} />저장됨</> : <><Save size={14} />저장</>}
+            {saved ? <><CheckCircle2 size={14} />저장됨</> : saving ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />저장 중...</> : <><Save size={14} />저장</>}
           </button>
         </div>
       </div>
@@ -354,8 +399,11 @@ export default function AdminAIPrompt() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">AI 응답</span>
-                    {testResult && (
+                    {testResult && !testIsError && (
                       <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-semibold">생성 완료</span>
+                    )}
+                    {testResult && testIsError && (
+                      <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md font-semibold">오류 발생</span>
                     )}
                   </div>
                   {testResult && (
@@ -383,12 +431,14 @@ export default function AdminAIPrompt() {
                     <p className="text-[12px] text-slate-400 font-medium">AI가 코멘트를 생성하는 중...</p>
                   </div>
                 ) : testResult ? (
-                  <div className="bg-[#EEF2FF] rounded-xl border border-[#4F7CF3]/15 p-4 min-h-[160px]">
+                  <div className={`rounded-xl border p-4 min-h-[160px] ${testIsError ? 'bg-red-50 border-red-100' : 'bg-[#EEF2FF] border-[#4F7CF3]/15'}`}>
                     <div className="flex items-center gap-1.5 mb-2.5">
-                      <Bot size={13} className="text-[#4F7CF3]" />
-                      <span className="text-[10px] font-bold text-[#4F7CF3] uppercase tracking-wide">Claude 응답</span>
+                      <Bot size={13} className={testIsError ? 'text-red-500' : 'text-[#4F7CF3]'} />
+                      <span className={`text-[10px] font-bold uppercase tracking-wide ${testIsError ? 'text-red-500' : 'text-[#4F7CF3]'}`}>
+                        {testIsError ? '오류' : 'Claude 응답'}
+                      </span>
                     </div>
-                    <p className="text-[13px] text-slate-700 leading-relaxed">{testResult}</p>
+                    <p className={`text-[13px] leading-relaxed ${testIsError ? 'text-red-600' : 'text-slate-700'}`}>{testResult}</p>
                   </div>
                 ) : (
                   <div className="min-h-[160px] bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 p-4">
