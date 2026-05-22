@@ -54,9 +54,9 @@ CURRICULUM: dict = {
 
 
 def get_curriculum_courses(apply_year: str, major_name: str, grade: int, semester: int) -> dict:
-    """
-    해당 학번/학과/학년/학기의 교육과정 과목 반환.
-    Returns: {"전필": [...], "전선": [...], "계교": [...]}  (없으면 빈 dict)
-    """
+    # "23" -> "2023" 변환
+    if len(apply_year) == 2:
+        apply_year = "20" + apply_year
+    
     major_curriculum = CURRICULUM.get((apply_year, major_name), {})
     return major_curriculum.get((grade, semester), {})

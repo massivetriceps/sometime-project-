@@ -72,13 +72,6 @@ def get_priority_label(key: str, request: CSPRequest) -> str:
 # 유틸 함수
 # ==========================================================
 
-def get_priority_weight(priority_order: list[str], key: str) -> int:
-    """사용자 우선순위 리스트에서 해당 key의 가중치 반환"""
-    if not priority_order or key not in priority_order:
-        return 1
-    idx = priority_order.index(key)
-    return PRIORITY_WEIGHTS.get(idx, 1)
-
 def get_plan_profiles(request: CSPRequest) -> dict:
     """
     사용자 우선순위에 따라 3개 plan의 가중치 프로파일 생성.
@@ -157,7 +150,7 @@ def validate_request(candidates: list, request: CSPRequest, distance_map: dict) 
         conflicts.extend(_check_cart_travel_time(cart_courses, distance_map))
 
     # 학점 가능성 검증 (장바구니 유무 무관하게 항상 실행)
-    conflicts.extend(_check_credit_feasibility(candidates, request))  # ← 추가
+    conflicts.extend(_check_credit_feasibility(candidates, request))
 
     return conflicts
 
@@ -403,11 +396,6 @@ def filter_candidates(all_courses: list, request: CSPRequest) -> list:
 
         if is_major or is_liberal:
             candidates.append(c)
-
-    print(f"[DEBUG] 후보 강의 수: {len(candidates)}")
-    print(f"[DEBUG] 전공: {sum(1 for c in candidates if request.major_id in c['major_ids'])}")
-    print(f"[DEBUG] 교양: {sum(1 for c in candidates if c['classification'] in LIBERAL_ARTS_CLASSIFICATIONS)}")
-    print(f"[DEBUG] 학점 합계 가능: {sum(c['credits'] for c in candidates)}")
 
     return candidates
 
@@ -709,17 +697,6 @@ class TimetableCallback(cp_model.CpSolverSolutionCallback):
         return self._solutions
 
 
-def run_solver(model, variables, candidates) -> list[dict]:
-    """솔버 실행 후 찾은 해 리스트 반환"""
-    solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 10.0
-    solver.parameters.enumerate_all_solutions = True
-
-    callback = TimetableCallback(variables, candidates, max_solutions=50)
-    status = solver.Solve(model, callback)
-
-    return callback.get_solutions(), status
-
 def solve_single_plan(
     candidates: list,
     request: CSPRequest,
@@ -789,23 +766,16 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
             )]
         )
 
-<<<<<<< Updated upstream
     # 사전 모순 검증
     conflicts = validate_request(candidates, request, distance_map)
-=======
-    conflicts = validate_request(candidates, request)
->>>>>>> Stashed changes
+
     if conflicts:
         return CSPResponse(
             result_code="NO_SOLUTION",
             found_count=0,
             conflict_info=conflicts,
         )
-<<<<<<< Updated upstream
-
-=======
     
->>>>>>> Stashed changes
     # 3) Plan profile 생성
     profiles = get_plan_profiles(request)
 
@@ -820,18 +790,14 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
         )
         
         if solution is None:
-            print(f"[DEBUG] Plan {plan_type}: 해 없음")
             continue
         
-        # 같은 강의 조합이면 스킵 (다양성 확보)
         key = frozenset(c["course_id"] for c in solution["selected_courses"])
         if key in seen_keys:
-            print(f"[DEBUG] Plan {plan_type}: 이전 plan과 동일 → 스킵")
             continue
         seen_keys.add(key)
         
         plans.append(_build_plan(solution, plan_type, profile["label"]))
-        print(f"[DEBUG] Plan {plan_type} ({profile['label']}): score={int(solution['score'])}")
 
     # 5) 결과 처리
     if not plans:
@@ -862,18 +828,6 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
 # ==========================================================
 # 응답 변환 헬퍼
 # ==========================================================
-
-def _deduplicate_solutions(solutions: list) -> list:
-    """동일한 강의 조합의 해를 제거"""
-    seen = set()
-    unique = []
-    for sol in solutions:
-        key = frozenset(c["course_id"] for c in sol["selected_courses"])
-        if key not in seen:
-            seen.add(key)
-            unique.append(sol)
-    return unique
-
 
 def _build_plan(solution: dict, plan_type: str, plan_label: str) -> TimetablePlan:
     """솔루션을 TimetablePlan 스키마로 변환"""
@@ -953,106 +907,3 @@ def _generate_characteristics(courses: list) -> list[str]:
         tags.append("#여유로운학기")
 
     return tags if tags else ["#균형잡힌시간표"]
-
-
-
-
-
-"""
-제약 모순 예외처리 피드백
-======================
-CSP에서 사용자가 입력한 조건들이 서로 충돌하거나 만족할 수 없을 때,
-에러 메시지를 통해 사용자에게 알려주는 기능.
-"""
-
-# ==========================================================
-# 사전 검증 (Validation)
-# ==========================================================
-
-def validate_request(candidates: list, request: CSPRequest) -> list[ConflictInfo]:
-    """솔버 실행 전 모순 케이스 검증.
-    
-    충돌이 발견되면 ConflictInfo 리스트를 반환.
-    충돌 없으면 빈 리스트.
-    """
-    conflicts = []
-    
-    # 장바구니에 있는 강의 정보를 dict로 미리 변환 (조회 빠르게)
-    cart_courses = _get_cart_courses(candidates, request.cart_course_ids)
-    
-    if cart_courses:
-        conflicts.extend(_check_cart_vs_free_day(cart_courses, request))
-        conflicts.extend(_check_cart_internal_conflict(cart_courses))
-    
-    return conflicts
-
-
-def _get_cart_courses(candidates: list, cart_ids: list[int]) -> list[dict]:
-    """장바구니 강의 ID -> 실제 강의 dict 리스트로 변환"""
-    cart_id_set = set(cart_ids)
-    return [c for c in candidates if c["course_id"] in cart_id_set]
-
-
-def _check_cart_vs_free_day(cart_courses: list, request: CSPRequest) -> list[ConflictInfo]:
-    """장바구니 강의가 사용자 공강 요일과 충돌하는지 검증"""
-    conflicts = []
-    free_day_set = set(request.free_days or [])
-    
-    if not free_day_set:
-        return conflicts
-    
-    for course in cart_courses:
-        # 이 강의의 모든 schedule 중 공강 요일에 걸리는 게 있는지
-        conflicting_days = set()
-        for sched in course["schedules"]:
-            if sched["day_of_week"] in free_day_set:
-                conflicting_days.add(sched["day_of_week"])
-        
-        if conflicting_days:
-            days_str = ", ".join(sorted(conflicting_days))
-            course_name = course["course_name"].strip()
-            conflicts.append(ConflictInfo(
-                conflict_type="CART_FREE_DAY_CONFLICT",
-                message=f"장바구니 강의 '{course_name}'가 공강 요일({days_str})에 수업이 있어요.",
-                suggestion=f"공강 요일에서 '{days_str}'을(를) 빼거나, '{course_name}'을(를) 장바구니에서 제거하세요."
-            ))
-    
-    return conflicts
-
-
-def _check_cart_internal_conflict(cart_courses: list) -> list[ConflictInfo]:
-    """장바구니 강의들끼리 시간이 겹치는지 검증"""
-    conflicts = []
-    
-    # 모든 쌍 비교
-    for i, course_a in enumerate(cart_courses):
-        for course_b in cart_courses[i+1:]:
-            overlap = _find_time_overlap(course_a, course_b)
-            if overlap:
-                day, period = overlap
-                name_a = course_a["course_name"].strip()
-                name_b = course_b["course_name"].strip()
-                conflicts.append(ConflictInfo(
-                    conflict_type="CART_INTERNAL_CONFLICT",
-                    message=f"장바구니의 '{name_a}'와 '{name_b}'가 {day}요일 {period}교시에 시간이 겹쳐요.",
-                    suggestion=f"두 강의 중 하나를 장바구니에서 제거하거나, 다른 분반으로 변경하세요."
-                ))
-    
-    return conflicts
-
-
-def _find_time_overlap(course_a: dict, course_b: dict) -> tuple | None:
-    """두 강의의 시간이 겹치는지 확인. 겹치면 (요일, 교시) 반환, 아니면 None"""
-    for sched_a in course_a["schedules"]:
-        for sched_b in course_b["schedules"]:
-            if sched_a["day_of_week"] != sched_b["day_of_week"]:
-                continue
-            # 교시 범위가 겹치는지
-            a_start, a_end = sched_a["start_period"], sched_a["end_period"]
-            b_start, b_end = sched_b["start_period"], sched_b["end_period"]
-            if a_start <= b_end and b_start <= a_end:
-                # 겹치는 첫 교시 반환
-                overlap_period = max(a_start, b_start)
-                return (sched_a["day_of_week"], overlap_period)
-    return None
-

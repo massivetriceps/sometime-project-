@@ -79,6 +79,7 @@ def generate_ai_comment(request: LLMRequest) -> LLMResponse:
             ],
             max_tokens=300,
             temperature=0.7,
+            timeout=10,
         )
         
         comment = response.choices[0].message.content.strip()
@@ -90,9 +91,17 @@ def generate_ai_comment(request: LLMRequest) -> LLMResponse:
         )
     
     except Exception as e:
-        print(f"[LLM ERROR] {e}")
+        print(f"[LLM ERROR] {type(e).__name__}: {e}")
+        fallback_comments = {
+            "A": "이 시간표는 최적화 점수가 가장 높은 추천안입니다. 균형 잡힌 구성으로 효율적인 학기를 보내실 수 있습니다.",
+            "B": "이 시간표는 두 번째 추천안입니다. Plan A와 다른 시간대 배치로 새로운 선택이 될 수 있습니다.",
+            "C": "이 시간표는 균형형 구성입니다. 다양한 시간표를 비교해보시고 자신에게 맞는 것을 선택해보세요.",
+        }
         return LLMResponse(
-            result_code="ERROR",
-            comment=f"AI 코멘트 생성에 실패했습니다. 잠시 후 다시 시도해주세요.",
+            result_code="FALLBACK",
+            comment=fallback_comments.get(
+                request.plan_type,
+                "시간표가 생성되었습니다. 자세한 내용을 확인해보세요."
+            ),
             model_used=None,
         )
