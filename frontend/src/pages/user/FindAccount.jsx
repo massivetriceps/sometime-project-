@@ -7,7 +7,7 @@ import api from '../../api/axios';
 export default function FindAccount() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('id');
-  const [form, setForm] = useState({ name: '', email: '', userId: '' });
+  const [form, setForm] = useState({ name: '', email: '' });
   const [done, setDone] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
@@ -51,7 +51,7 @@ export default function FindAccount() {
                 } else {
                   const res = await api.post('/api/auth/findpw', {
                     name: form.name,
-                    email: form.userId,
+                    email: form.email,
                   });
                   if (res.data.resultType === 'SUCCESS') {
                     setDone(true);
@@ -82,7 +82,7 @@ export default function FindAccount() {
                 <>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>아이디 (이메일)</label>
-                    <input style={inp} type="email" placeholder="가입한 이메일을 입력하세요" value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} required />
+                    <input style={inp} type="email" placeholder="가입한 이메일을 입력하세요" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>이름</label>
