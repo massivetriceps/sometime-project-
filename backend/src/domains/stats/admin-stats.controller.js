@@ -1,6 +1,8 @@
 const { StatusCodes } = require('http-status-codes');
 const adminStatsService = require('./admin-stats.service');
 
+
+
 const handleGetUsageStats = async (req, res, next) => {
   try {
     const result = await adminStatsService.getUsageStats();
@@ -45,8 +47,50 @@ const handleGetErrorLogs = async (req, res, next) => {
   }
 };
 
+const handleGetDailyStats = async (req, res, next) => {
+  try {
+    const days = Math.min(parseInt(req.query.days) || 7, 30);
+    const result = await adminStatsService.getDailyStats(days);
+    res.status(StatusCodes.OK).success({ message: '일별 통계 조회 성공', data: result });
+  } catch (error) { next(error); }
+};
+
+const handleGetWeekdayStats = async (req, res, next) => {
+  try {
+    const result = await adminStatsService.getWeekdayStats();
+    res.status(StatusCodes.OK).success({ message: '요일별 통계 조회 성공', data: result });
+  } catch (error) { next(error); }
+};
+
+const handleGetPlanDistribution = async (req, res, next) => {
+  try {
+    const period = req.query.period || 'all';
+    const result = await adminStatsService.getPlanDistribution(period);
+    res.status(StatusCodes.OK).success({ message: 'Plan 분포 조회 성공', data: result });
+  } catch (error) { next(error); }
+};
+
+const handleGetFreeDayDistribution = async (req, res, next) => {
+  try {
+    const result = await adminStatsService.getFreeDayDistribution();
+    res.status(StatusCodes.OK).success({ message: '공강 요일 분포 조회 성공', data: result });
+  } catch (error) { next(error); }
+};
+
+const handleGetDeptDistribution = async (req, res, next) => {
+  try {
+    const result = await adminStatsService.getDeptDistribution();
+    res.status(StatusCodes.OK).success({ message: '학과별 분포 조회 성공', data: result });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   handleGetUsageStats,
   handleGetPreferenceStats,
   handleGetErrorLogs,
+  handleGetDailyStats,
+  handleGetWeekdayStats,
+  handleGetPlanDistribution,
+  handleGetFreeDayDistribution,
+  handleGetDeptDistribution,
 };

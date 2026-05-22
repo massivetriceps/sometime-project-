@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const adminMiddleware = require('../../middlewares/adminMiddleware');
-const { handleGetUsageStats, handleGetPreferenceStats, handleGetErrorLogs } = require('./admin-stats.controller');
+const {
+  handleGetUsageStats,
+  handleGetPreferenceStats,
+  handleGetErrorLogs,
+  handleGetDailyStats,
+  handleGetWeekdayStats,
+  handleGetPlanDistribution,
+  handleGetFreeDayDistribution,
+  handleGetDeptDistribution,
+} = require('./admin-stats.controller');
 
 /**
  * @swagger
@@ -140,5 +149,12 @@ router.get('/preferences', adminMiddleware, handleGetPreferenceStats);
  *         description: 오류 로그 조회 성공
  */
 router.get('/error', adminMiddleware, handleGetErrorLogs);
+
+/* ── 신규: 차트용 통계 ── */
+router.get('/daily',              adminMiddleware, handleGetDailyStats);       // ?days=7|30
+router.get('/weekday',            adminMiddleware, handleGetWeekdayStats);
+router.get('/plan-distribution',  adminMiddleware, handleGetPlanDistribution); // ?period=all|7d|30d
+router.get('/free-day',           adminMiddleware, handleGetFreeDayDistribution);
+router.get('/dept-distribution',  adminMiddleware, handleGetDeptDistribution);
 
 module.exports = router;

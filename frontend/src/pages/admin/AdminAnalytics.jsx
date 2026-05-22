@@ -8,28 +8,6 @@ import { TrendingUp, Users, Calendar, BarChart2, RefreshCw } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
 
-/* ── mock 데이터 (API 없는 항목) ── */
-const FREEYDAY_DATA = [
-  { name: '월요일', short: '월', value: 22, color: '#8FA8FF' },
-  { name: '화요일', short: '화', value: 15, color: '#8EDDD0' },
-  { name: '수요일', short: '수', value: 31, color: '#C3B5FF' },
-  { name: '목요일', short: '목', value: 18, color: '#F4AFCF' },
-  { name: '금요일', short: '금', value: 44, color: '#F7CFA1' },
-];
-
-const PLAN_DATA = [
-  { plan: 'Plan A', selected: 420, pct: 42, color: '#4F7CF3' },
-  { plan: 'Plan B', selected: 340, pct: 34, color: '#8FA8FF' },
-  { plan: 'Plan C', selected: 240, pct: 24, color: '#C3B5FF' },
-];
-
-const DEPT_DATA = [
-  { dept: '컴퓨터공학과',   short: 'CS',  count: 380, color: '#4F7CF3' },
-  { dept: '소프트웨어학과', short: 'SW',  count: 290, color: '#8FA8FF' },
-  { dept: 'AI학과',         short: 'AI',  count: 210, color: '#A78BFA' },
-  { dept: '정보보안학과',   short: 'SEC', count: 180, color: '#C3B5FF' },
-  { dept: '산업경영공학과', short: 'IME', count: 150, color: '#8EDDD0' },
-];
 
 /* free_days DB 값(영문 약어) → 한국어 매핑 */
 const FREE_DAY_MAP = {
@@ -82,20 +60,29 @@ const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
 };
 
 export default function AdminAnalytics() {
-  const [period, setPeriod]       = useState('7d');
-  const [loading, setLoading]     = useState(true);
-  const [prefData, setPrefData]   = useState(null);
-  const [usageStats, setUsageStats] = useState(null);
+  const [period, setPeriod]           = useState('all');
+  const [loading, setLoading]         = useState(true);
+  const [prefData, setPrefData]       = useState(null);
+  const [usageStats, setUsageStats]   = useState(null);
+  const [freeDayData, setFreeDayData] = useState([]);
+  const [planData, setPlanData]       = useState({ plans: [], total: 0 });
+  const [deptData, setDeptData]       = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = async (p = period) => {
     setLoading(true);
     try {
-      const [prefRes, usageRes] = await Promise.all([
+      const [prefRes, usageRes, freeDayRes, planRes, deptRes] = await Promise.all([
         adminApi.get('/api/admin/stats/preferences'),
         adminApi.get('/api/admin/stats/usage'),
+        adminApi.get('/api/admin/stats/free-day'),
+        adminApi.get(`/api/admin/stats/plan-distribution?period=${p}`),
+        adminApi.get('/api/admin/stats/dept-distribution'),
       ]);
       setPrefData(prefRes.data.success.data);
       setUsageStats(usageRes.data.success.data);
+      setFreeDayData(freeDayRes.data.success.data  ?? []);
+      setPlanData(planRes.data.success.data         ?? { plans: [], total: 0 });
+      setDeptData(deptRes.data.success.data         ?? []);
     } catch (err) {
       console.error('Analytics fetch error:', err);
     } finally {
@@ -103,9 +90,13 @@ export default function AdminAnalytics() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData('all'); }, []);
+
+  // 기간 필터 변경 시 plan-distribution 재호출
+  const handlePeriodChange = (p) => {
+    setPeriod(p);
+    fetchData(p);
+  };
 
   /* ratio 값(0~1) → 퍼센트 변환 */
   const toPercent = (val) =>
@@ -196,7 +187,7 @@ export default function AdminAnalytics() {
             ].map((p) => (
               <button
                 key={p.val}
-                onClick={() => setPeriod(p.val)}
+                onClick={() => handlePeriodChange(p.val)}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                   period === p.val
                     ? 'bg-white text-slate-700 shadow-sm'
@@ -208,7 +199,7 @@ export default function AdminAnalytics() {
             ))}
           </div>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData(period)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-50 shadow-sm transition-all"
           >
             <RefreshCw size={12} />
@@ -295,10 +286,15 @@ export default function AdminAnalytics() {
             <p className="text-[11px] text-slate-400 mt-0.5">원하는 공강 요일 선택 비율</p>
           </div>
 
+          {loading ? (
+            <div className="h-[200px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
-                data={FREEYDAY_DATA}
+                data={freeDayData}
                 cx="50%" cy="50%"
                 innerRadius={52}
                 outerRadius={82}
@@ -307,17 +303,18 @@ export default function AdminAnalytics() {
                 labelLine={false}
                 label={<PieLabel />}
               >
-                {FREEYDAY_DATA.map((entry, i) => (
+                {freeDayData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
                 ))}
               </Pie>
               <Tooltip formatter={(v) => [`${v}%`, '선택 비율']} />
             </PieChart>
           </ResponsiveContainer>
+          )}
 
           {/* 요일 범례 */}
           <div className="grid grid-cols-5 gap-2 mt-2">
-            {FREEYDAY_DATA.map((d) => (
+            {freeDayData.map((d) => (
               <div key={d.name} className="flex flex-col items-center gap-1">
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold"
@@ -325,7 +322,7 @@ export default function AdminAnalytics() {
                 >
                   {d.short}
                 </div>
-                <span className="text-[11px] font-bold text-slate-700">{d.value}%</span>
+                <span className="text-[11px] font-bold text-slate-700">{loading ? '—' : `${d.value}%`}</span>
               </div>
             ))}
           </div>
@@ -362,8 +359,15 @@ export default function AdminAnalytics() {
             <p className="text-[11px] text-slate-400 mt-0.5">생성된 3개 시간표 중 최종 선택 비율</p>
           </div>
 
+          {loading ? (
+            <div className="py-8 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : planData.total === 0 ? (
+            <div className="py-8 text-center text-[12px] text-slate-400">선택된 시간표 데이터가 없습니다</div>
+          ) : (
           <div className="space-y-4 mb-5">
-            {PLAN_DATA.map((p) => (
+            {planData.plans.map((p) => (
               <div key={p.plan}>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
@@ -389,13 +393,16 @@ export default function AdminAnalytics() {
               </div>
             ))}
           </div>
+          )}
 
+          {!loading && planData.total > 0 && (
           <div className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-[12px] text-slate-500 font-medium">총 선택 횟수</span>
             <span className="text-sm font-bold text-slate-800">
-              {PLAN_DATA.reduce((s, p) => s + p.selected, 0).toLocaleString()}명
+              {planData.total.toLocaleString()}명
             </span>
           </div>
+          )}
         </div>
 
         {/* 학과별 이용 현황 */}
@@ -405,9 +412,16 @@ export default function AdminAnalytics() {
             <p className="text-[11px] text-slate-400 mt-0.5">학과별 시간표 생성 사용자 수</p>
           </div>
 
+          {loading ? (
+            <div className="h-[185px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : deptData.length === 0 ? (
+            <div className="h-[185px] flex items-center justify-center text-[12px] text-slate-400">학과 데이터가 없습니다</div>
+          ) : (
           <ResponsiveContainer width="100%" height={185}>
             <BarChart
-              data={DEPT_DATA}
+              data={deptData}
               barSize={28}
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
             >
@@ -425,29 +439,35 @@ export default function AdminAnalytics() {
               />
               <Tooltip content={<Tip />} />
               <Bar dataKey="count" name="이용자" radius={[6, 6, 0, 0]}>
-                {DEPT_DATA.map((entry, i) => (
+                {deptData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
 
           {/* 학과 범례 */}
+          {!loading && deptData.length > 0 && (
           <div className="space-y-1.5 mt-3">
-            {DEPT_DATA.map((d) => (
+            {deptData.map((d) => {
+              const maxCount = deptData[0]?.count || 1;
+              return (
               <div key={d.dept} className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
-                <span className="text-[12px] text-slate-500 flex-1">{d.dept}</span>
+                <span className="text-[12px] text-slate-500 flex-1 truncate">{d.dept}</span>
                 <span className="text-[12px] font-bold text-slate-700">{d.count.toLocaleString()}명</span>
                 <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
-                    style={{ width: `${(d.count / 380) * 100}%`, background: d.color }}
+                    style={{ width: `${(d.count / maxCount) * 100}%`, background: d.color }}
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
+          )}
         </div>
       </div>
 

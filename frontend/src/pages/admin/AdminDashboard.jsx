@@ -11,26 +11,6 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
 
-const MOCK_LINE = [
-  { date: '4/22', users: 180, timetables: 320 },
-  { date: '4/23', users: 210, timetables: 380 },
-  { date: '4/24', users: 195, timetables: 340 },
-  { date: '4/25', users: 260, timetables: 450 },
-  { date: '4/26', users: 237, timetables: 420 },
-  { date: '4/27', users: 290, timetables: 510 },
-  { date: '4/28', users: 237, timetables: 430 },
-];
-
-const MOCK_BAR = [
-  { day: '월', count: 85 },
-  { day: '화', count: 120 },
-  { day: '수', count: 95 },
-  { day: '목', count: 140 },
-  { day: '금', count: 70 },
-  { day: '토', count: 30 },
-  { day: '일', count: 20 },
-];
-
 const BAR_COLORS = ['#8FA8FF','#8FA8FF','#8FA8FF','#4F7CF3','#8FA8FF','#C3B5FF','#C3B5FF'];
 
 const fmtTime = (iso) => {
@@ -84,33 +64,49 @@ const StatCard = ({ title, value, trend, sub, icon: Icon, iconBg, iconColor, acc
 );
 
 export default function AdminDashboard() {
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated]   = useState(new Date());
+  const [loading, setLoading]           = useState(true);
   const [stats, setStats] = useState({
     total_count: null,
-    daily_active_users: null,
-    total_timetables: null,
-    api_call_counts: null,
+    today_new_users: null, today_new_users_trend: null,
+    daily_active_users: null, daily_active_users_trend: null,
+    total_timetables: null, today_timetables_trend: null,
+    api_call_counts: null,   api_call_counts_trend: null,
   });
-  const [errorLogs, setErrorLogs] = useState([]);
+  const [chartData, setChartData]       = useState([]);
+  const [weekdayData, setWeekdayData]   = useState([]);
+  const [errorLogs, setErrorLogs]       = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usageRes, usersRes, errorRes] = await Promise.all([
+      const [usageRes, usersRes, errorRes, dailyRes, weekdayRes] = await Promise.all([
         adminApi.get('/api/admin/stats/usage'),
         adminApi.get('/api/admin/users'),
         adminApi.get('/api/admin/stats/error?page=1&limit=5'),
+        adminApi.get('/api/admin/stats/daily?days=7'),
+        adminApi.get('/api/admin/stats/weekday'),
       ]);
-      const usageData = usageRes.data.success.data;
-      const usersData = usersRes.data.success;
-      const errorData = errorRes.data.success.data;
+
+      const usageData   = usageRes.data.success.data;
+      const usersData   = usersRes.data.success;
+      const errorData   = errorRes.data.success.data;
+      const dailyArr    = dailyRes.data.success.data   ?? [];
+      const weekdayArr  = weekdayRes.data.success.data ?? [];
+
       setStats({
-        total_count: usersData.total_count,
-        daily_active_users: usageData.daily_active_users,
-        total_timetables: usageData.total_timetables,
-        api_call_counts: usageData.api_call_counts,
+        total_count:               usersData.total_count,
+        today_new_users:           usageData.today_new_users,
+        today_new_users_trend:     usageData.today_new_users_trend ?? null,
+        daily_active_users:        usageData.daily_active_users,
+        daily_active_users_trend:  usageData.daily_active_users_trend ?? null,
+        total_timetables:          usageData.total_timetables,
+        today_timetables_trend:    usageData.today_timetables_trend ?? null,
+        api_call_counts:           usageData.api_call_counts,
+        api_call_counts_trend:     usageData.api_call_counts_trend ?? null,
       });
+      setChartData(dailyArr);
+      setWeekdayData(weekdayArr);
       setErrorLogs(errorData.content ?? []);
       setLastUpdated(new Date());
     } catch (err) {
@@ -120,9 +116,7 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fmt = (val) => (loading || val === null || val === undefined ? '—' : val.toLocaleString());
 
@@ -151,7 +145,8 @@ export default function AdminDashboard() {
         <StatCard
           title="전체 사용자"
           value={fmt(stats.total_count)}
-          trend={5.2}
+          trend={stats.today_new_users_trend}
+          sub={loading ? '' : `오늘 신규 ${fmt(stats.today_new_users)}명`}
           icon={Users}
           iconBg="bg-[#EEF2FF]"
           iconColor="text-[#4F7CF3]"
@@ -160,7 +155,8 @@ export default function AdminDashboard() {
         <StatCard
           title="오늘 접속자"
           value={fmt(stats.daily_active_users)}
-          trend={-2.1}
+          trend={stats.daily_active_users_trend}
+          sub="전일 대비"
           icon={Activity}
           iconBg="bg-[#E6FAF8]"
           iconColor="text-[#2EC4B6]"
@@ -169,7 +165,8 @@ export default function AdminDashboard() {
         <StatCard
           title="시간표 생성수"
           value={fmt(stats.total_timetables)}
-          trend={8.4}
+          trend={stats.today_timetables_trend}
+          sub="오늘 생성 전일 대비"
           icon={Calendar}
           iconBg="bg-[#F3F0FF]"
           iconColor="text-[#A78BFA]"
@@ -178,6 +175,8 @@ export default function AdminDashboard() {
         <StatCard
           title="API 호출수"
           value={fmt(stats.api_call_counts)}
+          trend={stats.api_call_counts_trend}
+          sub="오늘 전일 대비"
           icon={TrendingUp}
           iconBg="bg-[#FFFBEA]"
           iconColor="text-yellow-500"
@@ -204,8 +203,13 @@ export default function AdminDashboard() {
               </span>
             </div>
           </div>
+          {loading ? (
+            <div className="h-[210px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={210}>
-            <AreaChart data={MOCK_LINE} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gUsers" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4F7CF3" stopOpacity={0.18} />
@@ -224,27 +228,34 @@ export default function AdminDashboard() {
               <Area type="monotone" dataKey="timetables" name="시간표 생성" stroke="#2EC4B6" strokeWidth={2.5} fill="url(#gTimetables)" dot={false} activeDot={{ r: 4, fill: '#2EC4B6' }} />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </div>
 
         {/* 막대 차트 */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <div className="mb-5">
             <h2 className="text-sm font-bold text-slate-800">요일별 접속 분포</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">이번 주 기준</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">최근 30일 기준</p>
           </div>
+          {loading ? (
+            <div className="h-[210px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={MOCK_BAR} barSize={22} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <BarChart data={weekdayData} barSize={22} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="count" name="접속자" radius={[6, 6, 0, 0]}>
-                {MOCK_BAR.map((_, i) => (
-                  <Cell key={i} fill={BAR_COLORS[i]} />
+                {weekdayData.map((_, i) => (
+                  <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
         </div>
       </div>
 
