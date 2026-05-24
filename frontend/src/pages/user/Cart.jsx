@@ -9,6 +9,11 @@ const TC = {
   '전선': { bg: '#d1faf5', color: '#2EC4B6' },
   '교필': { bg: '#ede9fe', color: '#A78BFA' },
   '교선': { bg: '#fef9e7', color: '#d4a017' },
+  '융합': { bg: '#fff7ed', color: '#f97316' },
+  '융합(예술)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(사회)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(자연)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(세계)': { bg: '#fff7ed', color: '#f97316' },
   '계교': { bg: '#fef3c7', color: '#d97706' },
   '교직': { bg: '#f0fdf4', color: '#16a34a' },
   '군사': { bg: '#f1f5f9', color: '#64748b' },
@@ -16,18 +21,24 @@ const TC = {
 
 const s = { fontFamily: 'Pretendard, sans-serif' };
 
+// Courses.jsx의 formatSchedule과 동기화 유지
+const DAY_SHORT = { '월요일': '월', '화요일': '화', '수요일': '수', '목요일': '목', '금요일': '금', MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금' };
 const formatSchedule = (schedules) => {
   if (!schedules || schedules.length === 0) return null;
-  return schedules.map(s => `${s.day_of_week} ${s.start_period}~${s.end_period}교시`).join(', ');
+  return schedules.map(sc => `${DAY_SHORT[sc.day_of_week] ?? sc.day_of_week} ${sc.start_period}~${sc.end_period}교시`).join(' · ');
 };
 
 export default function Cart() {
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [removingIds, setRemovingIds]   = useState(new Set());
+  const [removeErrors, setRemoveErrors] = useState({});
   const [takenCourses, setTaken]  = useState([]);
   const [distances, setDistances] = useState([]);
   const removeFromCart = useTimetableStore((state) => state.removeFromCart);
   const setCartFromDB  = useTimetableStore((state) => state.setCartFromDB);
+  const cartLoaded     = useTimetableStore((state) => state.cartLoaded);
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -36,10 +47,11 @@ export default function Cart() {
         if (res.data.resultType === 'SUCCESS') {
           const data = res.data.success;
           setItems(data);
-          setCartFromDB(data);
+          // Layout이 이미 초기화했으면 store 덮어쓰기 생략 (race condition 방지)
+          if (!cartLoaded) setCartFromDB(data);
         }
-      } catch (err) {
-        console.error('장바구니 조회 실패', err);
+      } catch {
+        setLoadError('장바구니를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
       } finally {
         setLoading(false);
       }
@@ -51,6 +63,7 @@ export default function Cart() {
     api.get('/api/admin/campus/distances')
       .then(r => { if (r.data.resultType === 'SUCCESS') setDistances(r.data.success); })
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── 장바구니 충돌 사전 감지 ─────────────────────────────────
@@ -145,12 +158,17 @@ export default function Cart() {
   }, [items, takenCourses, distances]);
 
   const handleRemove = async (courseId) => {
+    setRemovingIds(prev => new Set([...prev, courseId]));
+    setRemoveErrors(prev => { const n = { ...prev }; delete n[courseId]; return n; });
     try {
       await api.delete(`/api/users/me/cart/${courseId}`);
       setItems(prev => prev.filter(i => i.course_id !== courseId));
       removeFromCart(courseId);
     } catch (err) {
-      console.error('장바구니 삭제 실패', err);
+      const reason = err.response?.data?.error?.reason;
+      setRemoveErrors(prev => ({ ...prev, [courseId]: reason || '삭제 중 오류가 발생했습니다.' }));
+    } finally {
+      setRemovingIds(prev => { const n = new Set(prev); n.delete(courseId); return n; });
     }
   };
 
@@ -165,6 +183,15 @@ export default function Cart() {
           </h1>
           <p style={{ color: '#6B7280', margin: 0, fontSize: 14 }}>담아둔 강의는 시간표 생성 시 최우선 제약 조건으로 반영됩니다.</p>
         </div>
+
+        {/* 에러 배너 */}
+        {loadError && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <p style={{ margin: 0, fontSize: 13, color: '#DC2626', fontWeight: 500, flex: 1 }}>{loadError}</p>
+            <button onClick={() => window.location.reload()} style={{ padding: '6px 12px', borderRadius: 8, background: '#DC2626', color: 'white', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', ...s }}>새로고침</button>
+          </div>
+        )}
 
         {/* 로딩 */}
         {loading ? (
@@ -207,46 +234,63 @@ export default function Cart() {
               {items.map(course => {
                 const schedule = formatSchedule(course.schedules);
                 return (
-                  <div key={course.course_id} style={{ background: 'white', borderRadius: 14, border: '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '16px 18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        {/* 뱃지 */}
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: TC[course.classification]?.bg ?? '#F3F4F6', color: TC[course.classification]?.color ?? '#6B7280' }}>
-                            {course.classification}
-                          </span>
-                          <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.credits}학점</span>
+                  <div key={course.course_id} style={{ borderRadius: 14, overflow: 'hidden', border: removeErrors[course.course_id] ? '1px solid #FECACA' : '1px solid #E8F0FF', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    <div style={{ background: 'white', padding: '16px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          {/* 뱃지 */}
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: TC[course.classification]?.bg ?? '#F3F4F6', color: TC[course.classification]?.color ?? '#6B7280' }}>
+                              {course.classification}
+                            </span>
+                            <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.credits}학점</span>
+                          </div>
+
+                          {/* 과목명 */}
+                          <p style={{ fontWeight: 700, color: '#1F2937', margin: '0 0 4px', fontSize: 15 }}>
+                            {course.course_name}
+                          </p>
+
+                          {/* 교수 */}
+                          <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <BookOpen size={12} color="#9CA3AF" />
+                            {course.professor ?? '교수 미정'}
+                          </p>
+
+                          {/* 시간 */}
+                          {schedule && (
+                            <p style={{ fontSize: 12, color: '#9CA3AF', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <Clock size={12} color="#BFD4FF" />
+                              {schedule}
+                            </p>
+                          )}
                         </div>
 
-                        {/* 과목명 */}
-                        <p style={{ fontWeight: 700, color: '#1F2937', margin: '0 0 4px', fontSize: 15 }}>
-                          {course.course_name}
-                        </p>
-
-                        {/* 교수 */}
-                        <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <BookOpen size={12} color="#9CA3AF" />
-                          {course.professor ?? '교수 미정'}
-                        </p>
-
-                        {/* 시간 */}
-                        {schedule && (
-                          <p style={{ fontSize: 12, color: '#9CA3AF', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <Clock size={12} color="#BFD4FF" />
-                            {schedule}
-                          </p>
-                        )}
+                        {/* 삭제 버튼 */}
+                        <button
+                          onClick={() => !removingIds.has(course.course_id) && handleRemove(course.course_id)}
+                          disabled={removingIds.has(course.course_id)}
+                          style={{ background: 'none', border: 'none', cursor: removingIds.has(course.course_id) ? 'not-allowed' : 'pointer', color: '#9CA3AF', padding: 6, flexShrink: 0, opacity: removingIds.has(course.course_id) ? 0.4 : 1 }}
+                          title="장바구니에서 제거"
+                        >
+                          <Trash2 size={17} />
+                        </button>
                       </div>
-
-                      {/* 삭제 버튼 */}
-                      <button
-                        onClick={() => handleRemove(course.course_id)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 6, flexShrink: 0 }}
-                        title="장바구니에서 제거"
-                      >
-                        <Trash2 size={17} />
-                      </button>
                     </div>
+                    {/* 인라인 삭제 오류 */}
+                    {removeErrors[course.course_id] && (
+                      <div style={{ background: '#FEF2F2', borderTop: '1px solid #FECACA', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 12, color: '#DC2626', flex: 1 }}>⚠️ {removeErrors[course.course_id]}</span>
+                        <button
+                          onClick={() => handleRemove(course.course_id)}
+                          style={{ fontSize: 11, fontWeight: 600, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', ...s }}
+                        >다시 시도</button>
+                        <button
+                          onClick={() => setRemoveErrors(prev => { const n = { ...prev }; delete n[course.course_id]; return n; })}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14 }}
+                        >✕</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

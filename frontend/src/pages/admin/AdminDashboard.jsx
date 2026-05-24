@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users, Calendar, Activity, TrendingUp,
   ArrowUpRight, ArrowDownRight, RefreshCw,
-  AlertCircle, CheckCircle2
+  AlertCircle, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -10,16 +10,9 @@ import {
 } from 'recharts';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { fmtTime } from '../../utils/date';
 
 const BAR_COLORS = ['#8FA8FF','#8FA8FF','#8FA8FF','#4F7CF3','#8FA8FF','#C3B5FF','#C3B5FF'];
-
-const fmtTime = (iso) => {
-  try {
-    return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-  } catch {
-    return '';
-  }
-};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -66,6 +59,7 @@ const StatCard = ({ title, value, trend, sub, icon: Icon, iconBg, iconColor, acc
 export default function AdminDashboard() {
   const [lastUpdated, setLastUpdated]   = useState(new Date());
   const [loading, setLoading]           = useState(true);
+  const [fetchError, setFetchError]     = useState('');
   const [stats, setStats] = useState({
     total_count: null,
     today_new_users: null, today_new_users_trend: null,
@@ -79,8 +73,9 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
+    setFetchError('');
     try {
-      const [usageRes, usersRes, errorRes, dailyRes, weekdayRes] = await Promise.all([
+      const [usageResult, usersResult, errorResult, dailyResult, weekdayResult] = await Promise.allSettled([
         adminApi.get('/api/admin/stats/usage'),
         adminApi.get('/api/admin/users'),
         adminApi.get('/api/admin/stats/error?page=1&limit=5'),
@@ -88,35 +83,41 @@ export default function AdminDashboard() {
         adminApi.get('/api/admin/stats/weekday'),
       ]);
 
-      const usageData   = usageRes.data.success.data;
-      const usersData   = usersRes.data.success;
-      const errorData   = errorRes.data.success.data;
-      const dailyArr    = dailyRes.data.success.data   ?? [];
-      const weekdayArr  = weekdayRes.data.success.data ?? [];
+      const usageData  = usageResult.status  === 'fulfilled' ? usageResult.value.data.success.data   : null;
+      const usersData  = usersResult.status  === 'fulfilled' ? usersResult.value.data.success         : null;
+      const errorData  = errorResult.status  === 'fulfilled' ? errorResult.value.data.success.data    : null;
+      const dailyArr   = dailyResult.status  === 'fulfilled' ? (dailyResult.value.data.success.data   ?? []) : [];
+      const weekdayArr = weekdayResult.status === 'fulfilled' ? (weekdayResult.value.data.success.data ?? []) : [];
+
+      const anySuccess = [usageResult, usersResult, errorResult, dailyResult, weekdayResult]
+        .some(r => r.status === 'fulfilled');
+      if (!anySuccess) {
+        setFetchError('통계 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      }
 
       setStats({
-        total_count:               usersData.total_count,
-        today_new_users:           usageData.today_new_users,
-        today_new_users_trend:     usageData.today_new_users_trend ?? null,
-        daily_active_users:        usageData.daily_active_users,
-        daily_active_users_trend:  usageData.daily_active_users_trend ?? null,
-        total_timetables:          usageData.total_timetables,
-        today_timetables_trend:    usageData.today_timetables_trend ?? null,
-        api_call_counts:           usageData.api_call_counts,
-        api_call_counts_trend:     usageData.api_call_counts_trend ?? null,
+        total_count:              usersData?.total_count ?? null,
+        today_new_users:          usageData?.today_new_users ?? null,
+        today_new_users_trend:    usageData?.today_new_users_trend ?? null,
+        daily_active_users:       usageData?.daily_active_users ?? null,
+        daily_active_users_trend: usageData?.daily_active_users_trend ?? null,
+        total_timetables:         usageData?.total_timetables ?? null,
+        today_timetables_trend:   usageData?.today_timetables_trend ?? null,
+        api_call_counts:          usageData?.api_call_counts ?? null,
+        api_call_counts_trend:    usageData?.api_call_counts_trend ?? null,
       });
       setChartData(dailyArr);
       setWeekdayData(weekdayArr);
-      setErrorLogs(errorData.content ?? []);
+      setErrorLogs(errorData?.content ?? []);
       setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Dashboard stats fetch error:', err);
+    } catch {
+      setFetchError('통계 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = (val) => (loading || val === null || val === undefined ? '—' : val.toLocaleString());
 
@@ -133,12 +134,21 @@ export default function AdminDashboard() {
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
+          disabled={loading}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RefreshCw size={13} />
-          <span className="hidden sm:inline">새로고침</span>
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          <span className="hidden sm:inline">{loading ? '새로고침 중...' : '새로고침'}</span>
         </button>
       </div>
+
+      {/* ── 오류 배너 ── */}
+      {fetchError && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertTriangle size={14} className="flex-shrink-0" />
+          {fetchError}
+        </div>
+      )}
 
       {/* ── 통계 카드 4개 ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">

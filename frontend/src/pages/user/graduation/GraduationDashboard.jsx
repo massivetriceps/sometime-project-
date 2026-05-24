@@ -60,8 +60,7 @@ export default function GraduationDashboard() {
     details.major_elective.req +
     details.basic_liberal.req +
     (conv?.req_credits || 0) +
-    (details.area_liberal?.req || 0) +
-    (details.free_liberal?.req || 0);
+    (details.area_liberal?.req || 0);
   const freeReq    = Math.max(total_req_credits - mandatoryTotal, 0);
   const freeEarned = Math.max(total_earned_credits -
     details.major_required.earned -

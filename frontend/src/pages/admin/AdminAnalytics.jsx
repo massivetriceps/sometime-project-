@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
   Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { TrendingUp, Users, Calendar, BarChart2, RefreshCw } from 'lucide-react';
+import { TrendingUp, Users, Calendar, BarChart2, RefreshCw, AlertTriangle } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
 
@@ -22,9 +22,8 @@ const FREE_DAY_MAP = {
 
 /* ratio label 매핑 */
 const RATIO_META = [
-  { key: 'avoid_uphill_ratio',      label: '오르막 회피', color: '#A78BFA', bg: 'bg-[#F3F0FF]' },
-  { key: 'prefer_online_ratio',     label: '온라인 선호', color: '#F7CFA1', bg: 'bg-[#FFFBEA]' },
-  { key: 'minimize_gaps_ratio',     label: '연강 회피',   color: '#F4AFCF', bg: 'bg-pink-50'   },
+  { key: 'avoid_uphill_ratio',        label: '오르막 회피',  color: '#A78BFA', bg: 'bg-[#F3F0FF]' },
+  { key: 'prefer_online_ratio',       label: '온라인 선호',  color: '#F7CFA1', bg: 'bg-[#FFFBEA]' },
   { key: 'prioritize_required_ratio', label: '전공필수 우선', color: '#4F7CF3', bg: 'bg-[#EEF2FF]' },
 ];
 
@@ -62,6 +61,7 @@ const PieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
 export default function AdminAnalytics() {
   const [period, setPeriod]           = useState('all');
   const [loading, setLoading]         = useState(true);
+  const [fetchError, setFetchError]   = useState('');
   const [prefData, setPrefData]       = useState(null);
   const [usageStats, setUsageStats]   = useState(null);
   const [freeDayData, setFreeDayData] = useState([]);
@@ -70,27 +70,37 @@ export default function AdminAnalytics() {
 
   const fetchData = async (p = period) => {
     setLoading(true);
+    setFetchError('');
+    // allSettled: 하나 실패해도 나머지 결과는 정상 반영
+    const [prefRes, usageRes, freeDayRes, planRes, deptRes] = await Promise.allSettled([
+      adminApi.get('/api/admin/stats/preferences'),
+      adminApi.get('/api/admin/stats/usage'),
+      adminApi.get('/api/admin/stats/free-day'),
+      adminApi.get(`/api/admin/stats/plan-distribution?period=${p}`),
+      adminApi.get('/api/admin/stats/dept-distribution'),
+    ]);
+    const val = (r) => r.status === 'fulfilled' ? r.value : null;
     try {
-      const [prefRes, usageRes, freeDayRes, planRes, deptRes] = await Promise.all([
-        adminApi.get('/api/admin/stats/preferences'),
-        adminApi.get('/api/admin/stats/usage'),
-        adminApi.get('/api/admin/stats/free-day'),
-        adminApi.get(`/api/admin/stats/plan-distribution?period=${p}`),
-        adminApi.get('/api/admin/stats/dept-distribution'),
-      ]);
-      setPrefData(prefRes.data.success.data);
-      setUsageStats(usageRes.data.success.data);
-      setFreeDayData(freeDayRes.data.success.data  ?? []);
-      setPlanData(planRes.data.success.data         ?? { plans: [], total: 0 });
-      setDeptData(deptRes.data.success.data         ?? []);
-    } catch (err) {
-      console.error('Analytics fetch error:', err);
+      if (val(prefRes))    setPrefData(val(prefRes).data.success.data);
+      if (val(usageRes))   setUsageStats(val(usageRes).data.success.data);
+      if (val(freeDayRes)) setFreeDayData(val(freeDayRes).data.success.data ?? []);
+      if (val(planRes))    setPlanData(val(planRes).data.success.data ?? { plans: [], total: 0 });
+      if (val(deptRes))    setDeptData(val(deptRes).data.success.data ?? []);
+
+      const failCount = [prefRes, usageRes, freeDayRes, planRes, deptRes].filter(r => r.status === 'rejected').length;
+      if (failCount === 5) {
+        setFetchError('분석 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      } else if (failCount > 0) {
+        setFetchError(`일부 데이터(${failCount}개 항목)를 불러오지 못했습니다. 표시된 데이터는 부분 결과입니다.`);
+      }
+    } catch {
+      setFetchError('분석 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData('all'); }, []);
+  useEffect(() => { fetchData('all'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 기간 필터 변경 시 plan-distribution 재호출
   const handlePeriodChange = (p) => {
@@ -171,6 +181,20 @@ export default function AdminAnalytics() {
 
   return (
     <AdminLayout>
+
+      {/* ── 오류 배너 ── */}
+      {fetchError && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertTriangle size={14} className="flex-shrink-0" />
+          <span className="flex-1">{fetchError}</span>
+          <button
+            onClick={() => fetchData(period)}
+            className="ml-2 px-3 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold transition-colors"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
 
       {/* ── 헤더 ── */}
       <div className="flex items-center justify-between mb-5">

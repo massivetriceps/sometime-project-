@@ -1,39 +1,61 @@
 import { useState, useEffect } from 'react';
-import { Bell, Clock, Pin, ChevronRight } from 'lucide-react';
+import { Bell, Clock, ChevronRight } from 'lucide-react';
 import api from '../../api/axios';
+import { formatDate } from '../../utils/date';
 
 export default function Notice() {
   const [notices, setNotices] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchNotices = async () => {
+      setLoading(true);
+      setFetchError(false);
       try {
         const res = await api.get('/api/notices');
-        if (res.data.resultType === 'SUCCESS') {
-          setNotices(res.data.success.content || []);
+        if (!cancelled && res.data.resultType === 'SUCCESS') {
+          const data = res.data.success;
+          // 페이지네이션 응답({ content: [] })과 배열 응답 모두 허용
+          setNotices(Array.isArray(data) ? data : (data?.content ?? []));
         }
-      } catch (err) {
-        console.error('공지사항 조회 실패', err);
+      } catch {
+        if (!cancelled) setFetchError(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchNotices();
-  }, []);
+    return () => { cancelled = true; };
+  }, [retryCount]);
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('ko-KR', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-    }).replace(/\. /g, '.').replace(/\.$/, '');
-  };
+  const normalizeContent = (text) => (text || '').replace(/\\n/g, '\n');
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center font-pretendard">
         <p className="text-slate-400 text-sm">공지사항을 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-pretendard">
+        <div className="text-center">
+          <Bell size={40} className="mx-auto mb-4 text-red-300" />
+          <p className="text-slate-700 font-semibold mb-1">공지사항을 불러올 수 없습니다</p>
+          <p className="text-sm text-slate-400 mb-5">네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.</p>
+          <button
+            onClick={() => setRetryCount(c => c + 1)}
+            className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }
@@ -50,7 +72,7 @@ export default function Notice() {
             </div>
             <div className="h-px bg-slate-100 mb-6" />
             <div className="text-[15px] text-slate-700 leading-relaxed whitespace-pre-wrap">
-              {selected.content}
+              {normalizeContent(selected.content)}
             </div>
             {selected.attachment_url && (
               <div className="mt-6 pt-4 border-t border-slate-100">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Save, MapPin, TrendingUp, Plus, Pencil,
   CheckCircle2, X, ArrowRight, Navigation,
@@ -7,32 +7,8 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
 
-// 건물명 → DB building_id 매핑 (BUILDINGS 테이블 삽입 순서 기준)
-const BUILDING_MAP = {
-  '공학관A':    1,
-  '공학관B':    2,
-  '비전타워':   3,
-  '바이오나노관': 4,
-  '예술체육관': 5,
-  '중앙도서관': 6,
-  '학생회관':   7,
-  '인문관':     8,
-};
-
-const BUILDINGS = Object.keys(BUILDING_MAP);
-
-const INIT_MATRIX = {
-  '공학관A-공학관B':     { distance: 120, slope: 2  },
-  '공학관A-비전타워':    { distance: 350, slope: 5  },
-  '공학관A-바이오나노관':{ distance: 480, slope: 8  },
-  '공학관A-예술체육관':  { distance: 520, slope: 12 },
-  '공학관B-비전타워':    { distance: 280, slope: 3  },
-  '공학관B-바이오나노관':{ distance: 420, slope: 6  },
-  '비전타워-중앙도서관': { distance: 200, slope: 1  },
-  '비전타워-학생회관':   { distance: 180, slope: 2  },
-  '중앙도서관-학생회관': { distance:  90, slope: 0  },
-  '학생회관-인문관':     { distance: 230, slope: 3  },
-};
+// 건물명 → DB building_id 매핑은 API로부터 동적으로 구성됩니다
+const WALK_SPEED_M_PER_MIN = 80; // 도보 이동속도 (m/분) — time_minutes 변환 기준
 
 const getSlopeInfo = (slope) => {
   if (slope >= 10) return { label: '급경사', bg: 'bg-red-50',     text: 'text-red-500',    dot: 'bg-red-400',    bar: 'bg-red-400'    };
@@ -47,15 +23,56 @@ const getDistanceInfo = (dist) => {
 };
 
 export default function AdminCampusConfig() {
-  const [matrix, setMatrix]     = useState(INIT_MATRIX);
-  const [editKey, setEditKey]   = useState(null);
-  const [editForm, setEditForm] = useState({ distance: 0, slope: 0 });
-  const [saved, setSaved]       = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [showAdd, setShowAdd]   = useState(false);
-  const [newRoute, setNewRoute] = useState({ from: '', to: '', distance: '', slope: '' });
+  const [matrix, setMatrix]         = useState({});
+  const [buildingMap, setBuildingMap] = useState({});   // 건물명 → id
+  const [buildings, setBuildings]   = useState([]);     // 건물명 목록
+  const [loadingData, setLoadingData] = useState(true);
+  const [loadError, setLoadError]   = useState('');
+  const [editKey, setEditKey]       = useState(null);
+  const [editForm, setEditForm]     = useState({ distance: 0, slope: 0 });
+  const [saved, setSaved]           = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [saveError, setSaveError]   = useState(null);
+  const savedTimerRef = useRef(null);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [newRoute, setNewRoute]     = useState({ from: '', to: '', distance: '', slope: '' });
   const [filterSlope, setFilterSlope] = useState('all');
+
+  // 마운트 시 서버에서 경로 데이터 로드
+  useEffect(() => {
+    const load = async () => {
+      setLoadingData(true);
+      try {
+        const res = await adminApi.get('/api/admin/campus/distances');
+        const rows = res.data.success?.data ?? res.data.success ?? [];
+
+        // buildingMap: 건물명 → id
+        const bMap = {};
+        rows.forEach((r) => {
+          bMap[r.from_building_name] = r.from_building_id;
+          bMap[r.to_building_name]   = r.to_building_id;
+        });
+        setBuildingMap(bMap);
+        setBuildings(Object.keys(bMap).sort());
+
+        // matrix: "출발-도착" → { distance, slope }
+        const mat = {};
+        rows.forEach((r) => {
+          const key = `${r.from_building_name}-${r.to_building_name}`;
+          mat[key] = {
+            distance: Math.round(r.time_minutes * WALK_SPEED_M_PER_MIN),
+            slope: r.is_uphill ? 7 : 2,
+          };
+        });
+        setMatrix(mat);
+      } catch {
+        setLoadError('캠퍼스 데이터를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    load();
+  }, []);
 
   const entries = Object.entries(matrix).filter(([, val]) => {
     if (filterSlope === 'flat')   return val.slope < 5;
@@ -67,17 +84,16 @@ export default function AdminCampusConfig() {
   const steepCount  = Object.values(matrix).filter(v => v.slope >= 10).length;
   const midCount    = Object.values(matrix).filter(v => v.slope >= 5 && v.slope < 10).length;
   const flatCount   = Object.values(matrix).filter(v => v.slope < 5).length;
-  const avgDist     = Math.round(Object.values(matrix).reduce((s, v) => s + v.distance, 0) / Object.keys(matrix).length);
 
   const handleEdit     = (key)  => { setEditKey(key); setEditForm({ ...matrix[key] }); };
   const handleSaveEdit = ()     => {
-    setMatrix({ ...matrix, [editKey]: { distance: Number(editForm.distance), slope: Number(editForm.slope) } });
+    setMatrix(prev => ({ ...prev, [editKey]: { distance: Number(editForm.distance), slope: Number(editForm.slope) } }));
     setEditKey(null);
   };
   const handleAddRoute = () => {
     if (!newRoute.from || !newRoute.to || !newRoute.distance) return;
     const key = `${newRoute.from}-${newRoute.to}`;
-    setMatrix({ ...matrix, [key]: { distance: Number(newRoute.distance), slope: Number(newRoute.slope || 0) } });
+    setMatrix(prev => ({ ...prev, [key]: { distance: Number(newRoute.distance), slope: Number(newRoute.slope || 0) } }));
     setNewRoute({ from: '', to: '', distance: '', slope: '' });
     setShowAdd(false);
   };
@@ -93,23 +109,50 @@ export default function AdminCampusConfig() {
           const from = key.slice(0, dashIdx);
           const to   = key.slice(dashIdx + 1);
           return {
-            from_building_id: BUILDING_MAP[from],
-            to_building_id:   BUILDING_MAP[to],
-            time_minutes: Math.max(1, Math.round(val.distance / 80)),
+            from_building_id: buildingMap[from],
+            to_building_id:   buildingMap[to],
+            time_minutes: Math.max(1, Math.round(val.distance / WALK_SPEED_M_PER_MIN)),
             is_uphill: val.slope >= 5,
           };
         })
         .filter((d) => d.from_building_id && d.to_building_id);
 
       await adminApi.put('/api/admin/campus/distance', { distances });
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch {
       setSaveError('저장에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
   };
+
+  if (loadingData || loadError) {
+    return (
+      <AdminLayout>
+        {loadError ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="flex items-center gap-2 px-5 py-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600 font-medium max-w-sm text-center">
+              <AlertTriangle size={16} className="flex-shrink-0 text-red-500" />
+              {loadError}
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2 rounded-xl bg-[#4F7CF3] text-white text-sm font-semibold shadow-sm hover:bg-[#3B6AE0] transition-colors"
+            >
+              새로고침
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-24 text-slate-400 text-sm gap-2">
+            <div className="w-5 h-5 border-2 border-[#4F7CF3] border-t-transparent rounded-full animate-spin" />
+            캠퍼스 데이터를 불러오는 중...
+          </div>
+        )}
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -118,7 +161,7 @@ export default function AdminCampusConfig() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-bold text-slate-800">캠퍼스 지리 정보 관리</h1>
-          <p className="text-xs text-slate-400 mt-0.5">건물 간 이동 거리 및 경사 가중치를 설정합니다</p>
+          <p className="text-xs text-slate-400 mt-0.5">건물 간 이동 거리 및 경사 가중치를 설정합니다 <span className="text-amber-400 font-medium">· 거리는 이동시간 기반 추정값</span></p>
         </div>
         <div className="flex gap-2">
           <button
@@ -253,7 +296,7 @@ export default function AdminCampusConfig() {
                           type="number"
                           className="w-full rounded-xl border border-[#4F7CF3]/30 bg-white px-3 py-2 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all"
                           value={editForm.distance}
-                          onChange={(e) => setEditForm({ ...editForm, distance: e.target.value })}
+                          onChange={(e) => setEditForm(f => ({ ...f, distance: e.target.value }))}
                         />
                       </div>
                       <div>
@@ -262,7 +305,7 @@ export default function AdminCampusConfig() {
                           type="number"
                           className="w-full rounded-xl border border-[#4F7CF3]/30 bg-white px-3 py-2 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all"
                           value={editForm.slope}
-                          onChange={(e) => setEditForm({ ...editForm, slope: e.target.value })}
+                          onChange={(e) => setEditForm(f => ({ ...f, slope: e.target.value }))}
                         />
                       </div>
                     </div>
@@ -306,6 +349,7 @@ export default function AdminCampusConfig() {
                         </div>
                         <span className={`text-[11px] font-semibold ${dist.color}`}>{val.distance}m</span>
                         <span className="text-[10px] text-slate-300">{dist.label}</span>
+                        <span className="text-[10px] text-amber-400">추정</span>
                       </div>
                     </div>
 
@@ -369,10 +413,10 @@ export default function AdminCampusConfig() {
                       <select
                         className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm outline-none appearance-none focus:border-[#4F7CF3] transition-all pr-7 text-slate-700"
                         value={newRoute.from}
-                        onChange={(e) => setNewRoute({ ...newRoute, from: e.target.value })}
+                        onChange={(e) => setNewRoute(r => ({ ...r, from: e.target.value }))}
                       >
                         <option value="">선택</option>
-                        {BUILDINGS.map((b) => <option key={b}>{b}</option>)}
+                        {buildings.map((b) => <option key={b}>{b}</option>)}
                       </select>
                       <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
@@ -383,10 +427,10 @@ export default function AdminCampusConfig() {
                       <select
                         className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm outline-none appearance-none focus:border-[#4F7CF3] transition-all pr-7 text-slate-700"
                         value={newRoute.to}
-                        onChange={(e) => setNewRoute({ ...newRoute, to: e.target.value })}
+                        onChange={(e) => setNewRoute(r => ({ ...r, to: e.target.value }))}
                       >
                         <option value="">선택</option>
-                        {BUILDINGS.map((b) => <option key={b}>{b}</option>)}
+                        {buildings.map((b) => <option key={b}>{b}</option>)}
                       </select>
                       <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
@@ -413,7 +457,7 @@ export default function AdminCampusConfig() {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all"
                     placeholder="예: 350"
                     value={newRoute.distance}
-                    onChange={(e) => setNewRoute({ ...newRoute, distance: e.target.value })}
+                    onChange={(e) => setNewRoute(r => ({ ...r, distance: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -423,7 +467,7 @@ export default function AdminCampusConfig() {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all"
                     placeholder="예: 5"
                     value={newRoute.slope}
-                    onChange={(e) => setNewRoute({ ...newRoute, slope: e.target.value })}
+                    onChange={(e) => setNewRoute(r => ({ ...r, slope: e.target.value }))}
                   />
                 </div>
               </div>

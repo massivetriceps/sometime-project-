@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Megaphone, Upload, MapPin,
-  GraduationCap, BarChart2, PieChart, FileText, Sliders,
+  GraduationCap, PieChart, FileText, Sliders,
   Bot, LogOut, Menu, X, ChevronRight, Bell, UserCog
 } from 'lucide-react';
 import useAdminStore from '../../store/adminStore';
@@ -27,24 +27,9 @@ const navItems = [
   { label: '계정 설정', icon: UserCog, path: '/admin/profile' },
 ];
 
-export default function AdminLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const logout = useAdminStore((s) => s.logout);
-
-  const handleLogout = async () => {
-    try {
-      await adminApi.post('/api/admin/logout');
-    } catch {
-      // 서버 오류여도 로컬 세션은 항상 초기화
-    } finally {
-      logout();
-      navigate('/admin/login');
-    }
-  };
-
-  const SidebarContent = () => (
+// SidebarContent를 AdminLayout 밖에 정의하여 부모 리렌더 시 불필요한 마운트 방지
+function SidebarContent({ location, setSidebarOpen, handleLogout, admin }) {
+  return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-100">
@@ -89,11 +74,10 @@ export default function AdminLayout({ children }) {
       <div className="px-3 py-4 border-t border-gray-100">
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-bg-gray">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary text-xs font-bold">A</span>
+            <span className="text-primary text-xs font-bold">{(admin?.name || admin?.username || 'A')[0].toUpperCase()}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-text-dark truncate">관리자</p>
-            <p className="text-[11px] text-text-light truncate">admin@sometime.kr</p>
+            <p className="text-sm font-semibold text-text-dark truncate">{admin?.name || admin?.username || '관리자'}</p>
           </div>
           <button onClick={handleLogout} className="text-text-light hover:text-red-500 transition-colors">
             <LogOut size={15} />
@@ -102,12 +86,31 @@ export default function AdminLayout({ children }) {
       </div>
     </div>
   );
+}
+
+export default function AdminLayout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const logout = useAdminStore((s) => s.logout);
+  const admin = useAdminStore((s) => s.admin);
+
+  const handleLogout = async () => {
+    try {
+      await adminApi.post('/api/admin/logout');
+    } catch {
+      // 서버 오류여도 로컬 세션은 항상 초기화
+    } finally {
+      logout();
+      navigate('/admin/login');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-bg-gray overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 bg-white border-r border-gray-100 flex-shrink-0">
-        <SidebarContent />
+        <SidebarContent location={location} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout} admin={admin} />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -121,7 +124,7 @@ export default function AdminLayout({ children }) {
             >
               <X size={20} />
             </button>
-            <SidebarContent />
+            <SidebarContent location={location} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout} admin={admin} />
           </aside>
         </div>
       )}
@@ -139,10 +142,9 @@ export default function AdminLayout({ children }) {
           <div className="flex-1" />
           <button className="relative text-text-light hover:text-primary transition-colors">
             <Bell size={18} />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
           </button>
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary text-xs font-bold">A</span>
+            <span className="text-primary text-xs font-bold">{(admin?.name || admin?.username || 'A')[0].toUpperCase()}</span>
           </div>
         </header>
 

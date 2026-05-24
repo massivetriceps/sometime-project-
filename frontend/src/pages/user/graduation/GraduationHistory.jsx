@@ -43,9 +43,11 @@ const GRADES = ['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P', 'NP'];
 
 export default function GraduationHistory() {
   const navigate = useNavigate();
-  const [reqs, setReqs]       = useState(null);
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [reqs, setReqs]         = useState(null);
+  const [courses, setCourses]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [toast, setToast]       = useState(null); // { msg, type: 'success'|'error' }
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', course_code: '', credits: 3, letterGrade: 'A+', category: '전공필수', gradeYear: '1', semesterNum: '1' });
 
@@ -53,66 +55,90 @@ export default function GraduationHistory() {
   const [query, setQuery]           = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSugg, setShowSugg]     = useState(false);
-  const debounceRef = useRef(null);
-  const suggRef     = useRef(null);
+  const debounceRef   = useRef(null);
+  const suggRef       = useRef(null);
+  const toastTimerRef = useRef(null);
+  const abortRef      = useRef(null);
 
   const s   = { fontFamily: 'Pretendard, sans-serif' };
   const inp = { borderRadius: 10, border: '1px solid #E8F0FF', padding: '9px 12px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', ...s };
 
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, msg });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  };
+
   /* ── 초기 데이터 로드 ── */
   useEffect(() => {
     const load = async () => {
-      try {
-        const [histRes, reqRes] = await Promise.all([
-          api.get('/api/users/me/graduation/history'),
-          api.get('/api/users/me/graduation/dashboard'),
-        ]);
-        if (histRes.data.resultType === 'SUCCESS') {
-          setCourses(histRes.data.success.map(c => ({
-            id:          c.history_id,
-            course_code: c.course_code,
-            name:        c.course_name,
-            credits:     c.credits,
-            grade:       c.grade    ?? null,
-            semester:    c.semester ?? null,
-            letterGrade: 'A+',
-            category:    TO_CAT[c.classification] ?? c.classification,
-          })));
-        }
-        if (reqRes.data.resultType === 'SUCCESS') setReqs(reqRes.data.success);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+      const [histResult, reqResult] = await Promise.allSettled([
+        api.get('/api/users/me/graduation/history'),
+        api.get('/api/users/me/graduation/dashboard'),
+      ]);
+      if (histResult.status === 'fulfilled' && histResult.value.data.resultType === 'SUCCESS') {
+        setCourses(histResult.value.data.success.map(c => ({
+          id:          c.history_id,
+          course_code: c.course_code,
+          name:        c.course_name,
+          credits:     c.credits,
+          grade:       c.grade    ?? null,
+          semester:    c.semester ?? null,
+          letterGrade: c.letter_grade ?? null,
+          category:    TO_CAT[c.classification] ?? c.classification,
+        })));
+      } else if (histResult.status === 'rejected') {
+        setLoadError('수강내역 데이터를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
       }
+      if (reqResult.status === 'fulfilled' && reqResult.value.data.resultType === 'SUCCESS') {
+        setReqs(reqResult.value.data.success);
+      }
+      setLoading(false);
     };
     load();
   }, []);
 
-  /* ── 드롭다운 외부 클릭 닫기 ── */
+  /* ── 드롭다운 외부 클릭/터치 닫기 ── */
   useEffect(() => {
     const handler = (e) => {
       if (suggRef.current && !suggRef.current.contains(e.target)) setShowSugg(false);
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchend', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchend', handler);
+    };
   }, []);
 
-  /* ── 과목 검색 (debounce 300ms) ── */
+  /* ── debounceRef 언마운트 클린업 ── */
+  useEffect(() => () => {
+    clearTimeout(debounceRef.current);
+    if (abortRef.current) abortRef.current.abort();
+  }, []);
+
+  /* ── 과목 검색 (debounce 150ms + AbortController) ── */
   const handleQueryChange = useCallback((val) => {
     setQuery(val);
     setForm(f => ({ ...f, name: val, course_code: '' }));
     clearTimeout(debounceRef.current);
     if (!val.trim() || val.length < 1) { setSuggestions([]); setShowSugg(false); return; }
     debounceRef.current = setTimeout(async () => {
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const res = await api.get(`/api/courses?keyword=${encodeURIComponent(val)}`);
+        const res = await api.get(`/api/courses?keyword=${encodeURIComponent(val)}`, {
+          signal: controller.signal,
+        });
         if (res.data.resultType === 'SUCCESS') {
           setSuggestions(res.data.success.slice(0, 8));
           setShowSugg(true);
         }
-      } catch { setSuggestions([]); }
-    }, 300);
+      } catch (e) {
+        if (e.name !== 'CanceledError' && e.name !== 'AbortError') setSuggestions([]);
+      }
+    }, 150);
   }, []);
 
   /* ── 과목 선택 → 자동완성 ── */
@@ -135,16 +161,18 @@ export default function GraduationHistory() {
   };
 
   /* ── 졸업요건 기반 표시 카테고리 ── */
+  const existingFusionCats = [...new Set(courses.filter(c => c.category.startsWith('융합(')).map(c => c.category))];
+  const fusionRequired     = reqs?.details.convergence_lib?.req_credits > 0;
   const availableCats = reqs ? [
     reqs.details.major_required.req   > 0 && '전공필수',
     reqs.details.major_elective.req   > 0 && '전공선택',
     reqs.details.basic_liberal.req    > 0 && '기초교양',
-    reqs.details.convergence_lib?.req_credits > 0 && '융합(예술)',
-    reqs.details.convergence_lib?.req_credits > 0 && '융합(사회)',
-    reqs.details.convergence_lib?.req_credits > 0 && '융합(자연)',
-    reqs.details.convergence_lib?.req_credits > 0 && '융합(세계)',
+    // 요건에 융합교양이 있으면 4개 전부, 없어도 기존 수강 이력에 있으면 포함
+    ...(fusionRequired
+      ? ['융합(예술)', '융합(사회)', '융합(자연)', '융합(세계)']
+      : existingFusionCats),
     reqs.details.area_liberal?.req    > 0 && '계열교양',
-    '교양선택',   // DB 교선 과목 → 항상 포함
+    '교양선택',
     '자유선택',
   ].filter(Boolean) : Object.keys(CLASS_MAP);
 
@@ -168,9 +196,9 @@ export default function GraduationHistory() {
     }] : []),
   ] : [];
 
-  const addCourse = () => {
+  const addCourse = async () => {
     if (!form.name.trim()) return;
-    setCourses([...courses, {
+    const newCourse = {
       id:          Date.now(),
       course_code: form.course_code,
       name:        form.name,
@@ -179,7 +207,23 @@ export default function GraduationHistory() {
       category:    form.category,
       grade:       Number(form.gradeYear) || null,
       semester:    Number(form.semesterNum) || null,
-    }]);
+    };
+    const updated = [...courses, newCourse];
+    try {
+      await api.post('/api/users/me/graduation/history', {
+        courses: updated.map(c => ({
+          course_code:    c.course_code || c.name.trim().replace(/\s+/g, '_'),
+          course_name:    c.name,
+          classification: CLASS_MAP[c.category] ?? c.category,
+          credits:        Number(c.credits),
+          letter_grade:   c.letterGrade,
+        })),
+      });
+    } catch (err) {
+      showToast('error', err.response?.data?.error?.reason || '과목 저장 중 오류가 발생했습니다.');
+      return;
+    }
+    setCourses(updated);
     const firstCat = availableCats[0] || '전공필수';
     setForm({ name: '', course_code: '', credits: 3, letterGrade: 'A+', category: firstCat, gradeYear: '1', semesterNum: '1' });
     setQuery('');
@@ -192,8 +236,28 @@ export default function GraduationHistory() {
     </div>
   );
 
+  if (loadError) return (
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', ...s }}>
+      <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: '28px 32px', textAlign: 'center', maxWidth: 380 }}>
+        <p style={{ color: '#EF4444', fontWeight: 700, fontSize: 15, margin: '0 0 8px' }}>데이터를 불러오지 못했습니다</p>
+        <p style={{ color: '#6B7280', fontSize: 13, margin: '0 0 16px' }}>{loadError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ background: '#4F7CF3', color: 'white', border: 'none', padding: '10px 22px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...s }}
+        >
+          새로고침
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', ...s }}>
+      {toast && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999, background: toast.type === 'error' ? '#EF4444' : '#10B981', color: 'white', padding: '12px 20px', borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxWidth: 360, lineHeight: 1.5, ...s }}>
+          {toast.msg}
+        </div>
+      )}
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
 
         <div style={{ marginBottom: 28 }}>
@@ -277,13 +341,13 @@ export default function GraduationHistory() {
               {/* 학점 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>학점</label>
-                <input style={inp} type="number" min="1" max="4" value={form.credits} onChange={e => setForm({ ...form, credits: e.target.value })} />
+                <input style={inp} type="number" min="1" max="4" value={form.credits} onChange={e => setForm(f => ({ ...f, credits: e.target.value }))} />
               </div>
 
               {/* 성적 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>성적</label>
-                <select style={inp} value={form.letterGrade} onChange={e => setForm({ ...form, letterGrade: e.target.value })}>
+                <select style={inp} value={form.letterGrade} onChange={e => setForm(f => ({ ...f, letterGrade: e.target.value }))}>
                   {GRADES.map(g => <option key={g}>{g}</option>)}
                 </select>
               </div>
@@ -291,7 +355,7 @@ export default function GraduationHistory() {
               {/* 이수 구분 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>이수 구분</label>
-                <select style={inp} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <select style={inp} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   {availableCats.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
@@ -299,7 +363,7 @@ export default function GraduationHistory() {
               {/* 학년 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>학년</label>
-                <select style={inp} value={form.gradeYear} onChange={e => setForm({ ...form, gradeYear: e.target.value })}>
+                <select style={inp} value={form.gradeYear} onChange={e => setForm(f => ({ ...f, gradeYear: e.target.value }))}>
                   {['1','2','3','4'].map(y => <option key={y} value={y}>{y}학년</option>)}
                 </select>
               </div>
@@ -307,7 +371,7 @@ export default function GraduationHistory() {
               {/* 학기 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>학기</label>
-                <select style={inp} value={form.semesterNum} onChange={e => setForm({ ...form, semesterNum: e.target.value })}>
+                <select style={inp} value={form.semesterNum} onChange={e => setForm(f => ({ ...f, semesterNum: e.target.value }))}>
                   <option value="1">1학기</option>
                   <option value="2">2학기</option>
                 </select>
@@ -357,8 +421,24 @@ export default function GraduationHistory() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#4F7CF3' }}>{c.letterGrade || ''}</span>
-                <button onClick={() => setCourses(courses.filter(x => x.id !== c.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D1D5DB', padding: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#4F7CF3' }}>{c.letterGrade ?? '—'}</span>
+                <button onClick={async () => {
+                  const updated = courses.filter(x => x.id !== c.id);
+                  try {
+                    await api.post('/api/users/me/graduation/history', {
+                      courses: updated.map(x => ({
+                        course_code:    x.course_code || x.name.trim().replace(/\s+/g, '_'),
+                        course_name:    x.name,
+                        classification: CLASS_MAP[x.category] ?? x.category,
+                        credits:        Number(x.credits),
+                        letter_grade:   x.letterGrade,
+                      })),
+                    });
+                    setCourses(updated);
+                  } catch (err) {
+                    showToast('error', err.response?.data?.error?.reason || '삭제 중 오류가 발생했습니다.');
+                  }
+                }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D1D5DB', padding: 4 }}>
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -402,7 +482,23 @@ export default function GraduationHistory() {
                         {noSem.reduce((s, c) => s + Number(c.credits), 0)}학점
                       </span>
                     </div>
-                    <button onClick={() => setCourses(courses.filter(c => c.grade && c.semester))}
+                    <button onClick={async () => {
+                      const updated = courses.filter(c => c.grade && c.semester);
+                      try {
+                        await api.post('/api/users/me/graduation/history', {
+                          courses: updated.map(x => ({
+                            course_code:    x.course_code || x.name.trim().replace(/\s+/g, '_'),
+                            course_name:    x.name,
+                            classification: CLASS_MAP[x.category] ?? x.category,
+                            credits:        Number(x.credits),
+                            letter_grade:   x.letterGrade,
+                          })),
+                        });
+                        setCourses(updated);
+                      } catch (err) {
+                        showToast('error', err.response?.data?.error?.reason || '삭제 중 오류가 발생했습니다.');
+                      }
+                    }}
                       style={{ fontSize: 11, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Trash2 size={12} /> 전체 삭제
                     </button>
@@ -424,19 +520,20 @@ export default function GraduationHistory() {
           </button>
           <button
             onClick={async () => {
-              if (courses.length === 0) { alert('수강내역을 입력해주세요.'); return; }
+              if (courses.length === 0) { showToast('error', '수강내역을 입력해주세요.'); return; }
               try {
                 await api.post('/api/users/me/graduation/history', {
                   courses: courses.map(c => ({
-                    course_code: c.course_code || c.name.trim().replace(/\s+/g, '_'),
-                    course_name: c.name,
+                    course_code:    c.course_code || c.name.trim().replace(/\s+/g, '_'),
+                    course_name:    c.name,
                     classification: CLASS_MAP[c.category] ?? c.category,
-                    credits: Number(c.credits),
+                    credits:        Number(c.credits),
+                    letter_grade:   c.letterGrade,
                   })),
                 });
                 navigate('/graduation/dashboard');
               } catch (err) {
-                alert(err.response?.data?.error?.reason || '저장 중 오류가 발생했습니다.');
+                showToast('error', err.response?.data?.error?.reason || '저장 중 오류가 발생했습니다.');
               }
             }}
             style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#4F7CF3', color: 'white', padding: '12px 28px', borderRadius: 999, fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79,124,243,0.35)', ...s }}>

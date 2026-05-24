@@ -8,44 +8,43 @@ import api from '../../api/axios';
 export default function Login() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!form.email || !form.password) {
-    setError('이메일과 비밀번호를 모두 입력해주세요.');
-    return;
-  }
-
-  try {
-    const res = await api.post('/api/auth/login', {
-      login_id: form.email,
-      password: form.password,
-    });
-
-    if (res.data.resultType === 'SUCCESS') {
-      const { access_token } = res.data.success;
-
-      const userRes = await api.get('/api/users/me', {
-        headers: { Authorization: `Bearer ${access_token}` }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password) {
+      setError('이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/api/auth/login', {
+        login_id: form.email,
+        password: form.password,
       });
 
-      if (userRes.data.resultType === 'SUCCESS') {
-        login(userRes.data.success, access_token);
-      } else {
-        login({ email: form.email }, access_token);
+      if (res.data.resultType === 'SUCCESS') {
+        const { access_token } = res.data.success;
+        login({ email: form.email }, access_token, rememberMe);
+        try {
+          const userRes = await api.get('/api/users/me');
+          if (userRes.data.resultType === 'SUCCESS') updateUser(userRes.data.success);
+        } catch {}
+        navigate('/');
       }
-
-      navigate('/');
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      setError(reason || '로그인 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.log('에러:', err);
-    const reason = err.response?.data?.error?.reason;
-    setError(reason || '로그인 중 오류가 발생했습니다.');
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-6 font-pretendard">
@@ -78,7 +77,7 @@ const handleSubmit = async (e) => {
                 placeholder="이메일을 입력하세요"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
               />
             </div>
 
@@ -91,11 +90,11 @@ const handleSubmit = async (e) => {
                   placeholder="비밀번호를 입력하세요"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-4 pr-11 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPw(!showPw)}
+                  onClick={() => setShowPw(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -106,7 +105,12 @@ const handleSubmit = async (e) => {
             {/* 옵션 링크 */}
             <div className="flex justify-between items-center text-[13px] mt-1">
               <label className="flex items-center gap-2 text-slate-500 cursor-pointer">
-                <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary" />
+                <input
+                  type="checkbox"
+                  className="rounded border-slate-300 text-primary focus:ring-primary"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                />
                 로그인 상태 유지
               </label>
               <Link to="/find-account" className="text-primary font-medium hover:underline">
@@ -117,9 +121,14 @@ const handleSubmit = async (e) => {
             {/* 로그인 버튼 */}
             <button
               type="submit"
-              className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all"
+              disabled={loading}
+              className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              로그인 <ArrowRight size={16} />
+              {loading ? (
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />로그인 중...</>
+              ) : (
+                <>로그인 <ArrowRight size={16} /></>
+              )}
             </button>
           </form>
 

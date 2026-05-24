@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import './styles/global.css';
 import useAuthStore from './store/authStore';
 import useAdminStore from './store/adminStore';
 import Layout from './components/Layout';
@@ -32,6 +31,26 @@ import AdminCSPConfig      from './pages/admin/AdminCSPConfig';
 import AdminAIPrompt       from './pages/admin/AdminAIPrompt';
 import AdminProfile        from './pages/admin/AdminProfile';
 
+// FAQ 인라인 페이지 (별도 파일 없음)
+function FAQ() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-12 font-pretendard">
+      <h1 className="text-2xl font-bold text-slate-800 mb-8">자주 묻는 질문</h1>
+      {[
+        { q: '시간표는 어떻게 저장하나요?', a: '수강신청 > 장바구니에 과목을 담은 후 시간표 확정 버튼을 누르면 저장됩니다.' },
+        { q: '졸업요건 확인은 어디서 하나요?', a: '졸업요건 메뉴에서 수강내역을 입력하면 자동으로 이수 현황을 분석해 드립니다.' },
+        { q: '비밀번호를 잊어버렸어요.', a: '로그인 화면의 [아이디/비밀번호 찾기] 링크를 이용해 주세요.' },
+        { q: '학과 정보가 잘못 표시돼요.', a: '마이페이지 > 개인정보 수정에서 학과를 직접 변경할 수 있습니다.' },
+      ].map(({ q, a }, i) => (
+        <div key={i} className="mb-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <p className="font-semibold text-slate-800 mb-2">Q. {q}</p>
+          <p className="text-sm text-slate-500">A. {a}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PrivateRoute({ children }) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   return isLoggedIn ? children : <Navigate to="/login" replace />;
@@ -60,6 +79,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/"                     element={<Landing />} />
           <Route path="/notice"               element={<Notice />} />
+          <Route path="/faq"                  element={<FAQ />} />
           <Route path="/mypage"               element={<PrivateRoute><MyPage /></PrivateRoute>} />
           <Route path="/courses"              element={<PrivateRoute><Courses /></PrivateRoute>} />
           <Route path="/cart"                 element={<PrivateRoute><Cart /></PrivateRoute>} />

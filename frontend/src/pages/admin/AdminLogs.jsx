@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { formatDateTime } from '../../utils/date';
 
 const ERROR_STYLE = {
   badge:    'bg-red-50 text-red-500 border border-red-100',
@@ -13,18 +14,6 @@ const ERROR_STYLE = {
   iconColor:'text-red-500',
   detailBg: 'bg-red-50/40',
   dot:      'bg-red-400',
-};
-
-const formatDateTime = (isoStr) => {
-  if (!isoStr) return '—';
-  try {
-    const d = new Date(isoStr);
-    const date = d.toLocaleDateString('ko-KR');
-    const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    return `${date} ${time}`;
-  } catch {
-    return isoStr;
-  }
 };
 
 export default function AdminLogs() {
@@ -50,8 +39,7 @@ export default function AdminLogs() {
       setCurrentPage(data.current_page ?? page);
       setTotalPages(data.total_pages ?? 1);
       setTotalCount(data.total_count ?? 0);
-    } catch (err) {
-      console.error('AdminLogs fetch error:', err);
+    } catch {
       setError('데이터를 불러오지 못했습니다');
     } finally {
       setLoading(false);
@@ -60,7 +48,7 @@ export default function AdminLogs() {
 
   useEffect(() => {
     fetchLogs(1);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = logs.filter((l) => {
     if (!search) return true;

@@ -5,7 +5,8 @@ import api from '../../../api/axios';
 
 const COLORS = ['#8FA8FF', '#8EDDD0', '#C3B5FF', '#F7CFA1', '#F4AFCF'];
 
-// 교시 → 시간 변환 (1교시=09:00, 2교시=10:00, ...)
+// 교시 → 시간 변환: 가천대 기준 1교시=09:00, 각 교시는 50분 수업+10분 휴식(정각 시작)
+// n교시 시작 = (8+n)시 정각, 종료 = (8+n)시 50분
 const periodToTime = (period) => `${String(8 + period).padStart(2, '0')}:00`;
 const periodToEndTime = (period) => `${String(8 + period).padStart(2, '0')}:50`;
 
@@ -72,6 +73,7 @@ function TimetableGrid({ courses }) {
 export default function TimetableManage() {
   const [timetables, setTimetables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [aiComment, setAiComment] = useState('');
@@ -83,16 +85,46 @@ export default function TimetableManage() {
   const [searching, setSearching] = useState(false);
   const [addingCourseId, setAddingCourseId] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [toast, setToast] = useState(null); // { msg, type: 'success'|'error' }
   const searchRef = useRef(null);
+  const searchPanelRef = useRef(null);
+  const searchDebounceRef = useRef(null);
+  const toastTimerRef = useRef(null);
+  const abortRef = useRef(null);
 
   const s = { fontFamily: 'Pretendard, sans-serif' };
 
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ msg, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  };
+
   useEffect(() => {
     fetchTimetables();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ── 검색 디바운스·AbortController 클린업 ── */
+  useEffect(() => () => { clearTimeout(searchDebounceRef.current); abortRef.current?.abort(); }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchPanelRef.current && !searchPanelRef.current.contains(e.target)) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchend', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchend', handler);
+    };
   }, []);
 
   const fetchTimetables = async () => {
     setLoading(true);
+    setFetchError('');
     try {
       const res = await api.get('/api/users/me/timetables');
       if (res.data.resultType === 'SUCCESS') {
@@ -100,8 +132,8 @@ export default function TimetableManage() {
         setTimetables(data);
         if (data.length > 0) setSelectedId(data[0].timetable_id);
       }
-    } catch (err) {
-      console.error('시간표 조회 실패', err);
+    } catch {
+      setFetchError('시간표를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +150,7 @@ export default function TimetableManage() {
       setAiComment('');
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
-      alert(reason || '삭제 중 오류가 발생했습니다.');
+      showToast('error', reason || '삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -138,21 +170,26 @@ export default function TimetableManage() {
       );
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
-      alert(reason || '강의 제거 중 오류가 발생했습니다.');
+      showToast('error', reason || '강의 제거 중 오류가 발생했습니다.');
     } finally {
       setRemovingCourseId(null);
     }
   };
 
-  const handleSearch = async (keyword) => {
+  const handleSearch = (keyword) => {
     setSearchKeyword(keyword);
+    clearTimeout(searchDebounceRef.current);
+    abortRef.current?.abort();
     if (!keyword.trim()) { setSearchResults([]); return; }
-    setSearching(true);
-    try {
-      const res = await api.get(`/api/courses?keyword=${encodeURIComponent(keyword)}`);
-      if (res.data.resultType === 'SUCCESS') setSearchResults(res.data.success.slice(0, 20));
-    } catch { setSearchResults([]); }
-    finally { setSearching(false); }
+    searchDebounceRef.current = setTimeout(async () => {
+      abortRef.current = new AbortController();
+      setSearching(true);
+      try {
+        const res = await api.get(`/api/courses?keyword=${encodeURIComponent(keyword)}`, { signal: abortRef.current.signal });
+        if (res.data.resultType === 'SUCCESS') setSearchResults(res.data.success.slice(0, 20));
+      } catch { setSearchResults([]); }
+      finally { setSearching(false); }
+    }, 300);
   };
 
   const handleAddCourse = async (courseId) => {
@@ -164,7 +201,7 @@ export default function TimetableManage() {
       if (res.data.resultType === 'SUCCESS') setTimetables(res.data.success);
       setSearchResults(prev => prev.filter(c => c.course_id !== courseId));
     } catch (err) {
-      alert(err.response?.data?.error?.reason || '추가 중 오류가 발생했습니다.');
+      showToast('error', err.response?.data?.error?.reason || '추가 중 오류가 발생했습니다.');
     } finally {
       setAddingCourseId(null);
     }
@@ -177,7 +214,7 @@ export default function TimetableManage() {
       const res = await api.post(`/api/users/me/timetables/${activePlan.timetable_id}/confirm`);
       if (res.data.resultType === 'SUCCESS') {
         const { added_count } = res.data.success;
-        alert(`이번 학기 시간표로 확정되었습니다.\n수강내역에 ${added_count}개 과목이 추가되었습니다.`);
+        showToast('success', `이번 학기 시간표로 확정되었습니다. 수강내역에 ${added_count}개 과목이 추가되었습니다.`);
         setTimetables(prev => prev.map(t => ({
           ...t,
           is_selected: t.timetable_id === activePlan.timetable_id,
@@ -185,7 +222,7 @@ export default function TimetableManage() {
       }
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
-      alert(reason || '확정 중 오류가 발생했습니다.');
+      showToast('error', reason || '확정 중 오류가 발생했습니다.');
     } finally {
       setConfirming(false);
     }
@@ -199,8 +236,8 @@ export default function TimetableManage() {
       if (res.data.resultType === 'SUCCESS') {
         setAiComment(res.data.success.ai_comment || '아직 AI 코멘트가 없습니다.');
       }
-    } catch (err) {
-      console.error('AI 코멘트 조회 실패', err);
+    } catch {
+      setAiComment('AI 코멘트를 불러오지 못했습니다.');
     } finally {
       setLoadingComment(false);
     }
@@ -222,6 +259,12 @@ export default function TimetableManage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', ...s }}>
+      {/* 토스트 알림 */}
+      {toast && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999, background: toast.type === 'error' ? '#EF4444' : '#10B981', color: 'white', padding: '12px 20px', borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxWidth: 360, lineHeight: 1.5, ...s }}>
+          {toast.msg}
+        </div>
+      )}
       <main style={{ maxWidth: 896, margin: '0 auto', padding: '28px 16px' }}>
 
         <div style={{ marginBottom: 24 }}>
@@ -230,6 +273,12 @@ export default function TimetableManage() {
           </h1>
           <p style={{ color: '#6B7280', margin: 0, fontSize: 14 }}>생성된 시간표를 조회, 수정, 삭제할 수 있어요</p>
         </div>
+
+        {fetchError && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#EF4444' }}>
+            {fetchError}
+          </div>
+        )}
 
         {timetables.length === 0 ? (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E8F0FF', padding: '80px 24px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
@@ -363,7 +412,7 @@ export default function TimetableManage() {
 
                 {/* 과목 추가 검색 패널 */}
                 {showAddPanel && (
-                  <div style={{ padding: '16px 22px', borderBottom: '1px solid #F3F4F6', background: '#FAFBFF' }}>
+                  <div ref={searchPanelRef} style={{ padding: '16px 22px', borderBottom: '1px solid #F3F4F6', background: '#FAFBFF' }}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px', background: 'white' }}>
                         <Search size={14} color="#9CA3AF" />
@@ -388,7 +437,7 @@ export default function TimetableManage() {
                                 <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', margin: '0 0 2px' }}>{c.course_name}</p>
                                 <p style={{ fontSize: 11, color: '#6B7280', margin: 0 }}>
                                   {c.professor} · {c.credits}학점
-                                  {c.schedules?.[0] && ` · ${c.schedules[0].day_of_week}요일 ${c.schedules[0].start_period}~${c.schedules[0].end_period}교시`}
+                                  {c.schedules?.[0] && ` · ${c.schedules[0].day_of_week} ${c.schedules[0].start_period}~${c.schedules[0].end_period}교시`}
                                   {c.classification && <span style={{ marginLeft: 6, color: '#4F7CF3' }}>{c.classification}</span>}
                                 </p>
                               </div>
@@ -422,7 +471,7 @@ export default function TimetableManage() {
                             <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: '0 0 3px' }}>{course.course_name}</p>
                             <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>
                               {course.professor || '교수 미정'} · {course.credits}학점
-                              {course.schedules?.[0] && ` · ${course.schedules[0].day_of_week}요일 ${course.schedules[0].start_period}~${course.schedules[0].end_period}교시`}
+                              {course.schedules?.[0] && ` · ${course.schedules[0].day_of_week} ${course.schedules[0].start_period}~${course.schedules[0].end_period}교시`}
                             </p>
                             {course.classification && (
                               <span style={{ fontSize: 11, color: '#4F7CF3', background: '#EEF2FF', padding: '2px 7px', borderRadius: 999, marginTop: 4, display: 'inline-block' }}>

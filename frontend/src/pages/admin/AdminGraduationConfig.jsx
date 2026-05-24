@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Save, ChevronDown, Pencil, CheckCircle2,
   GraduationCap, BookOpen, BookMarked, Layers, Sparkles, AlertTriangle, Plus
@@ -25,6 +25,15 @@ export default function AdminGraduationConfig() {
   const [form, setForm]           = useState(EMPTY);
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
+  const [toast, setToast]         = useState(null); // { msg, type }
+  const toastTimerRef = useRef(null);
+  const savedTimerRef = useRef(null);
+
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, msg });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  };
 
   useEffect(() => {
     adminApi.get('/api/admin/majors').then(r => {
@@ -80,10 +89,12 @@ export default function AdminGraduationConfig() {
       // 목록 갱신
       const r = await adminApi.get('/api/admin/graduation/rules');
       if (r.data.resultType === 'SUCCESS') setRules(r.data.success);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+      showToast('success', '졸업 요건이 저장되었습니다.');
     } catch {
-      alert('저장 중 오류가 발생했습니다.');
+      showToast('error', '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
@@ -93,6 +104,11 @@ export default function AdminGraduationConfig() {
 
   return (
     <AdminLayout>
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+          {toast.msg}
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-bold text-slate-800">졸업 요건 관리</h1>
@@ -197,7 +213,7 @@ export default function AdminGraduationConfig() {
                       min={0}
                       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base font-bold text-slate-800 outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all pr-12"
                       value={form[field]}
-                      onChange={e => setForm({ ...form, [field]: Number(e.target.value) })}
+                      onChange={e => setForm(prev => ({ ...prev, [field]: Number(e.target.value) }))}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-medium">학점</span>
                   </div>
@@ -215,7 +231,7 @@ export default function AdminGraduationConfig() {
                   type="number"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all pr-12"
                   value={form.total_credits}
-                  onChange={e => setForm({ ...form, total_credits: Number(e.target.value) })}
+                  onChange={e => setForm(prev => ({ ...prev, total_credits: Number(e.target.value) }))}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">학점</span>
               </div>

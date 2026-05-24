@@ -1,6 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GachonLogo } from '../../components/ui/GachonLogo';
 import { Search, ShoppingCart, Plus, Check, Filter, ArrowLeft } from 'lucide-react';
 import useTimetableStore from '../../store/timetableStore';
 import api from '../../api/axios';
@@ -10,16 +9,24 @@ const TC = {
   '전선': { bg: '#d1faf5', color: '#2EC4B6' },
   '교필': { bg: '#ede9fe', color: '#A78BFA' },
   '교선': { bg: '#fef9e7', color: '#d4a017' },
+  '융합': { bg: '#fff7ed', color: '#f97316' },
+  '융합(예술)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(사회)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(자연)': { bg: '#fff7ed', color: '#f97316' },
+  '융합(세계)': { bg: '#fff7ed', color: '#f97316' },
   '계교': { bg: '#fef3c7', color: '#d97706' },
   '교직': { bg: '#f0fdf4', color: '#16a34a' },
   '군사': { bg: '#f1f5f9', color: '#64748b' },
 };
+
+const DAY_SHORT = { '월요일': '월', '화요일': '화', '수요일': '수', '목요일': '목', '금요일': '금', MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금' };
 
 const FILTER_MAP = {
   '전공필수': '전필',
   '전공선택': '전선',
   '교양필수': '교필',
   '교양선택': '교선',
+  '융합교양': '융합',
   '계열교양': '계교',
   '군사학':   '군사',
   '교직':     '교직',
@@ -37,13 +44,15 @@ export default function Courses() {
   const [takenCourses, setTakenCourses] = useState([]);  // 기수강 과목
   const [distances, setDistances] = useState([]);        // 건물 간 이동시간
   const [conflictErrors, setConflictErrors] = useState({}); // { [course_id]: { msg, sub } }
+  const [addingIds, setAddingIds] = useState(new Set());   // API 요청 중인 course_id 집합
+  const [cartInitWarn, setCartInitWarn] = useState('');    // 장바구니 초기 로드 경고
   const s = { fontFamily: 'Pretendard, sans-serif' };
 
   // 장바구니·기수강·이동시간 데이터 초기 로드
   useEffect(() => {
     api.get('/api/users/me/cart')
       .then(r => { if (r.data.resultType === 'SUCCESS') setCartItems(r.data.success); })
-      .catch(() => {});
+      .catch(() => { setCartInitWarn('장바구니 데이터를 불러오지 못해 충돌 검사가 부정확할 수 있습니다.'); });
     api.get('/api/users/me/graduation/history')
       .then(r => { if (r.data.resultType === 'SUCCESS') setTakenCourses(r.data.success); })
       .catch(() => {});
@@ -115,15 +124,15 @@ export default function Courses() {
   };
 
   // API로 강의 목록 가져오기
-  const fetchCourses = async (overrideFilter) => {
+  const fetchCourses = async (overrideFilter, overrideSearch) => {
     const activeFilter = overrideFilter !== undefined ? overrideFilter : filter;
+    const activeSearch = overrideSearch !== undefined ? overrideSearch : search;
     setLoading(true);
     setFetchError(null);
     try {
       const params = {};
-      if (search) params.keyword = search;
+      if (activeSearch) params.keyword = activeSearch;
       if (activeFilter !== '전체') params.classification = FILTER_MAP[activeFilter] ?? activeFilter;
-
       const res = await api.get('/api/courses', { params });
       if (res.data.resultType === 'SUCCESS') {
         const data = res.data.success ?? [];
@@ -132,7 +141,6 @@ export default function Courses() {
         setFetchError('강의 목록을 가져오지 못했습니다.');
       }
     } catch (err) {
-      console.error('강의 목록 조회 실패', err);
       const msg = err.response?.status === 401
         ? '로그인이 필요합니다. 다시 로그인해주세요.'
         : '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
@@ -142,39 +150,59 @@ export default function Courses() {
     }
   };
 
-  // 필터 변경 시 재검색 (mount 포함)
+  // 필터 변경 시 재검색 (mount 포함) — 검색어도 초기화
   useEffect(() => {
-    fetchCourses(filter);
+    fetchCourses(filter, '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const isInCart = (id) => cart.some(item => item.courseId === id);
 
   const handleAdd = async (course) => {
+    // 이미 요청 중이거나 담긴 과목이면 무시 (중복 클릭 방지)
+    if (addingIds.has(course.course_id) || isInCart(course.course_id)) return;
+
     // ── 강한 제약 충돌 사전 검사 ──
     const conflict = checkHardConflicts(course);
     if (conflict) {
       setConflictErrors(prev => ({ ...prev, [course.course_id]: conflict }));
-      return; // 담기 거부
+      return;
     }
 
+    setAddingIds(prev => new Set([...prev, course.course_id]));
     try {
       await api.post('/api/users/me/cart', { course_id: course.course_id });
       addToCart({ id: course.course_id, name: course.course_name }, 'medium');
-      setCartItems(prev => [...prev, course]); // 로컬 동기화
-      setConflictErrors(prev => {             // 혹시 남은 에러 제거
+      setCartItems(prev =>
+        prev.some(c => c.course_id === course.course_id) ? prev : [...prev, course]
+      );
+      setConflictErrors(prev => {
         const next = { ...prev };
         delete next[course.course_id];
         return next;
       });
     } catch (err) {
-      console.error('장바구니 담기 실패', err);
+      const reason = err.response?.data?.error?.reason;
+      setConflictErrors(prev => ({
+        ...prev,
+        [course.course_id]: {
+          msg: `⚠️ 담기 실패 — ${reason || '서버 오류가 발생했습니다.'}`,
+          sub: '잠시 후 다시 시도해주세요.',
+        },
+      }));
+    } finally {
+      setAddingIds(prev => {
+        const next = new Set(prev);
+        next.delete(course.course_id);
+        return next;
+      });
     }
   };
 
-  // 시간표 포맷 변환
+  // 시간표 포맷 변환 (Cart.jsx의 formatSchedule과 동기화 유지)
   const formatSchedule = (schedules) => {
     if (!schedules || schedules.length === 0) return '-';
-    return schedules.map(s => `${s.day_of_week} ${s.start_period}~${s.end_period}교시`).join(', ');
+    return schedules.map(sc => `${DAY_SHORT[sc.day_of_week] ?? sc.day_of_week} ${sc.start_period}~${sc.end_period}교시`).join(' · ');
   };
 
   const formatRoom = (schedules) => {
@@ -211,7 +239,7 @@ export default function Courses() {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             <Filter size={13} color="#9CA3AF" />
             {['전체', '전공필수', '전공선택', '교양필수', '교양선택', '융합교양', '계열교양', '군사학', '교직'].map(f => (
-              <button key={f} onClick={() => setFilter(f)}
+              <button key={f} onClick={() => { setSearch(''); setFilter(f); }}
                 style={{ padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500, border: filter === f ? 'none' : '1px solid #E8F0FF', background: filter === f ? '#4F7CF3' : 'white', color: filter === f ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
                 {f}
               </button>
@@ -229,6 +257,13 @@ export default function Courses() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {cartInitWarn && (
+            <div style={{ background: '#FFFBEA', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14 }}>⚠️</span>
+              <p style={{ margin: 0, fontSize: 12, color: '#92400E' }}>{cartInitWarn}</p>
+              <button onClick={() => setCartInitWarn('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, marginLeft: 'auto' }}>✕</button>
+            </div>
+          )}
           {fetchError && (
             <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 18 }}>⚠️</span>
@@ -254,7 +289,7 @@ export default function Courses() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 500, background: TC[course.classification]?.bg, color: TC[course.classification]?.color }}>{course.classification}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 500, background: TC[course.classification]?.bg ?? '#F3F4F6', color: TC[course.classification]?.color ?? '#6B7280' }}>{course.classification}</span>
                           <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.credits}학점</span>
                           <span style={{ fontSize: 11, color: '#9CA3AF' }}>{course.major}</span>
                         </div>

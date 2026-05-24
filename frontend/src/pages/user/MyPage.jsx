@@ -1,15 +1,18 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GachonLogo } from '../../components/ui/GachonLogo';
 import { Lock, Trash2, ArrowRight, LogOut } from 'lucide-react';
 import studentLogo from '../../assets/student-logo.png';
 import useAuthStore from '../../store/authStore';
+import useTimetableStore from '../../store/timetableStore';
 import api from '../../api/axios';
 
+let _majorsCache = null;
+
 export default function MyPage() {
- const user = useAuthStore((state) => state.user);
-const logout = useAuthStore((state) => state.logout);
-const updateUser = useAuthStore((state) => state.updateUser);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const resetCart = useTimetableStore((state) => state.resetCart);
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [form, setForm] = useState({
@@ -25,12 +28,32 @@ const updateUser = useAuthStore((state) => state.updateUser);
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawPw, setWithdrawPw] = useState('');
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
 
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, msg });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  };
+
+  // 학과 목록: mount 시 한 번만 로드 (모듈 캐시 활용)
   useEffect(() => {
-    api.get('/api/auth/majors').then(r => {
-      if (r.data.resultType === 'SUCCESS') setMajors(r.data.success);
-    }).catch(() => {});
+    if (_majorsCache) {
+      setMajors(_majorsCache);
+    } else {
+      api.get('/api/auth/majors').then(r => {
+        if (r.data.resultType === 'SUCCESS') {
+          _majorsCache = r.data.success;
+          setMajors(r.data.success);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
+  // 유저 정보: store에 없을 때만 API로 가져옴 (user가 바뀔 때마다 재평가)
+  useEffect(() => {
+    if (user?.email) return;
     api.get('/api/users/me').then(r => {
       if (r.data.resultType === 'SUCCESS') {
         const u = r.data.success;
@@ -46,11 +69,18 @@ const updateUser = useAuthStore((state) => state.updateUser);
         }));
       }
     }).catch(() => {});
-  }, []);
+  }, [user, updateUser]);
 
 
   return (
     <div className="min-h-screen bg-slate-50 font-pretendard">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold transition-all animate-in fade-in slide-in-from-top-2 duration-300 ${
+          toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
       
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* 프로필 요약 카드 */}
@@ -62,7 +92,7 @@ const updateUser = useAuthStore((state) => state.updateUser);
           <div>
             <h3 className="font-bold text-lg text-slate-800 mb-0.5">{form.name}</h3>
             <p className="text-sm text-slate-500">
-              {form.department} · {form.studentId.slice(2, 4)}학번 · {form.grade}학년
+              {form.department} · {form.studentId ? `${form.studentId.slice(2, 4)}학번` : '학번 미등록'} · {form.grade}학년
             </p>
           </div>
         </div>
@@ -112,7 +142,7 @@ const updateUser = useAuthStore((state) => state.updateUser);
                       value={form.majorId}
                       onChange={e => {
                         const selected = majors.find(m => String(m.major_id) === e.target.value);
-                        setForm({ ...form, majorId: e.target.value, department: selected?.major_name || form.department });
+                        setForm(f => ({ ...f, majorId: e.target.value, department: selected?.major_name || f.department }));
                       }}
                     >
                       {majors.map(m => (
@@ -122,16 +152,18 @@ const updateUser = useAuthStore((state) => state.updateUser);
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 ml-1">학번</label>
-                    <input 
+                    <input
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                      type="text" value={form.studentId} maxLength={9} onChange={e => setForm({ ...form, studentId: e.target.value })} 
+                      type="text" inputMode="numeric" pattern="[0-9]*"
+                      value={form.studentId} maxLength={9}
+                      onChange={e => setForm(f => ({ ...f, studentId: e.target.value.replace(/\D/g, '') }))}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 ml-1">학년</label>
                     <select 
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all appearance-none"
-                      value={form.grade} onChange={e => setForm({ ...form, grade: e.target.value })}
+                      value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}
                     >
                       {['1', '2', '3', '4'].map(g => <option key={g} value={g}>{g}학년</option>)}
                     </select>
@@ -142,7 +174,7 @@ const updateUser = useAuthStore((state) => state.updateUser);
                   <label className="text-xs font-semibold text-slate-600 ml-1">이메일</label>
                   <input 
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                    type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} 
+                    type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -152,12 +184,17 @@ const updateUser = useAuthStore((state) => state.updateUser);
     type="password"
     placeholder="정보 수정을 위해 현재 비밀번호를 입력하세요"
     value={form.currentPassword}
-    onChange={e => setForm({ ...form, currentPassword: e.target.value })}
+    onChange={e => setForm(f => ({ ...f, currentPassword: e.target.value }))}
   />
 </div>
 
-                <button 
+                <button
+  type="button"
   onClick={async () => {
+    if (!form.currentPassword.trim()) {
+      showToast('error', '현재 비밀번호를 입력해주세요.');
+      return;
+    }
     try {
       await api.put('/api/users/me', {
         current_password: form.currentPassword,
@@ -166,26 +203,28 @@ const updateUser = useAuthStore((state) => state.updateUser);
         student_id: form.studentId,
         major_id: Number(form.majorId),
       });
+      showToast('success', '저장되었습니다!');
+      setForm(f => ({ ...f, currentPassword: '' }));
       // 저장 후 최신 유저 정보 다시 불러와서 store + 폼 갱신
-      const res = await api.get('/api/users/me');
-      if (res.data.resultType === 'SUCCESS') {
-        const updated = res.data.success;
-        updateUser(updated);
-        setForm(f => ({
-          ...f,
-          name:       updated.name        || f.name,
-          majorId:    String(updated.major_id || f.majorId),
-          department: updated.major_name  || f.department,
-          studentId:  updated.student_id  || f.studentId,
-          email:      updated.email       || f.email,
-          grade:      String(updated.grade || f.grade),
-          currentPassword: '',
-        }));
-      }
-      alert('저장되었습니다!');
+      try {
+        const res = await api.get('/api/users/me');
+        if (res.data.resultType === 'SUCCESS') {
+          const updated = res.data.success;
+          updateUser(updated);
+          setForm(f => ({
+            ...f,
+            name:       updated.name        || f.name,
+            majorId:    String(updated.major_id || f.majorId),
+            department: updated.major_name  || f.department,
+            studentId:  updated.student_id  || f.studentId,
+            email:      updated.email       || f.email,
+            grade:      String(updated.grade || f.grade),
+          }));
+        }
+      } catch {}
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
-      alert(reason || '저장 중 오류가 발생했습니다.');
+      showToast('error', reason || '저장 중 오류가 발생했습니다.');
     }
   }}
   className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
@@ -213,14 +252,27 @@ const updateUser = useAuthStore((state) => state.updateUser);
                     <input 
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
                       type="password" placeholder={f.label} 
-                      value={pwForm[f.key]} onChange={e => setPwForm({ ...pwForm, [f.key]: e.target.value })} 
+                      value={pwForm[f.key]} onChange={e => setPwForm(p => ({ ...p, [f.key]: e.target.value }))}
                     />
                   </div>
                 ))}
-             <button 
+             <button
+  type="button"
   onClick={async () => {
+    if (!pwForm.current) {
+      showToast('error', '현재 비밀번호를 입력해주세요.');
+      return;
+    }
+    if (!pwForm.next) {
+      showToast('error', '새 비밀번호를 입력해주세요.');
+      return;
+    }
+    if (pwForm.next.length < 8) {
+      showToast('error', '새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
     if (pwForm.next !== pwForm.confirm) {
-      alert('새 비밀번호가 일치하지 않습니다.');
+      showToast('error', '새 비밀번호가 일치하지 않습니다.');
       return;
     }
     try {
@@ -228,11 +280,11 @@ const updateUser = useAuthStore((state) => state.updateUser);
         current_password: pwForm.current,
         new_password: pwForm.next,
       });
-      alert('비밀번호가 변경되었습니다!');
+      showToast('success', '비밀번호가 변경되었습니다!');
       setPwForm({ current: '', next: '', confirm: '' });
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
-      alert(reason || '변경 중 오류가 발생했습니다.');
+      showToast('error', reason || '변경 중 오류가 발생했습니다.');
     }
   }}
   className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
@@ -286,10 +338,11 @@ const updateUser = useAuthStore((state) => state.updateUser);
                             data: { password: withdrawPw },
                           });
                           logout();
+                          resetCart(); // 탈퇴 시 장바구니 상태 초기화
                           navigate('/');
                         } catch (err) {
                           const reason = err.response?.data?.error?.reason;
-                          alert(reason || '탈퇴 처리 중 오류가 발생했습니다.');
+                          showToast('error', reason || '탈퇴 처리 중 오류가 발생했습니다.');
                         }
                       }}
                       className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"

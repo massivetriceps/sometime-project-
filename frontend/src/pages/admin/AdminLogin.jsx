@@ -21,6 +21,8 @@ export default function AdminLogin() {
     }
     setLoading(true);
     setError('');
+    // 이전 세션 토큰을 먼저 제거 — 로그인 실패 시 잔류 토큰으로 인한 인증 오류 방지
+    localStorage.removeItem('admin_token');
 
     try {
       const res = await adminApi.post('/api/admin/login', {
@@ -138,7 +140,7 @@ export default function AdminLogin() {
                     placeholder="아이디를 입력하세요"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-3 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all placeholder:text-slate-400"
                     value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                    onChange={(e) => setForm(f => ({ ...f, username: e.target.value }))}
                   />
                 </div>
               </div>
@@ -153,11 +155,11 @@ export default function AdminLogin() {
                     placeholder="비밀번호를 입력하세요"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-11 py-3 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all placeholder:text-slate-400"
                     value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPw(!showPw)}
+                    onClick={() => setShowPw(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}

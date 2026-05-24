@@ -1,7 +1,30 @@
 const { StatusCodes } = require('http-status-codes');
 const adminService = require('./admin.service');
-const { readConfig, writeConfig } = require('./admin-settings.helper');
 const axios = require('axios');
+const fs   = require('fs');
+const path = require('path');
+
+/* ─────────────────────────────────────────────────
+   관리자 설정값을 backend/data/ 폴더에 JSON으로 영속 저장
+───────────────────────────────────────────────── */
+const DATA_DIR = path.join(__dirname, '../../../../data');
+const getFilePath = (name) => path.join(DATA_DIR, `${name}.json`);
+
+const readConfig = (name, defaultValue = null) => {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    const fp = getFilePath(name);
+    if (!fs.existsSync(fp)) return defaultValue;
+    return JSON.parse(fs.readFileSync(fp, 'utf8'));
+  } catch {
+    return defaultValue;
+  }
+};
+
+const writeConfig = (name, data) => {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(getFilePath(name), JSON.stringify(data, null, 2), 'utf8');
+};
 
 const handleLogin = async (req, res, next) => {
   try {

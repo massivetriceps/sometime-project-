@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Save, CheckCircle2, RotateCcw, PlayCircle,
-  Bot, Sparkles, ChevronDown, Hash, AlignLeft,
-  Clock, Zap, Copy, Check
+  Bot, Sparkles, Hash, AlignLeft,
+  Clock, Zap, Copy, Check, AlertTriangle, X
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { formatDateTime } from '../../utils/date';
 
 const DEFAULT_PROMPT = `당신은 대학교 시간표 분석 전문가입니다. 주어진 시간표 데이터를 분석하여 학생에게 유익한 맞춤형 코멘트를 생성해주세요.
 
@@ -34,11 +35,15 @@ const TEST_INPUT = `{
   "graduationFit": 0.85
 }`;
 
+// 모델 ID는 새 버전 출시 시 업데이트 필요 (https://docs.anthropic.com/en/docs/about-claude/models)
 const MODELS = [
-  { val: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4',  badge: 'bg-[#EEF2FF] text-[#4F7CF3]',  desc: '균형잡힌 성능 · 권장' },
-  { val: 'claude-opus-4-20250514',   label: 'Claude Opus 4',    badge: 'bg-[#F3F0FF] text-[#A78BFA]',  desc: '최고 품질 · 느림'    },
-  { val: 'claude-haiku-4-5-20251001',label: 'Claude Haiku 4.5', badge: 'bg-[#E6FAF8] text-[#2EC4B6]',  desc: '빠른 응답 · 경량'    },
+  { val: 'claude-sonnet-4-6',        label: 'Claude Sonnet 4.6', badge: 'bg-[#EEF2FF] text-[#4F7CF3]', desc: '균형잡힌 성능 · 권장' },
+  { val: 'claude-opus-4-7',          label: 'Claude Opus 4.7',   badge: 'bg-[#F3F0FF] text-[#A78BFA]', desc: '최고 품질 · 느림'    },
+  { val: 'claude-haiku-4-5-20251001',label: 'Claude Haiku 4.5',  badge: 'bg-[#E6FAF8] text-[#2EC4B6]', desc: '빠른 응답 · 경량'    },
 ];
+// ▼ 기본값 상수 — 모델/토큰 변경 시 이 두 줄만 수정
+const DEFAULT_MODEL      = 'claude-sonnet-4-6';
+const DEFAULT_MAX_TOKENS = 300;
 
 const TIPS = [
   '역할(Persona)을 첫 문장에 명확히 정의하세요',
@@ -52,13 +57,16 @@ export default function AdminAIPrompt() {
   const [prompt, setPrompt]         = useState(DEFAULT_PROMPT);
   const [saved, setSaved]           = useState(false);
   const [saving, setSaving]         = useState(false);
+  const [saveError, setSaveError]   = useState('');
   const [testing, setTesting]       = useState(false);
   const [testResult, setTestResult] = useState('');
   const [testIsError, setTestIsError] = useState(false);
-  const [model, setModel]           = useState('claude-sonnet-4-20250514');
-  const [maxTokens, setMaxTokens]   = useState(300);
+  const [model, setModel]           = useState(DEFAULT_MODEL);
+  const [maxTokens, setMaxTokens]   = useState(DEFAULT_MAX_TOKENS);
   const [copied, setCopied]         = useState(false);
   const [lastSaved, setLastSaved]   = useState(null);
+  const savedTimerRef  = useRef(null);
+  const copiedTimerRef = useRef(null);
 
   /* 서버에서 저장된 설정 불러오기 */
   useEffect(() => {
@@ -77,15 +85,17 @@ export default function AdminAIPrompt() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       const res = await adminApi.put('/api/admin/settings/ai-prompt', { prompt, model, maxTokens });
       if (res.data?.resultType === 'SUCCESS') {
         setLastSaved(res.data.success.savedAt);
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
         setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       }
     } catch {
-      /* 서버 연결 실패 시 조용히 무시 */
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
@@ -93,26 +103,28 @@ export default function AdminAIPrompt() {
 
   const handleReset = async () => {
     setPrompt(DEFAULT_PROMPT);
-    setModel('claude-sonnet-4-20250514');
-    setMaxTokens(300);
+    setModel(DEFAULT_MODEL);
+    setMaxTokens(DEFAULT_MAX_TOKENS);
     setLastSaved(null);
     setTestResult('');
     setTestIsError(false);
+    setSaveError('');
     try {
       await adminApi.put('/api/admin/settings/ai-prompt', {
         prompt: DEFAULT_PROMPT,
-        model: 'claude-sonnet-4-20250514',
-        maxTokens: 300,
+        model: DEFAULT_MODEL,
+        maxTokens: DEFAULT_MAX_TOKENS,
       });
     } catch {
-      /* 서버 연결 실패 시 조용히 무시 */
+      /* 서버 연결 실패 시 조용히 무시 (초기화는 로컬에만 적용) */
     }
   };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(testResult);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const handleTest = async () => {
@@ -179,6 +191,17 @@ export default function AdminAIPrompt() {
           </button>
         </div>
       </div>
+
+      {/* ── 저장 오류 배너 ── */}
+      {saveError && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertTriangle size={14} className="flex-shrink-0" />
+          {saveError}
+          <button onClick={() => setSaveError('')} className="ml-auto text-red-400 hover:text-red-600">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
@@ -254,7 +277,7 @@ export default function AdminAIPrompt() {
                 { icon: Hash,      label: '글자 수',     value: charCount.toLocaleString(),   warn: charCount > 2000 },
                 { icon: AlignLeft, label: '줄 수',       value: `${lineCount}줄`,              warn: false            },
                 { icon: Zap,       label: '예상 토큰',   value: `~${tokenEst.toLocaleString()}`, warn: tokenEst > 800 },
-                { icon: Clock,     label: '마지막 저장', value: lastSaved ?? '저장 없음',      warn: false            },
+                { icon: Clock,     label: '마지막 저장', value: lastSaved ? formatDateTime(lastSaved) : '저장 없음', warn: false },
               ].map(({ icon: Icon, label, value, warn }) => (
                 <div key={label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Search, UserX, ChevronDown,
+  Search,
   Users, UserCheck2, Trash2, AlertCircle
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { formatDate } from '../../utils/date';
 
 const DEPT_COLOR = {
   '컴퓨터공학과':   'bg-[#EEF2FF] text-[#4F7CF3]',
@@ -22,15 +23,18 @@ const Avatar = ({ name }) => {
     'bg-[#FEF9C3] text-yellow-600',
     'bg-red-50 text-red-400',
   ];
-  const idx = name.charCodeAt(0) % colors.length;
+  const safeName = name || '?';
+  const idx = safeName.charCodeAt(0) % colors.length;
   return (
     <div className={`w-8 h-8 rounded-xl ${colors[idx]} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
-      {name[0]}
+      {safeName[0]}
     </div>
   );
 };
 
 export default function AdminUsers() {
+  const ITEMS_PER_PAGE = 20;
+
   const [search, setSearch]             = useState('');
   const [users, setUsers]               = useState([]);
   const [majors, setMajors]             = useState([]);
@@ -38,6 +42,16 @@ export default function AdminUsers() {
   const [error, setError]               = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', msg }
+  const toastTimerRef = useRef(null);
+
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, msg });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  };
 
   const majorMap = majors.reduce((acc, m) => {
     acc[m.major_id] = m.major_name;
@@ -48,14 +62,19 @@ export default function AdminUsers() {
     setLoading(true);
     setError(null);
     try {
-      const [usersRes, majorsRes] = await Promise.all([
+      const [usersResult, majorsResult] = await Promise.allSettled([
         adminApi.get('/api/admin/users'),
         adminApi.get('/api/admin/majors'),
       ]);
-      setUsers(usersRes.data.success.users || []);
-      setMajors(majorsRes.data.success || []);
-    } catch (err) {
-      console.error('AdminUsers fetch error:', err);
+      if (usersResult.status === 'fulfilled') {
+        setUsers(usersResult.value.data.success.users || []);
+      } else {
+        setError('사용자 데이터를 불러오지 못했습니다');
+      }
+      if (majorsResult.status === 'fulfilled') {
+        setMajors(majorsResult.value.data.success || []);
+      }
+    } catch {
       setError('데이터를 불러오지 못했습니다');
     } finally {
       setLoading(false);
@@ -64,7 +83,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = users.filter((u) => {
     const majorName = majorMap[u.major_id] || '';
@@ -75,6 +94,9 @@ export default function AdminUsers() {
       majorName.includes(search)
     );
   });
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginated   = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const handlePageChange = (p) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openDeleteModal = (user) => {
     setSelectedUser(user);
@@ -83,21 +105,32 @@ export default function AdminUsers() {
   const closeModal = () => {
     setSelectedUser(null);
     setShowDeleteModal(false);
+    setDeleteError('');
   };
 
   const handleDelete = async () => {
     if (!selectedUser) return;
+    setDeleteError('');
     try {
       await adminApi.delete(`/api/admin/users/${selectedUser.user_id}`);
-      setUsers(users.filter((u) => u.user_id !== selectedUser.user_id));
+      setUsers(prev => prev.filter((u) => u.user_id !== selectedUser.user_id));
       closeModal();
+      showToast('success', '사용자가 삭제되었습니다.');
     } catch (err) {
-      console.error('Delete user error:', err);
+      const reason = err.response?.data?.error?.reason;
+      setDeleteError(reason || '삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
   return (
     <AdminLayout>
+
+      {/* ── 토스트 ── */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-semibold animate-in fade-in slide-in-from-top-2 duration-300 ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+          {toast.msg}
+        </div>
+      )}
 
       {/* ── 헤더 ── */}
       <div className="flex items-center justify-between mb-5">
@@ -135,7 +168,7 @@ export default function AdminUsers() {
               placeholder="이름, 아이디, 이메일, 학과로 검색"
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all placeholder:text-slate-400"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
         </div>
@@ -177,7 +210,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((user) => {
+              {paginated.map((user) => {
                 const majorName = majorMap[user.major_id] || `학과 ID: ${user.major_id}`;
                 return (
                   <tr key={user.user_id} className="hover:bg-slate-50/60 transition-colors group">
@@ -216,7 +249,7 @@ export default function AdminUsers() {
                     {/* 가입일 */}
                     <td className="px-5 py-3.5">
                       <span className="text-[12px] text-slate-400">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '—'}
+                        {formatDate(user.created_at) || '—'}
                       </span>
                     </td>
 
@@ -237,7 +270,7 @@ export default function AdminUsers() {
             </tbody>
           </table>
 
-          {filtered.length === 0 && (
+          {paginated.length === 0 && (
             <div className="py-16 text-center">
               <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Search size={20} className="text-slate-400" />
@@ -248,11 +281,30 @@ export default function AdminUsers() {
           )}
 
           {filtered.length > 0 && (
-            <div className="px-5 py-3 border-t border-slate-50 bg-slate-50/50">
+            <div className="px-5 py-3 border-t border-slate-50 bg-slate-50/50 flex items-center justify-between gap-3">
               <p className="text-[11px] text-slate-400">
                 전체 <span className="font-semibold text-slate-600">{users.length}명</span> 중{' '}
                 <span className="font-semibold text-slate-600">{filtered.length}명</span> 표시
+                {totalPages > 1 && ` · ${currentPage}/${totalPages} 페이지`}
               </p>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    이전
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button key={p} onClick={() => handlePageChange(p)}
+                      className={`w-7 h-7 rounded-lg text-[11px] font-semibold transition-colors ${p === currentPage ? 'bg-[#4F7CF3] text-white' : 'border border-slate-200 text-slate-500 hover:bg-slate-100'}`}>
+                      {p}
+                    </button>
+                  ))}
+                  <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    다음
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -261,7 +313,7 @@ export default function AdminUsers() {
       {/* ── 카드 (모바일) ── */}
       {!loading && !error && (
         <div className="md:hidden space-y-3">
-          {filtered.map((user) => {
+          {paginated.map((user) => {
             const majorName = majorMap[user.major_id] || `학과 ID: ${user.major_id}`;
             return (
               <div key={user.user_id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
@@ -297,6 +349,19 @@ export default function AdminUsers() {
               </div>
             );
           })}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                이전
+              </button>
+              <span className="text-[12px] text-slate-500 font-medium px-2">{currentPage} / {totalPages}</span>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                다음
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -311,7 +376,13 @@ export default function AdminUsers() {
             <p className="text-sm text-slate-500 mb-1">
               <span className="font-semibold text-slate-700">{selectedUser.name}</span> 님의 계정과 모든 데이터가 영구적으로 삭제됩니다.
             </p>
-            <p className="text-xs text-red-400 font-medium mb-6">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+            <p className="text-xs text-red-400 font-medium mb-4">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+            {deleteError && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium">
+                <AlertCircle size={13} className="flex-shrink-0" />
+                {deleteError}
+              </div>
+            )}
             <div className="flex gap-2">
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                 취소

@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Save, CheckCircle2, RotateCcw, Info,
   Lock, Sliders, Zap, Clock, BookOpen,
-  TrendingUp, Sun, Wifi, LayoutList, Navigation, Calendar
+  TrendingUp, Sun, Wifi, LayoutList, Navigation, Calendar,
+  AlertTriangle, X
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { formatDateTime } from '../../utils/date';
 
 const INIT_CONFIG = {
   maxSolutions: 3,
@@ -68,9 +70,11 @@ const Toggle = ({ on, onToggle, disabled }) => (
 
 export default function AdminCSPConfig() {
   const [config, setConfig] = useState(INIT_CONFIG);
-  const [saved, setSaved]   = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [lastSaved, setLastSaved] = useState(null);
+  const savedTimerRef = useRef(null);
 
   /* 서버에서 저장된 설정 불러오기 */
   useEffect(() => {
@@ -91,15 +95,17 @@ export default function AdminCSPConfig() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       const res = await adminApi.put('/api/admin/settings/csp', config);
       if (res.data?.resultType === 'SUCCESS') {
         setLastSaved(res.data.success.savedAt);
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
         setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       }
     } catch {
-      /* 서버 연결 실패 시 조용히 무시 */
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
@@ -127,7 +133,7 @@ export default function AdminCSPConfig() {
           <h1 className="text-xl font-bold text-slate-800">CSP 알고리즘 설정</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             시간표 생성 제약조건 및 가중치를 조정합니다
-            {lastSaved && <span className="ml-2 text-slate-300">· 마지막 저장: {lastSaved}</span>}
+            {lastSaved && <span className="ml-2 text-slate-300">· 마지막 저장: {formatDateTime(lastSaved)}</span>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -151,6 +157,17 @@ export default function AdminCSPConfig() {
           </button>
         </div>
       </div>
+
+      {/* ── 저장 오류 배너 ── */}
+      {saveError && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertTriangle size={14} className="flex-shrink-0" />
+          {saveError}
+          <button onClick={() => setSaveError('')} className="ml-auto text-red-400 hover:text-red-600">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── 상단 요약 카드 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -204,7 +221,7 @@ export default function AdminCSPConfig() {
                       max={max}
                       className="w-16 rounded-xl border border-slate-200 bg-slate-50/50 px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all text-center"
                       value={config[field]}
-                      onChange={(e) => setConfig({ ...config, [field]: Number(e.target.value) })}
+                      onChange={(e) => setConfig(prev => ({ ...prev, [field]: Number(e.target.value) }))}
                     />
                     <span className="text-[11px] text-slate-400 w-7">{unit}</span>
                   </div>

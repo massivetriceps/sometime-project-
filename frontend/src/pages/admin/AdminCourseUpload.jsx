@@ -92,7 +92,17 @@ export default function AdminCourseUpload() {
   const [errorMsg, setErrorMsg] = useState('');
   const [majorMap, setMajorMap] = useState({});  // { major_name: major_id }
   const [parseErrors, setParseErrors] = useState([]); // 알 수 없는 학과명 목록
+  const [fileError, setFileError]   = useState('');   // 파일 형식/컬럼 오류
+  const [exportToast, setExportToast] = useState(null); // { msg, type } | null
+  const [skipConfirm, setSkipConfirm] = useState(null); // { skipped, courses } | null
   const inputRef = useRef();
+  const exportToastTimerRef = useRef(null);
+
+  const showExportToast = (type, msg) => {
+    if (exportToastTimerRef.current) clearTimeout(exportToastTimerRef.current);
+    setExportToast({ msg, type });
+    exportToastTimerRef.current = setTimeout(() => setExportToast(null), 3500);
+  };
 
   // ── 학과 목록 로드 ───────────────────────────────────────────────
   useEffect(() => {
@@ -112,9 +122,10 @@ export default function AdminCourseUpload() {
     if (!f) return;
     const ext = f.name.split('.').pop().toLowerCase();
     if (!['csv'].includes(ext)) {
-      alert('CSV 파일만 업로드 가능합니다. (.xlsx는 다른 이름으로 저장 → CSV로 변환해주세요)');
+      setFileError('CSV 파일만 업로드 가능합니다. (.xlsx는 다른 이름으로 저장 → CSV로 변환해주세요)');
       return;
     }
+    setFileError('');
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -125,7 +136,7 @@ export default function AdminCourseUpload() {
       const required = ['강의코드', '강의명', '학과명', '이수구분', '학점'];
       const missing = required.filter(c => !headers.includes(c));
       if (missing.length > 0) {
-        alert(`필수 컬럼이 없습니다: ${missing.join(', ')}\n첫 행에 컬럼명이 정확히 있어야 합니다.`);
+        setFileError(`필수 컬럼이 없습니다: ${missing.join(', ')} — 첫 행에 컬럼명이 정확히 있어야 합니다.`);
         return;
       }
 
@@ -146,15 +157,12 @@ export default function AdminCourseUpload() {
     handleFile(e.dataTransfer.files[0]);
   };
 
-  // ── 업로드 확정 ──────────────────────────────────────────────────
-  const handleUpload = async () => {
+  // ── 실제 업로드 API 호출 ─────────────────────────────────────────
+  const doUpload = async (courses) => {
+    setSkipConfirm(null);
     setStatus('uploading');
     setErrorMsg('');
     try {
-      const courses = preview
-        .map(row => rowToApiFormat(row, majorMap))
-        .filter(c => c.course_code && c.course_name);
-
       const res = await adminApi.post('/api/admin/courses/upload', { courses });
       if (res.data.resultType === 'SUCCESS') {
         setResult(res.data.success);
@@ -168,13 +176,75 @@ export default function AdminCourseUpload() {
     }
   };
 
+  // ── 업로드 확정 (제외 건수가 있으면 인라인 확인 모달 표시) ────────
+  const handleUpload = () => {
+    const courses = preview
+      .map(row => rowToApiFormat(row, majorMap))
+      .filter(c => c.course_code && c.course_name && c.major_id !== null);
+
+    if (courses.length === 0) {
+      setErrorMsg('업로드 가능한 행이 없습니다. 학과명이 시스템에 등록되어 있는지 확인해주세요.');
+      setStatus('error');
+      return;
+    }
+
+    const skipped = preview.length - courses.length;
+    if (skipped > 0) {
+      setSkipConfirm({ skipped, courses });
+      return;
+    }
+
+    doUpload(courses);
+  };
+
   const handleReset = () => {
     setFile(null); setStatus(null); setPreview([]);
-    setResult(null); setErrorMsg(''); setParseErrors([]);
+    setResult(null); setErrorMsg(''); setParseErrors([]); setFileError(''); setSkipConfirm(null);
   };
 
   return (
     <AdminLayout>
+
+      {/* ── 내보내기 토스트 ── */}
+      {exportToast && (
+        <div className={`fixed top-4 right-4 z-50 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-semibold ${exportToast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+          {exportToast.msg}
+        </div>
+      )}
+
+      {/* ── 학과 불일치 업로드 확인 모달 ── */}
+      {skipConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <AlertCircle size={20} className="text-amber-500" />
+              </div>
+              <h3 className="text-base font-bold text-slate-800">일부 행이 제외됩니다</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              학과명 불일치로{' '}
+              <span className="font-semibold text-amber-600">{skipConfirm.skipped}건</span>이 제외됩니다.
+              <br />
+              <span className="font-semibold text-[#4F7CF3]">{skipConfirm.courses.length}건</span>만 업로드하시겠습니까?
+            </p>
+            <div className="flex gap-2.5 mt-1">
+              <button
+                onClick={() => { setSkipConfirm(null); setStatus('previewing'); }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => doUpload(skipConfirm.courses)}
+                className="flex-1 py-2.5 rounded-xl bg-[#4F7CF3] text-sm font-semibold text-white shadow-lg shadow-[#4F7CF3]/25 hover:bg-[#3B6AE0] transition-all"
+              >
+                업로드 확정
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 헤더 ── */}
       <div className="flex items-center justify-between mb-5">
@@ -190,7 +260,7 @@ export default function AdminCourseUpload() {
                 const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
                 const a = document.createElement('a'); a.href = url; a.download = 'courses_export.csv'; a.click();
                 URL.revokeObjectURL(url);
-              } catch { alert('내보내기 실패'); }
+              } catch { showExportToast('error', '내보내기에 실패했습니다. 다시 시도해주세요.'); }
             }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-blue-200 text-sm font-medium text-blue-600 hover:bg-blue-50 shadow-sm transition-all"
           >
@@ -227,6 +297,17 @@ export default function AdminCourseUpload() {
         </div>
         <p className="text-[11px] text-[#4F7CF3]/70 mt-2">* 필수 컬럼 &nbsp;|&nbsp; 학과명은 시스템에 등록된 학과명과 정확히 일치해야 합니다</p>
       </div>
+
+      {/* ── 파일 형식/컬럼 오류 ── */}
+      {fileError && (
+        <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+          <AlertCircle size={15} className="flex-shrink-0 text-red-500" />
+          <span>{fileError}</span>
+          <button onClick={() => setFileError('')} className="ml-auto text-red-400 hover:text-red-600">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── 드롭존 ── */}
       {!file && (
@@ -288,7 +369,7 @@ export default function AdminCourseUpload() {
               <div>
                 <p className="text-[13px] font-bold text-amber-700">알 수 없는 학과명 {parseErrors.length}개</p>
                 <p className="text-[12px] text-amber-600 mt-0.5">
-                  {parseErrors.join(', ')} — 해당 행은 major_id 없이 등록됩니다. 업로드 후 직접 수정이 필요할 수 있습니다.
+                  {parseErrors.join(', ')} — 해당 학과명이 시스템에 없어 <strong>업로드 시 해당 행은 제외됩니다.</strong> 업로드 전 학과명을 확인하거나 관리자 설정에서 학과를 추가하세요.
                 </p>
               </div>
             </div>
@@ -326,16 +407,21 @@ export default function AdminCourseUpload() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {preview.slice(0, 10).map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50/60 transition-colors">
+                  {preview.slice(0, 10).map((row, i) => {
+                    const isInvalid = !majorMap[row['학과명']?.trim()];
+                    return (
+                    <tr key={i} className={`transition-colors ${isInvalid ? 'bg-amber-50/60' : 'hover:bg-slate-50/60'}`}>
                       <td className="px-4 py-3">
                         <span className="font-mono text-[12px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
                           {row['강의코드'] || '-'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-slate-700">{row['강의명'] || '-'}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-slate-700">
+                        <span className={isInvalid ? 'line-through text-slate-400' : ''}>{row['강의명'] || '-'}</span>
+                        {isInvalid && <span className="ml-2 text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">제외</span>}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`text-[12px] font-medium ${majorMap[row['학과명']?.trim()] ? 'text-slate-600' : 'text-amber-500'}`}>
+                        <span className={`text-[12px] font-medium ${majorMap[row['학과명']?.trim()] ? 'text-slate-600' : 'text-amber-500 font-semibold'}`}>
                           {row['학과명'] || '-'}
                         </span>
                       </td>
@@ -349,17 +435,24 @@ export default function AdminCourseUpload() {
                       </td>
                       <td className="px-4 py-3 text-[12px] text-slate-500">{row['담당교수'] || '-'}</td>
                     </tr>
-                  ))}
+                  );}}
                 </tbody>
               </table>
             </div>
           </div>
 
           {/* 확정 버튼 */}
+          {(() => {
+            const uploadableCount = preview.filter(row => majorMap[row['학과명']?.trim()]).length;
+            const skippedCount = preview.length - uploadableCount;
+            return (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-center sm:text-left">
               <p className="text-sm font-semibold text-slate-700">업로드를 확정하시겠습니까?</p>
-              <p className="text-[12px] text-slate-400 mt-0.5">전체 {preview.length}건이 데이터베이스에 등록/업데이트됩니다</p>
+              <p className="text-[12px] text-slate-400 mt-0.5">
+                {uploadableCount}건 업로드 예정
+                {skippedCount > 0 && <span className="text-amber-500"> · {skippedCount}건 학과 불일치로 제외</span>}
+              </p>
             </div>
             <div className="flex gap-2.5 w-full sm:w-auto">
               <button onClick={handleReset}
@@ -372,6 +465,8 @@ export default function AdminCourseUpload() {
               </button>
             </div>
           </div>
+            );
+          })()}
         </>
       )}
 

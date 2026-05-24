@@ -8,14 +8,40 @@ const DAY_EN      = { '월요일': 'MON', '화요일': 'TUE', '수요일': 'WED'
 const DAY_EN_TO_KR = { MON: '월요일', TUE: '화요일', WED: '수요일', THU: '목요일', FRI: '금요일' };
 const DAY_STR     = { '월요일': '월', '화요일': '화', '수요일': '수', '목요일': '목', '금요일': '금' };
 
-export default function TimeTableG() {
+export default function TimetableSetup() {
   // --- [1. 상태 관리] ---
   const [globalStep, setGlobalStep] = useState(1);
   const [dynamicStep, setDynamicStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [genError, setGenError] = useState('');
   const [cartCourses, setCartCourses] = useState([]);
   const [takenCourses, setTakenCourses] = useState([]);
   const [distances, setDistances] = useState([]);
+
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const [userInfo, setUserInfo] = useState({
+    name:       user?.name       || '',
+    department: user?.major_name || '컴퓨터공학과',
+    studentId:  (user?.student_id && user.student_id.length >= 4) ? user.student_id.slice(2, 4) : '21',
+  });
+  const [grade, setGrade] = useState(user?.grade || null);
+  const [semester, setSemester] = useState(null);
+
+  const [priorities, setPriorities] = useState([
+    { id: 'freeDay', label: '공강 요일' },
+    { id: 'hills', label: '오르막 회피 여부' },
+    { id: 'online', label: '온라인 강의 선호도' },
+    { id: 'morning', label: '오전 수업 선호도' }
+  ]);
+
+  const [answers, setAnswers] = useState({
+    freeDay: [],
+    hills: '',
+    online: '',
+    morning: ''
+  });
+  const [targetCredits, setTargetCredits] = useState(18);
 
   useEffect(() => {
     api.get('/api/users/me/cart')
@@ -48,31 +74,7 @@ export default function TimeTableG() {
         }
       })
       .catch(() => {});
-  }, []);
-  const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const [userInfo, setUserInfo] = useState({
-    name:       user?.name       || '',
-    department: user?.major_name || '컴퓨터공학과',
-    studentId:  user?.student_id?.slice(2, 4) || '21',
-  });
-  const [grade, setGrade] = useState(user?.grade || null);
-  const [semester, setSemester] = useState(null);
-  
-  const [priorities, setPriorities] = useState([
-    { id: 'freeDay', label: '공강 요일' },
-    { id: 'hills', label: '오르막 회피 여부' },
-    { id: 'online', label: '온라인 강의 선호도' },
-    { id: 'morning', label: '오전 수업 선호도' }
-  ]);
-
-  const [answers, setAnswers] = useState({
-    freeDay: [],
-    hills: '',
-    online: '',
-    morning: ''
-  });
-  const [targetCredits, setTargetCredits] = useState(18);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepLabels = ['기본 정보 입력', '우선순위 설정', '세부 조건 설정', '결과 및 분석'];
 
@@ -188,7 +190,7 @@ export default function TimeTableG() {
       });
     }
 
-    // 6. 오르막 회피인데 장바구니에 오르막 연속 강의
+    // 7. 오르막 회피인데 장바구니에 오르막 연속 강의
     const avoidUphill = answers.hills === '무조건 평지 건물 위주로';
     if (avoidUphill && distances.length > 0) {
       for (let i = 0; i < cartCourses.length; i++) {
@@ -217,7 +219,7 @@ export default function TimeTableG() {
       }
     }
 
-    // 7. 온라인 선호인데 장바구니 전부 오프라인
+    // 8. 온라인 선호인데 장바구니 전부 오프라인
     const preferOnline = answers.online === '최소 1개는 무조건 포함' || answers.online === '2개 이상';
     if (preferOnline) {
       const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
@@ -231,7 +233,7 @@ export default function TimeTableG() {
       }
     }
 
-    // 8. 오전 선호인데 연속 장바구니 강의 이동시간(5~10분)이 오전 배치를 제한
+    // 9. 오전 선호인데 연속 장바구니 강의 이동시간(5~10분)이 오전 배치를 제한
     const preferMorning = answers.morning === '아침형 인간 (1교시 환영)';
     if (preferMorning && distances.length > 0) {
       for (let i = 0; i < cartCourses.length; i++) {
@@ -260,9 +262,9 @@ export default function TimeTableG() {
       }
     }
 
-    // 9. (이미 위에서 처리) WARN_MORNING_TRAVEL_CONFLICT
+    // 10. (이미 위에서 처리) WARN_MORNING_TRAVEL_CONFLICT
 
-    // 10. 공강 요일에 장바구니 강의 존재 (CART_FREE_DAY_CONFLICT) — Soft vs Hard
+    // 11. 공강 요일에 장바구니 강의 존재 (CART_FREE_DAY_CONFLICT) — Soft vs Hard
     const freeDayList = answers.freeDay.filter(d => d !== '난 5일 내내 학교 다닐래');
     const seenFreeDayConflicts = new Set();
     freeDayList.forEach(day => {
@@ -284,7 +286,7 @@ export default function TimeTableG() {
       });
     });
 
-    // 11. 공강 3개↑ + 학점 범위 충돌 (WARN_FREE_DAY_CREDIT_INFEASIBLE) — Soft vs Hard
+    // 12. 공강 3개↑ + 학점 범위 충돌 (WARN_FREE_DAY_CREDIT_INFEASIBLE) — Soft vs Hard
     const freeDayCount = freeDayList.length;
     if (freeDayCount >= 3) {
       warns.push({
@@ -299,8 +301,14 @@ export default function TimeTableG() {
   }, [cartCourses, takenCourses, distances, answers, targetCredits]);
 
   // --- [2. 핸들러 함수] ---
-  const handleUserChange = (e) => setUserInfo({ ...userInfo, [e.target.name]: e.target.value });
-  const handleAnswerChange = (e) => setAnswers({ ...answers, [e.target.name]: e.target.value });
+  const handleUserChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo(prev => ({ ...prev, [name]: value }));
+  };
+  const handleAnswerChange = (e) => {
+    const { name, value } = e.target;
+    setAnswers(prev => ({ ...prev, [name]: value }));
+  };
 
   // 🟢 복수 선택 및 단일 선택(5일 내내) 처리 로직
   const handleCheckboxChange = (e) => {
@@ -733,10 +741,16 @@ export default function TimeTableG() {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
-          <button 
-            onClick={handlePrev} 
-            disabled={globalStep === 1} 
+        {genError && (
+          <div style={{ margin: '16px 0 0', padding: '12px 16px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, fontSize: 13, color: '#DC2626', fontWeight: 500 }}>
+            ⚠️ {genError}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+          <button
+            onClick={handlePrev}
+            disabled={globalStep === 1}
             style={{ ...styles.btn, background: 'white', color: '#475569', border: '1px solid #CBD5E1', opacity: globalStep === 1 ? 0 : 1 }}
           >
             이전
@@ -745,6 +759,11 @@ export default function TimeTableG() {
        <button
   onClick={async () => {
     if (globalStep === 4) {
+      if (!grade || !semester) {
+        setGenError('학년과 학기를 선택해주세요. (1단계로 돌아가서 선택해주세요)');
+        return;
+      }
+      setGenError('');
       setIsGenerating(true);
       try {
         // UI 답변 → API 파라미터 매핑
@@ -786,7 +805,7 @@ export default function TimeTableG() {
         navigate('/timetable/manage');
       } catch (err) {
         const reason = err.response?.data?.error?.reason;
-        alert(reason || '시간표 생성 중 오류가 발생했습니다.');
+        setGenError(reason || '시간표 생성 중 오류가 발생했습니다.');
       } finally {
         setIsGenerating(false);
       }

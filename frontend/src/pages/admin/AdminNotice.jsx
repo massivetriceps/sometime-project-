@@ -1,84 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Pencil, Trash2, Search, Megaphone, X, AlertTriangle, AlertCircle } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
+import { formatDate } from '../../utils/date';
 
 const EMPTY_FORM = { title: '', content: '' };
 
-export default function AdminNotice() {
-  const [notices, setNotices]           = useState([]);
-  const [search, setSearch]             = useState('');
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState(null);
-  const [showModal, setShowModal]       = useState(false);
-  const [editTarget, setEditTarget]     = useState(null);
-  const [form, setForm]                 = useState(EMPTY_FORM);
-  const [saving, setSaving]             = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-
-  const fetchNotices = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await adminApi.get('/api/notices');
-      if (res.data.resultType === 'SUCCESS') {
-        setNotices(res.data.success?.content ?? []);
-      }
-    } catch (err) {
-      console.error('Notice fetch error:', err);
-      setError('데이터를 불러오지 못했습니다');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotices();
-  }, []);
-
-  const filtered = notices.filter(
-    (n) => n.title.includes(search) || n.content.includes(search)
-  );
-
-  const openCreate = () => { setForm(EMPTY_FORM); setEditTarget(null); setShowModal(true); };
-  const openEdit   = (n) => { setForm({ title: n.title, content: n.content }); setEditTarget(n); setShowModal(true); };
-  const closeModal = () => { setShowModal(false); setEditTarget(null); setSaving(false); };
-
-  const handleSave = async () => {
-    if (!form.title.trim() || !form.content.trim()) return;
-    setSaving(true);
-    try {
-      if (editTarget) {
-        await adminApi.put(`/api/admin/notices/${editTarget.notice_id}`, {
-          title: form.title,
-          content: form.content,
-        });
-      } else {
-        await adminApi.post('/api/admin/notices', {
-          title: form.title,
-          content: form.content,
-        });
-      }
-      closeModal();
-      await fetchNotices();
-    } catch (err) {
-      console.error('Notice save error:', err);
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await adminApi.delete(`/api/admin/notices/${deleteTarget.notice_id}`);
-      setDeleteTarget(null);
-      await fetchNotices();
-    } catch (err) {
-      console.error('Notice delete error:', err);
-    }
-  };
-
-  const NoticeCard = ({ notice }) => (
+// AdminNotice 밖에 정의하여 부모 리렌더 시 불필요한 언마운트/리마운트 방지
+function NoticeCard({ notice, onEdit, onDelete }) {
+  return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 group">
       <div className="p-5">
         <div className="flex items-start gap-4">
@@ -95,9 +25,7 @@ export default function AdminNotice() {
             <p className="text-[12px] text-slate-500 leading-relaxed line-clamp-2 mb-3">{notice.content}</p>
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-slate-400">
-                {notice.created_at
-                  ? new Date(notice.created_at).toLocaleDateString('ko-KR')
-                  : '—'}
+                {formatDate(notice.created_at) || '—'}
               </span>
             </div>
           </div>
@@ -105,14 +33,14 @@ export default function AdminNotice() {
           {/* 버튼 — 호버 시 표시 */}
           <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              onClick={() => openEdit(notice)}
+              onClick={() => onEdit(notice)}
               className="p-2 rounded-xl hover:bg-[#EEF2FF] text-slate-400 hover:text-[#4F7CF3] transition-colors"
               title="수정"
             >
               <Pencil size={14} />
             </button>
             <button
-              onClick={() => setDeleteTarget(notice)}
+              onClick={() => onDelete(notice)}
               className="p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
               title="삭제"
             >
@@ -123,9 +51,107 @@ export default function AdminNotice() {
       </div>
     </div>
   );
+}
+
+export default function AdminNotice() {
+  const [notices, setNotices]           = useState([]);
+  const [search, setSearch]             = useState('');
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
+  const [showModal, setShowModal]       = useState(false);
+  const [editTarget, setEditTarget]     = useState(null);
+  const [form, setForm]                 = useState(EMPTY_FORM);
+  const [saving, setSaving]             = useState(false);
+  const [saveError, setSaveError]       = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError]   = useState('');
+  const [toast, setToast]               = useState(null); // { type: 'success' | 'error', msg }
+  const toastTimerRef = useRef(null);
+
+  const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, msg });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchNotices = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await adminApi.get('/api/notices');
+      if (res.data.resultType === 'SUCCESS') {
+        setNotices(res.data.success?.content ?? []);
+      }
+    } catch {
+      setError('데이터를 불러오지 못했습니다');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotices();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtered = notices.filter(
+    (n) => n.title.includes(search) || n.content.includes(search)
+  );
+
+  const openCreate = () => { setForm(EMPTY_FORM); setEditTarget(null); setSaveError(''); setShowModal(true); };
+  const openEdit   = (n) => { setForm({ title: n.title, content: n.content }); setEditTarget(n); setSaveError(''); setShowModal(true); };
+  const closeModal = () => { setShowModal(false); setEditTarget(null); setSaving(false); setSaveError(''); };
+
+  const handleSave = async () => {
+    if (!form.title.trim() || !form.content.trim()) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const isEdit = !!editTarget;
+      if (editTarget) {
+        await adminApi.put(`/api/admin/notices/${editTarget.notice_id}`, {
+          title: form.title,
+          content: form.content,
+        });
+      } else {
+        await adminApi.post('/api/admin/notices', {
+          title: form.title,
+          content: form.content,
+        });
+      }
+      closeModal();
+      await fetchNotices();
+      showToast('success', isEdit ? '공지사항이 수정되었습니다.' : '공지사항이 등록되었습니다.');
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      setSaveError(reason || '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError('');
+    try {
+      await adminApi.delete(`/api/admin/notices/${deleteTarget.notice_id}`);
+      await fetchNotices();
+      setDeleteTarget(null);
+      setDeleteError('');
+      showToast('success', '공지사항이 삭제되었습니다.');
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      setDeleteError(reason || '삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
 
   return (
     <AdminLayout>
+
+      {/* ── 토스트 ── */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-semibold animate-in fade-in slide-in-from-top-2 duration-300 ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+          {toast.msg}
+        </div>
+      )}
 
       {/* ── 헤더 ── */}
       <div className="flex items-center justify-between mb-5">
@@ -185,7 +211,7 @@ export default function AdminNotice() {
         <>
           {filtered.length > 0 ? (
             <div className="space-y-2.5">
-              {filtered.map((n) => <NoticeCard key={n.notice_id} notice={n} />)}
+              {filtered.map((n) => <NoticeCard key={n.notice_id} notice={n} onEdit={openEdit} onDelete={setDeleteTarget} />)}
             </div>
           ) : notices.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
@@ -242,7 +268,7 @@ export default function AdminNotice() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm outline-none focus:border-[#4F7CF3] focus:ring-2 focus:ring-[#4F7CF3]/10 transition-all placeholder:text-slate-400"
                   placeholder="공지사항 제목을 입력하세요"
                   value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
                 />
               </div>
 
@@ -256,7 +282,7 @@ export default function AdminNotice() {
                   rows={5}
                   placeholder="공지사항 내용을 입력하세요"
                   value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                  onChange={(e) => setForm(f => ({ ...f, content: e.target.value }))}
                 />
               </div>
 
@@ -265,6 +291,13 @@ export default function AdminNotice() {
                 <div className="flex items-center gap-2 text-[12px] text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
                   <AlertTriangle size={13} />
                   제목과 내용을 모두 입력해주세요.
+                </div>
+              )}
+              {/* 저장 오류 */}
+              {saveError && (
+                <div className="flex items-center gap-2 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  <AlertCircle size={13} className="flex-shrink-0" />
+                  {saveError}
                 </div>
               )}
             </div>
@@ -300,10 +333,16 @@ export default function AdminNotice() {
             <p className="text-sm text-slate-500 mb-1.5 line-clamp-2">
               <span className="font-semibold text-slate-700">"{deleteTarget.title}"</span>
             </p>
-            <p className="text-xs text-red-400 font-medium mb-6">⚠ 삭제된 공지사항은 복구할 수 없습니다.</p>
+            <p className="text-xs text-red-400 font-medium mb-4">⚠ 삭제된 공지사항은 복구할 수 없습니다.</p>
+            {deleteError && (
+              <div className="flex items-center gap-2 mb-4 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                <AlertCircle size={13} className="flex-shrink-0" />
+                {deleteError}
+              </div>
+            )}
             <div className="flex gap-2.5">
               <button
-                onClick={() => setDeleteTarget(null)}
+                onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 취소

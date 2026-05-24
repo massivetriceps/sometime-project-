@@ -1,8 +1,7 @@
-﻿import { Link, useNavigate } from 'react-router-dom';
-import '../../styles/global.css';
-import React, { useState, useEffect } from 'react';
+﻿import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ArrowRight, Sparkles, CalendarDays, ShoppingCart, GraduationCap, ChevronDown, LogOut, User } from 'lucide-react';
+import { ArrowRight, Sparkles, CalendarDays, ShoppingCart, GraduationCap, ChevronDown } from 'lucide-react';
 import { GachonLogo } from '../../components/ui/GachonLogo';
 import useAuthStore from '../../store/authStore';
 
@@ -91,7 +90,7 @@ function TimetableGrid() {
 
 function HeroSection() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state) => state.user);
 
   return (
     <section className="pt-32 pb-20 px-6 bg-gradient-to-b from-white to-[#F5F7FB] font-pretendard">
@@ -169,16 +168,25 @@ const user = useAuthStore((state) => state.user);
 function Features() {
   const features = [
     {
-      title: '개인선호 맞춤형 조건 반영', 
-      desc: '단순한 공강 설정을 넘어섭니다. 선호하는 시간대는 물론, 건물 이동 동선 및 오르막 회피까지 계산해 나만의 최적화된 시간표를 조립합니다.' 
+      icon: CalendarDays,
+      iconColor: '#4F7CF3',
+      iconBg: '#EEF2FF',
+      title: '개인선호 맞춤형 조건 반영',
+      desc: '단순한 공강 설정을 넘어섭니다. 선호하는 시간대는 물론, 건물 이동 동선 및 오르막 회피까지 계산해 나만의 최적화된 시간표를 조립합니다.'
     },
-    { 
-      title: '직관적인 졸업 요건 대시보드', 
-      desc: '복잡한 졸업 규정, 더 이상 헤매지 마세요. 내 수강내역을 분석해 졸업까지 남은 학점과 필수 과목을 한눈에 시각화해 드립니다.' 
+    {
+      icon: GraduationCap,
+      iconColor: '#2EC4B6',
+      iconBg: '#E6FAF8',
+      title: '직관적인 졸업 요건 대시보드',
+      desc: '복잡한 졸업 규정, 더 이상 헤매지 마세요. 내 수강내역을 분석해 졸업까지 남은 학점과 필수 과목을 한눈에 시각화해 드립니다.'
     },
-    { 
-      title: '3초 만에 빠른 생성', 
-      desc: '아무리 복잡한 조건이라도 문제없습니다. 자체 CSP 엔진이 수백 개의 경우의 수를 즉시 비교하여 가장 완벽한 결과물을 제공합니다.' 
+    {
+      icon: Sparkles,
+      iconColor: '#A78BFA',
+      iconBg: '#F3F0FF',
+      title: '3초 만에 빠른 생성',
+      desc: '아무리 복잡한 조건이라도 문제없습니다. 자체 CSP 엔진이 수백 개의 경우의 수를 즉시 비교하여 가장 완벽한 결과물을 제공합니다.'
     },
   ];
 
@@ -208,12 +216,13 @@ function Features() {
               className="bg-white flex flex-col gap-4 p-8 rounded-2xl border border-[#E8F0FF] shadow-[0_2px_12px_rgba(79,124,243,0.08)] hover:shadow-lg transition-shadow"
             >
               {/* 아이콘 박스 */}
-    
-              
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: f.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <f.icon size={22} color={f.iconColor} />
+              </div>
               <h3 className="font-bold text-[#1F2937] text-[15px] m-0">
                 {f.title}
               </h3>
-              <p className="color-[#6B7280] text-sm leading-[1.6] m-0 text-slate-500">
+              <p className="text-sm leading-[1.6] m-0 text-slate-500">
                 {f.desc}
               </p>
             </motion.div>

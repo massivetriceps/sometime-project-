@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserCog, Lock, CheckCircle2, AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import adminApi from '../../api/adminApi';
@@ -13,16 +13,30 @@ export default function AdminProfile() {
   const [nameForm, setNameForm]   = useState({ name: admin?.name || '', currentPassword: '' });
   const [pwForm,   setPwForm]     = useState({ current: '', next: '', confirm: '' });
 
+  // 로그인 시 name을 저장하지 않으므로 마운트 시 /api/admin/me 로 이름을 보완
+  useEffect(() => {
+    if (nameForm.name) return; // 이미 이름이 있으면 스킵
+    adminApi.get('/api/admin/me').then(res => {
+      const data = res.data?.success ?? res.data;
+      if (data?.name) {
+        setNameForm(f => ({ ...f, name: data.name }));
+        setAdmin({ ...(useAdminStore.getState().admin ?? {}), name: data.name });
+      }
+    }).catch(() => {}); // 실패해도 폼에서 직접 입력 가능
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [nameSaving, setNameSaving] = useState(false);
   const [pwSaving,   setPwSaving]   = useState(false);
 
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
 
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', msg }
+  const toastTimerRef = useRef(null);
 
   const showToast = (type, msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   };
 
   /* ── 이름 수정 ── */
@@ -35,7 +49,7 @@ export default function AdminProfile() {
         name:             nameForm.name.trim(),
         current_password: nameForm.currentPassword,
       });
-      setAdmin({ ...admin, name: nameForm.name.trim() });
+      setAdmin({ ...(useAdminStore.getState().admin ?? {}), name: nameForm.name.trim() });
       setNameForm(f => ({ ...f, currentPassword: '' }));
       showToast('success', '이름이 변경되었습니다.');
     } catch (err) {
