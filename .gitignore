@@ -31,3 +31,6 @@ __pycache__/
 
 # Claude Code
 .claude/worktrees/
+
+# DB 크리덴셜 포함 스크립트 (절대 커밋 금지)
+backend/migrate.py
