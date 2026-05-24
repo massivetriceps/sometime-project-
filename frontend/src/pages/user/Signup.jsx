@@ -27,7 +27,6 @@ export default function Signup() {
     api.get('/api/auth/majors').then(r => {
       if (r.data.resultType === 'SUCCESS') {
         setMajors(r.data.success);
-        if (r.data.success.length > 0) setForm(f => ({ ...f, majorId: String(r.data.success[0].major_id) }));
       }
     }).catch(() => {
       setMajorError('학과 목록을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
@@ -74,6 +73,8 @@ export default function Signup() {
           }
         } catch {}
         navigate('/');
+      } else {
+        setError(res.data.error?.reason || '회원가입 중 오류가 발생했습니다.');
       }
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
@@ -120,6 +121,7 @@ export default function Signup() {
                   onChange={e => setForm(f => ({ ...f, majorId: e.target.value }))}
                   required
                 >
+                  <option value="" disabled>학과를 선택하세요</option>
                   {majors.map(m => (
                     <option key={m.major_id} value={m.major_id}>{m.major_name}</option>
                   ))}
@@ -174,6 +176,13 @@ export default function Signup() {
                 </button>
               </div>
             </div>
+
+            {/* 오류 메시지 */}
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium">
+                {error}
+              </div>
+            )}
 
             {/* 제출 버튼 */}
             <button
