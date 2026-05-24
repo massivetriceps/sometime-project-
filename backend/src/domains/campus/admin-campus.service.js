@@ -56,15 +56,15 @@ const updateDistances = async (distances) => {
 const getDistances = async () => {
   const rows = await prisma.distances.findMany({
     include: {
-      buildings_distances_from_building_idTobuildings: { select: { building_name: true } },
-      buildings_distances_to_building_idTobuildings:   { select: { building_name: true } },
+      from_building: { select: { building_name: true } },
+      to_building:   { select: { building_name: true } },
     },
   });
   return rows.map(r => ({
     from_building_id:   r.from_building_id,
     to_building_id:     r.to_building_id,
-    from_building_name: r.buildings_distances_from_building_idTobuildings?.building_name ?? '',
-    to_building_name:   r.buildings_distances_to_building_idTobuildings?.building_name   ?? '',
+    from_building_name: r.from_building?.building_name ?? '',
+    to_building_name:   r.to_building?.building_name   ?? '',
     time_minutes:       r.time_minutes,
     is_uphill:          r.is_uphill,
   }));
