@@ -435,7 +435,7 @@ export default function AdminCourseUpload() {
                       </td>
                       <td className="px-4 py-3 text-[12px] text-slate-500">{row['담당교수'] || '-'}</td>
                     </tr>
-                  );}}
+                  );})}
                 </tbody>
               </table>
             </div>
