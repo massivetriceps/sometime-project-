@@ -16,20 +16,18 @@ const getTakenHistory = async (userId) => {
 };
 
 const saveTakenHistory = async (userId, courses) => {
-  // 1. 데이터 검증
-  if (!courses || !Array.isArray(courses) || courses.length === 0) {
+  if (!courses || !Array.isArray(courses)) {
     throw new NoParams('입력할 기수강 내역이 없습니다.');
   }
 
-  // 2. 기존 내역 삭제 후 새로 저장 (트랜잭션 권장)
-  // 여기서는 단순화를 위해 순차적으로 실행합니다.
   await graduationRepository.deleteTakenCoursesByUserId(userId);
-  const result = await graduationRepository.createTakenCourses(userId, courses);
 
-  return {
-    message: '기수강 내역이 성공적으로 저장되었습니다.',
-    count: result.count
-  };
+  if (courses.length === 0) {
+    return { message: '기수강 내역이 성공적으로 저장되었습니다.', count: 0 };
+  }
+
+  const result = await graduationRepository.createTakenCourses(userId, courses);
+  return { message: '기수강 내역이 성공적으로 저장되었습니다.', count: result.count };
 };
 
 const getDashboard = async (userId) => {

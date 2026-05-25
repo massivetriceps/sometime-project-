@@ -487,6 +487,12 @@ const deleteTimetable = async (userId, timetableId) => {
   await prisma.$transaction([
     prisma.timetableCourses.deleteMany({ where: { timetable_id: timetableId } }),
     prisma.timetables.delete({ where: { timetable_id: timetableId } }),
+    // 확정된 시간표였다면 해당 학기 수강내역도 같이 삭제
+    ...(timetable.is_selected
+      ? [prisma.takenCourses.deleteMany({
+          where: { user_id: userId, grade: timetable.grade ?? null, semester: timetable.semester ?? null },
+        })]
+      : []),
   ]);
 
   return { message: '시간표가 삭제되었습니다.' };

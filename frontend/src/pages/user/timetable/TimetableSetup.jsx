@@ -53,27 +53,6 @@ export default function TimetableSetup() {
     api.get('/api/admin/campus/distances')
       .then(res => { if (res.data.resultType === 'SUCCESS') setDistances(res.data.success); })
       .catch(() => {});
-    // 이전 저장된 선호 조건 복원
-    api.get('/api/users/me/preferences')
-      .then(res => {
-        if (res.data.resultType === 'SUCCESS') {
-          const pref = res.data.success;
-          if (!pref || pref.message) return; // 설정값 없으면 무시
-          setAnswers(prev => ({
-            ...prev,
-            hills: pref.avoid_uphill === true
-              ? '무조건 평지 건물 위주로'
-              : pref.avoid_uphill === false ? '운동삼아 오르막도 감수함' : prev.hills,
-            online: pref.prefer_online === true
-              ? '최소 1개는 무조건 포함'
-              : pref.prefer_online === false ? '난 강의실이 좋은데' : prev.online,
-            freeDay: pref.free_days
-              ? pref.free_days.split(',').map(d => DAY_EN_TO_KR[d]).filter(Boolean)
-              : prev.freeDay,
-          }));
-        }
-      })
-      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepLabels = ['기본 정보 입력', '우선순위 설정', '세부 조건 설정', '결과 및 분석'];
@@ -219,19 +198,6 @@ export default function TimetableSetup() {
       }
     }
 
-    // 8. 온라인 선호인데 장바구니 전부 오프라인
-    const preferOnline = answers.online === '최소 1개는 무조건 포함' || answers.online === '2개 이상';
-    if (preferOnline) {
-      const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
-      if (allOffline) {
-        warns.push({
-          type: 'WARN_ONLINE_CART_CONFLICT',
-          color: '#F59E0B',
-          msg: `⚠️ 온라인 선호 충돌 — 장바구니의 모든 강의가 오프라인이에요.`,
-          sub: '시간표는 생성되지만 온라인 선호 최적화가 제한될 수 있어요.',
-        });
-      }
-    }
 
     // 9. 오전 선호인데 연속 장바구니 강의 이동시간(5~10분)이 오전 배치를 제한
     const preferMorning = answers.morning === '아침형 인간 (1교시 환영)';

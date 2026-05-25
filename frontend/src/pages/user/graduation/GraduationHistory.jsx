@@ -465,6 +465,25 @@ export default function GraduationHistory() {
                         <span style={{ fontSize: 12, color: '#4F7CF3', background: '#EEF2FF', padding: '2px 8px', borderRadius: 999, fontWeight: 600 }}>{semTotal}학점</span>
                         <span style={{ fontSize: 11, color: '#9CA3AF' }}>{list.length}과목</span>
                       </div>
+                      <button onClick={async () => {
+                        const updated = courses.filter(c => !(String(c.grade) === g && String(c.semester) === sem));
+                        try {
+                          await api.post('/api/users/me/graduation/history', {
+                            courses: updated.map(x => ({
+                              course_code:    x.course_code || x.name.trim().replace(/\s+/g, '_'),
+                              course_name:    x.name,
+                              classification: CLASS_MAP[x.category] ?? x.category,
+                              credits:        Number(x.credits),
+                              letter_grade:   x.letterGrade,
+                            })),
+                          });
+                          setCourses(updated);
+                        } catch (err) {
+                          showToast('error', err.response?.data?.error?.reason || '삭제 중 오류가 발생했습니다.');
+                        }
+                      }} style={{ fontSize: 11, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Trash2 size={12} /> 학기 전체 삭제
+                      </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px' }}>
                       {list.map(renderCourse)}
