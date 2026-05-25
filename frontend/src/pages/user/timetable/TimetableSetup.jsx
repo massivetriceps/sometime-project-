@@ -198,7 +198,20 @@ export default function TimetableSetup() {
       }
     }
 
-
+ // 8. 온라인 선호인데 장바구니 전부 오프라인
+    const preferOnline = answers.online === '최소 1개는 무조건 포함' || answers.online === '2개 이상';
+    if (preferOnline) {
+      const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
+      if (allOffline) {
+        warns.push({
+          type: 'WARN_ONLINE_CART_CONFLICT',
+          color: '#F59E0B',
+          msg: `⚠️ 온라인 선호 충돌 — 장바구니의 모든 강의가 오프라인이에요.`,
+          sub: '시간표는 생성되지만 온라인 선호 최적화가 제한될 수 있어요.',
+        });
+      }
+    }
+    
     // 9. 오전 선호인데 연속 장바구니 강의 이동시간(5~10분)이 오전 배치를 제한
     const preferMorning = answers.morning === '아침형 인간 (1교시 환영)';
     if (preferMorning && distances.length > 0) {
