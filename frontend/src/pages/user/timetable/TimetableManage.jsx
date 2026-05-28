@@ -86,6 +86,7 @@ export default function TimetableManage() {
   const [addingCourseId, setAddingCourseId] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [toast, setToast] = useState(null); // { msg, type: 'success'|'error' }
+  const [selectedSemesterKey, setSelectedSemesterKey] = useState(null);
   const searchRef = useRef(null);
   const searchPanelRef = useRef(null);
   const searchDebounceRef = useRef(null);
@@ -243,10 +244,34 @@ export default function TimetableManage() {
     }
   };
 
-  const activePlan = timetables.find(t => t.timetable_id === selectedId) || timetables[0] || null;
+  // 학년/학기 그룹핑
+  const semesterGroups = React.useMemo(() => {
+    const seen = new Set();
+    const groups = [];
+    timetables.forEach(t => {
+      const key = `${t.grade}-${t.semester}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        groups.push({ key, grade: t.grade, semester: t.semester });
+      }
+    });
+    return groups.sort((a, b) => a.grade !== b.grade ? a.grade - b.grade : a.semester - b.semester);
+  }, [timetables]);
+
+  const activeSemesterKey = selectedSemesterKey || semesterGroups[0]?.key || null;
+  const semesterTimetables = timetables.filter(t => `${t.grade}-${t.semester}` === activeSemesterKey);
+
+  const handleSemesterChange = (key) => {
+    setSelectedSemesterKey(key);
+    setDeleteConfirm(false);
+    setAiComment('');
+    const first = timetables.find(t => `${t.grade}-${t.semester}` === key);
+    setSelectedId(first?.timetable_id ?? null);
+  };
+
+  const activePlan = semesterTimetables.find(t => t.timetable_id === selectedId) || semesterTimetables[0] || null;
   const gridCourses = activePlan ? toGridCourses(activePlan.courses) : [];
   const total = activePlan?.courses.reduce((sum, c) => sum + Number(c.credits), 0) ?? 0;
-  // 시간 미배정 과목 (스케줄 없는 과목 — 사회봉사 등)
   const noScheduleCourses = activePlan?.courses.filter(c => !c.schedules || c.schedules.length === 0) ?? [];
 
   if (loading) {
@@ -288,19 +313,32 @@ export default function TimetableManage() {
           </div>
         ) : (
           <>
+            {/* 학년/학기 탭 */}
+            {semesterGroups.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                {semesterGroups.map(({ key, grade: g, semester: sm }) => {
+                  const isActive = activeSemesterKey === key;
+                  return (
+                    <button key={key}
+                      onClick={() => handleSemesterChange(key)}
+                      style={{ padding: '8px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#1F2937' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
+                      {g}학년 {sm}학기
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 플랜 탭 */}
-            {timetables.length > 1 && (
+            {semesterTimetables.length > 1 && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                {timetables.map((t) => {
+                {semesterTimetables.map((t) => {
                   const isActive = activePlan?.timetable_id === t.timetable_id;
                   return (
                     <button key={t.timetable_id}
                       onClick={() => { setSelectedId(t.timetable_id); setDeleteConfirm(false); setAiComment(''); }}
                       style={{ padding: '8px 18px', borderRadius: 12, fontSize: 13, fontWeight: 600, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#4F7CF3' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
                       플랜 {t.plan_type}
-                      {t.grade && t.semester && (
-                        <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.85 }}>({t.grade}학년 {t.semester}학기)</span>
-                      )}
                     </button>
                   );
                 })}

@@ -171,7 +171,7 @@ const callCSPEngine = async (payload) => {
 // AI 코멘트 생성 (OpenAI)
 // OPENAI_API_KEY 없으면 null 저장 후 진행
 // ────────────────────────────────────────
-const generateAIComment = async (plan) => {
+const generateAIComment = async (plan, allCourses, context) => {
   if (!process.env.OPENAI_API_KEY) {
     console.warn('[AI] OPENAI_API_KEY 없음 → 코멘트 null 처리');
     return null;
@@ -181,6 +181,24 @@ const generateAIComment = async (plan) => {
     const { default: OpenAI } = await import('openai');
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    const courseMap = Object.fromEntries(allCourses.map(c => [c.course_id, c]));
+    const planCourses = plan.course_ids.map(id => courseMap[id]).filter(Boolean);
+    const totalCredits = planCourses.reduce((sum, c) => sum + c.credits, 0);
+
+    const courseList = planCourses.map(c => {
+      const schedules = c.schedules.map(s =>
+        `${s.day_of_week}요일 ${s.start_period}~${s.end_period}교시 (${s.building_name || '온라인'})`
+      ).join(', ');
+      return `- ${c.course_name} [${c.classification || '기타'}] ${c.credits}학점 / ${schedules || '시간 미배정'}`;
+    }).join('\n');
+
+    const userMessage =
+      `학년: ${context.grade ?? '미지정'}학년\n` +
+      `전공: ${context.majorName || '미지정'}\n` +
+      `총 학점: ${totalCredits}학점\n` +
+      `플랜: ${plan.plan_type}\n\n` +
+      `강의 목록:\n${courseList}`;
+
     const chat = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -188,12 +206,13 @@ const generateAIComment = async (plan) => {
           role: 'system',
           content:
             '너는 가천대학교 시간표 추천 도우미야. ' +
-            '건물 간 이동시간, 공강 확보, 전공필수 충족 여부를 ' +
-            '분석해서 한 문장으로 자연어 설명해줘. 한국어로만 답해.',
+            '강의 목록, 요일/교시, 건물 정보를 바탕으로 ' +
+            '공강 확보 여부, 이동 동선, 전공 구성의 특징을 분석해서 ' +
+            '2~3문장으로 자연어 설명해줘. 한국어로만 답해.',
         },
-        { role: 'user', content: JSON.stringify(plan) },
+        { role: 'user', content: userMessage },
       ],
-      max_tokens: 150,
+      max_tokens: 200,
     });
 
     return chat.choices[0].message.content.trim();
@@ -243,6 +262,21 @@ const createTimetable = async (userId, body) => {
   const distances = await prisma.distances.findMany();
 
   // 4) CSP 호출 (Mock 포함)
+  const mappedCourses = courses.map((c) => ({
+    course_id:      c.course_id,
+    course_code:    c.course_code,
+    course_name:    c.course_name,
+    classification: c.classification,
+    credits:        c.credits,
+    schedules:      c.course_schedules.map((s) => ({
+      day_of_week:   s.day_of_week,
+      start_period:  s.start_period,
+      end_period:    s.end_period,
+      building_id:   s.building_id,
+      building_name: s.buildings?.building_name ?? '온라인',
+    })),
+  }));
+
   const plans = await callCSPEngine({
     userId,
     constraints: {
@@ -256,20 +290,7 @@ const createTimetable = async (userId, body) => {
       takenCourseCodes,
       targetCredits: target_credits ?? 18,
     },
-    courses: courses.map((c) => ({
-      course_id:      c.course_id,
-      course_code:    c.course_code,
-      course_name:    c.course_name,
-      classification: c.classification,
-      credits:        c.credits,
-      schedules:      c.course_schedules.map((s) => ({
-        day_of_week:   s.day_of_week,
-        start_period:  s.start_period,
-        end_period:    s.end_period,
-        building_id:   s.building_id,
-        building_name: s.buildings?.building_name ?? '온라인',
-      })),
-    })),
+    courses: mappedCourses,
     distances: distances.map((d) => ({
       from_building_id: d.from_building_id,
       to_building_id:   d.to_building_id,
@@ -278,8 +299,11 @@ const createTimetable = async (userId, body) => {
     })),
   });
 
-  // 4-5) 기존 시간표 전부 삭제 후 새로 생성 (중복 방지)
-  const oldTimetables = await prisma.timetables.findMany({ where: { user_id: userId }, select: { timetable_id: true } });
+  // 4-5) 같은 학년/학기 시간표만 삭제 후 재생성 (다른 학기는 유지)
+  const oldTimetables = await prisma.timetables.findMany({
+    where: { user_id: userId, grade: grade ?? null, semester: semester ?? null },
+    select: { timetable_id: true },
+  });
   if (oldTimetables.length > 0) {
     const oldIds = oldTimetables.map(t => t.timetable_id);
     await prisma.timetableCourses.deleteMany({ where: { timetable_id: { in: oldIds } } });
@@ -290,7 +314,7 @@ const createTimetable = async (userId, body) => {
   const created = [];
 
   for (const plan of plans) {
-    const ai_comment = await generateAIComment(plan);
+    const ai_comment = await generateAIComment(plan, mappedCourses, { grade, majorName });
 
     const timetable = await prisma.timetables.create({
       data: {

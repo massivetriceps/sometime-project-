@@ -539,6 +539,9 @@ export default function TimetableSetup() {
                   <option key={`${g}-${s}`} value={`${g}-${s}`}>{g}학년 {s}학기</option>
                 )))}
               </select>
+              <p style={{ fontSize: '12px', color: '#475569', margin: '6px 0 0', background: '#F1F5F9', borderRadius: '6px', padding: '6px 10px' }}>
+                ※ 현재 1학기 강의 데이터 기준으로 시간표가 생성됩니다
+              </p>
             </div>
 
             <div style={styles.inputGroup}>
