@@ -48,6 +48,6 @@ class LLMResponse(BaseModel):
             "example": {
                 "result_code": "SUCCESS",
                 "comment": "이 시간표는 오전 수업 위주로 구성되어 있어 오후 시간을 자유롭게 활용할 수 있어요!",
-                "model_used": "claude-3-5-sonnet",
+                "model_used": "gpt-4o-mini",
             }
         }

@@ -72,13 +72,6 @@ def get_priority_label(key: str, request: CSPRequest) -> str:
 # 유틸 함수
 # ==========================================================
 
-def get_priority_weight(priority_order: list[str], key: str) -> int:
-    """사용자 우선순위 리스트에서 해당 key의 가중치 반환"""
-    if not priority_order or key not in priority_order:
-        return 1
-    idx = priority_order.index(key)
-    return PRIORITY_WEIGHTS.get(idx, 1)
-
 def get_plan_profiles(request: CSPRequest) -> dict:
     """
     사용자 우선순위에 따라 3개 plan의 가중치 프로파일 생성.
@@ -628,11 +621,6 @@ def filter_candidates(all_courses: list, request: CSPRequest) -> list:
         if is_major or is_liberal:
             candidates.append(c)
 
-    print(f"[DEBUG] 후보 강의 수: {len(candidates)}")
-    print(f"[DEBUG] 전공: {sum(1 for c in candidates if request.major_id in c['major_ids'])}")
-    print(f"[DEBUG] 교양: {sum(1 for c in candidates if c['classification'] in LIBERAL_ARTS_CLASSIFICATIONS)}")
-    print(f"[DEBUG] 학점 합계 가능: {sum(c['credits'] for c in candidates)}")
-
     return candidates
 
 
@@ -953,17 +941,6 @@ class TimetableCallback(cp_model.CpSolverSolutionCallback):
         return self._solutions
 
 
-def run_solver(model, variables, candidates) -> list[dict]:
-    """솔버 실행 후 찾은 해 리스트 반환"""
-    solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 10.0
-    solver.parameters.enumerate_all_solutions = True
-
-    callback = TimetableCallback(variables, candidates, max_solutions=50)
-    status = solver.Solve(model, callback)
-
-    return callback.get_solutions(), status
-
 def solve_single_plan(
     candidates: list,
     request: CSPRequest,
@@ -1042,7 +1019,6 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
             conflict_info=conflicts,
         )
 
-
     # 3) Plan profile 생성
     profiles = get_plan_profiles(request)
 
@@ -1057,18 +1033,14 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
         )
         
         if solution is None:
-            print(f"[DEBUG] Plan {plan_type}: 해 없음")
             continue
         
-        # 같은 강의 조합이면 스킵 (다양성 확보)
         key = frozenset(c["course_id"] for c in solution["selected_courses"])
         if key in seen_keys:
-            print(f"[DEBUG] Plan {plan_type}: 이전 plan과 동일 → 스킵")
             continue
         seen_keys.add(key)
         
         plans.append(_build_plan(solution, plan_type, profile["label"]))
-        print(f"[DEBUG] Plan {plan_type} ({profile['label']}): score={int(solution['score'])}")
 
     # 5) 결과 처리
     if not plans:
@@ -1099,18 +1071,6 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
 # ==========================================================
 # 응답 변환 헬퍼
 # ==========================================================
-
-def _deduplicate_solutions(solutions: list) -> list:
-    """동일한 강의 조합의 해를 제거"""
-    seen = set()
-    unique = []
-    for sol in solutions:
-        key = frozenset(c["course_id"] for c in sol["selected_courses"])
-        if key not in seen:
-            seen.add(key)
-            unique.append(sol)
-    return unique
-
 
 def _build_plan(solution: dict, plan_type: str, plan_label: str) -> TimetablePlan:
     """솔루션을 TimetablePlan 스키마로 변환"""
@@ -1190,9 +1150,3 @@ def _generate_characteristics(courses: list) -> list[str]:
         tags.append("#여유로운학기")
 
     return tags if tags else ["#균형잡힌시간표"]
-
-
-
-
-
-
