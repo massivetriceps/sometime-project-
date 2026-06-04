@@ -113,6 +113,8 @@ const callCSPEngine = async (payload) => {
     const {
       dept, grade, free_day_mask, avoid_uphill, prefer_online, min_online_count = 0,
       cartCourseIds, targetCredits, takenCourseCodes = [],
+      priority_order = ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
+      preferred_time = 'ANY',
     } = constraints;
 
     const free_days = DAY_BITS.filter(d => (free_day_mask ?? 0) & d.bit).map(d => d.day);
@@ -128,8 +130,8 @@ const callCSPEngine = async (payload) => {
       apply_year:          applyYear,
       cart_course_ids:     cartCourseIds,
       taken_course_codes:  takenCourseCodes,
-      priority_order:      ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
-      preferred_time:      'ANY',
+      priority_order,
+      preferred_time,
       free_days,
       credit_intensity,
       avoid_uphill:        avoid_uphill ?? false,
@@ -231,6 +233,7 @@ const createTimetable = async (userId, body) => {
     free_day_mask, avoid_uphill,
     allow_first, prefer_online, min_online_count,
     target_credits, semester,
+    priority_order, preferred_time,
   } = body;
 
   // 0) 유저 major_id 조회
@@ -289,6 +292,8 @@ const createTimetable = async (userId, body) => {
       cartCourseIds,
       takenCourseCodes,
       targetCredits: target_credits ?? 18,
+      priority_order: priority_order ?? ['FREE_DAY', 'AVOID_UPHILL', 'PREFER_ONLINE', 'PREFER_MORNING'],
+      preferred_time: preferred_time ?? 'ANY',
     },
     courses: mappedCourses,
     distances: distances.map((d) => ({

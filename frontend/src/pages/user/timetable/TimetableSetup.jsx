@@ -763,6 +763,20 @@ export default function TimetableSetup() {
           .map(d => DAY_EN[d]);
         const free_days = selectedDays.length > 0 ? selectedDays.join(',') : null;
 
+        // 우선순위 순서 → CSP 키 변환
+        const PRIORITY_KEY_MAP = {
+          freeDay: 'FREE_DAY',
+          hills: 'AVOID_UPHILL',
+          online: 'PREFER_ONLINE',
+          morning: 'PREFER_MORNING',
+        };
+        const priority_order = priorities.map(p => PRIORITY_KEY_MAP[p.id]);
+
+        // 오전/오후 선호 → CSP preferred_time 변환
+        const preferred_time =
+          answers.morning === '아침형 인간 (1교시 환영)' ? 'MORNING' :
+          answers.morning === '절대 불가 (10시 이후 시작)' ? 'AFTERNOON' : 'ANY';
+
         try {
           await api.post('/api/users/me/preferences', {
             avoid_uphill,
@@ -782,6 +796,8 @@ export default function TimetableSetup() {
           prefer_online,
           min_online_count,
           target_credits: targetCredits,
+          priority_order,
+          preferred_time,
         });
 
         navigate('/timetable/manage');

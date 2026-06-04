@@ -5,6 +5,35 @@ import api from '../../../api/axios';
 
 const COLORS = ['#8FA8FF', '#8EDDD0', '#C3B5FF', '#F7CFA1', '#F4AFCF'];
 
+// ai-server csp_service.py의 _generate_characteristics 로직과 동일
+const generateCharacteristics = (courses) => {
+  const tags = [];
+
+  // 공강 요일
+  const dayCount = {};
+  courses.forEach(c => (c.schedules || []).forEach(s => { dayCount[s.day_of_week] = (dayCount[s.day_of_week] || 0) + 1; }));
+  ['월', '화', '수', '목', '금'].forEach(day => { if (!dayCount[day]) tags.push(`#공강${day}요일`); });
+
+  // 오전/오후 비율
+  let morning = 0, afternoon = 0;
+  courses.forEach(c => (c.schedules || []).forEach(s => { if (s.start_period <= 4) morning++; else afternoon++; }));
+  if (morning > afternoon * 2) tags.push('#오전집중형');
+  else if (afternoon > morning * 2) tags.push('#오후집중형');
+
+  // 온라인 강의 수
+  const onlineCount = courses.filter(c =>
+    (c.schedules || []).length > 0 && (c.schedules || []).every(s => s.building === '온라인')
+  ).length;
+  if (onlineCount >= 2) tags.push('#온라인강의다수');
+
+  // 학점
+  const total = courses.reduce((sum, c) => sum + Number(c.credits), 0);
+  if (total >= 19) tags.push('#고학점');
+  else if (total <= 14) tags.push('#여유로운학기');
+
+  return tags.length ? tags : ['#균형잡힌시간표'];
+};
+
 // 교시 → 시간 변환: 가천대 기준 1교시=09:00, 각 교시는 50분 수업+10분 휴식(정각 시작)
 // n교시 시작 = (8+n)시 정각, 종료 = (8+n)시 50분
 const periodToTime = (period) => `${String(8 + period).padStart(2, '0')}:00`;
@@ -273,6 +302,7 @@ export default function TimetableManage() {
   const gridCourses = activePlan ? toGridCourses(activePlan.courses) : [];
   const total = activePlan?.courses.reduce((sum, c) => sum + Number(c.credits), 0) ?? 0;
   const noScheduleCourses = activePlan?.courses.filter(c => !c.schedules || c.schedules.length === 0) ?? [];
+  const characteristics = activePlan ? generateCharacteristics(activePlan.courses) : [];
 
   if (loading) {
     return (
@@ -334,11 +364,13 @@ export default function TimetableManage() {
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                 {semesterTimetables.map((t) => {
                   const isActive = activePlan?.timetable_id === t.timetable_id;
+                  const chars = generateCharacteristics(t.courses);
                   return (
                     <button key={t.timetable_id}
                       onClick={() => { setSelectedId(t.timetable_id); setDeleteConfirm(false); setAiComment(''); }}
-                      style={{ padding: '8px 18px', borderRadius: 12, fontSize: 13, fontWeight: 600, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#4F7CF3' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
-                      플랜 {t.plan_type}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '10px 18px', borderRadius: 12, fontSize: 13, fontWeight: 600, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#4F7CF3' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
+                      <span>플랜 {t.plan_type}</span>
+                      <span style={{ fontSize: 11, fontWeight: 400, opacity: 0.8, marginTop: 2 }}>{chars[0]}</span>
                     </button>
                   );
                 })}
@@ -380,10 +412,17 @@ export default function TimetableManage() {
                         </span>
                       )}
                     </p>
-                    <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 8px' }}>
                       총 {total}학점 · {activePlan.courses.length}과목
                       {activePlan.total_walk_minutes > 0 && ` · 이동 ${activePlan.total_walk_minutes}분`}
                     </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {characteristics.map(tag => (
+                        <span key={tag} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: '#E8F0FF', color: '#4F7CF3' }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <button onClick={() => { setShowAddPanel(v => !v); setSearchKeyword(''); setSearchResults([]); }}
