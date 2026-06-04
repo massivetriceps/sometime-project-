@@ -676,13 +676,17 @@ def build_base_model(
 
     # 제약 6: 온라인 강의 수 제어
     if not request.prefer_online:
-        # 강의실 선호 → 온라인 강의 완전 제외
+        # 0개 → 온라인 완전 제외
         for course in candidates:
             if all(s.get("building_id") is None for s in course["schedules"]):
                 model.Add(variables[course["course_id"]] == 0)
-    elif request.min_online_count > 0:
+    elif request.min_online_count >= 3:
+        # 3개 이상 → 최소 3개만 보장, 상한 없음
         _add_min_online_constraint(model, variables, candidates, request.min_online_count)
-
+    else:
+        # 1개 or 2개 → 정확히 N개 고정
+        _add_min_online_constraint(model, variables, candidates, request.min_online_count)
+        _add_max_online_constraint(model, variables, candidates, request.min_online_count)
     return model, variables
 
 
@@ -747,6 +751,16 @@ def _add_min_online_constraint(model, variables, candidates, min_count):
     ]
     if online_vars:
         model.Add(sum(online_vars) >= min_count)
+
+
+def _add_max_online_constraint(model, variables, candidates, max_count):
+    """온라인 강의 최대 개수 하드 제약 (무제한 방지)"""
+    online_vars = [
+        variables[c["course_id"]] for c in candidates
+        if all(s.get("building_id") is None for s in c["schedules"])
+    ]
+    if online_vars:
+        model.Add(sum(online_vars) <= max_count)
 
 
 def _add_travel_time_constraint(model, variables, candidates, distance_map):
@@ -847,18 +861,24 @@ def build_objective(
             elif request.preferred_time == "AFTERNOON" and not is_morning:
                 objective_terms.append(morning_w * 2 * variables[cid])
 
-    # 교육과정 일치 보너스
+    # 교육과정 일치 보너스 (전필 우선 배치)
     curriculum = get_curriculum_courses(
         request.apply_year, request.major_name, request.grade, request.semester
     )
     if curriculum:
+        jeonpil_names = set(curriculum.get("전필", []))
+        jeonseon_names = set(curriculum.get("전선", []))
+        gyegyo_names = set(curriculum.get("계교", []))
+
         for course in candidates:
             cid = course["course_id"]
             normalized = re.sub(r"\s*\(.*?\)", "", course["course_name"]).strip()
-            if normalized in curriculum.get("전필", []):
-                objective_terms.append(30 * variables[cid])
-            elif normalized in curriculum.get("전선", []) or normalized in curriculum.get("계교", []):
-                objective_terms.append(10 * variables[cid])
+            if normalized in jeonpil_names:
+                # 전필: 매우 강한 보너스 (학점 최대화보다 우선)
+                objective_terms.append(100 * course["credits"] * variables[cid])
+            elif normalized in jeonseon_names or normalized in gyegyo_names:
+                # 전선/계교: 중간 보너스
+                objective_terms.append(30 * course["credits"] * variables[cid])
 
     # 학점 최대화 (기본 보너스, 모든 plan 공통)
     for course in candidates:
