@@ -199,7 +199,7 @@ export default function TimetableSetup() {
     }
 
  // 8. 온라인 선호인데 장바구니 전부 오프라인
-    const preferOnline = answers.online === '최소 1개는 무조건 포함' || answers.online === '2개 이상';
+    const preferOnline = answers.online === '1개 정도는 싸강으로 듣고 싶어' || answers.online === '2개는 싸강으로 들을래' || answers.online === '3개 이상 싸강으로 들을래';
     if (preferOnline) {
       const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
       if (allOffline) {
@@ -417,12 +417,18 @@ export default function TimetableSetup() {
           <div style={styles.card}>
             <h3>{dynamicStep + 1}순위 조건: 싸강(온라인) 선호도</h3>
             <p style={styles.desc}>온라인 강의 비중을 어떻게 설정할까요?</p>
-            {['최소 1개는 무조건 포함', '2개 이상', '난 강의실이 좋은데'].map(opt => (
+            {['난 강의실이 좋은데', '1개 정도는 싸강으로 듣고 싶어', '2개는 싸강으로 들을래', '3개 이상 싸강으로 들을래'].map(opt => (
               <label key={opt} style={answers.online === opt ? styles.radioActive : styles.radio}>
                 <input type="radio" name="online" value={opt} onChange={handleAnswerChange} checked={answers.online === opt} style={{display:'none'}} />
                 {opt}
               </label>
             ))}
+            {answers.online === '3개 이상 싸강으로 들을래' && (
+              <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>⚠️ 온라인 강의 부족 가능 — 전공 과목은 온라인 강의가 거의 없어 3개 이상 조건을 충족하는 시간표가 생성되지 않을 수 있어요.</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>조건을 낮추거나, 장바구니에 온라인 강의를 미리 담아두세요.</p>
+              </div>
+            )}
             {onlineWarn && (
               <div style={{ marginTop: '10px', background: '#FFFBEB', borderRadius: '10px', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B', padding: '10px 14px' }}>
                 <p style={{ fontSize: '13px', fontWeight: '600', color: '#F59E0B', margin: '0 0 3px' }}>{onlineWarn.msg}</p>
@@ -754,7 +760,7 @@ export default function TimetableSetup() {
           .reduce((mask, day) => mask | (DAY_MASK[day] ?? 0), 0);
 
         const avoid_uphill = answers.hills === '무조건 평지 건물 위주로';
-        const min_online_count = answers.online === '2개 이상' ? 2 : answers.online === '최소 1개는 무조건 포함' ? 1 : 0;
+        const min_online_count = answers.online === '3개 이상 싸강으로 들을래' ? 3 : answers.online === '2개는 싸강으로 들을래' ? 2 : answers.online === '1개 정도는 싸강으로 듣고 싶어' ? 1 : 0;
         const prefer_online = min_online_count > 0;
         const allow_first = answers.morning === '아침형 인간 (1교시 환영)';
 
