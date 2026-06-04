@@ -41,27 +41,20 @@ def load_courses(major_id: int = None):
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # COURSE_MAJORS와 LEFT JOIN, GROUP_CONCAT으로 다대다 처리
+        # COURSES 테이블의 major_id 컬럼 직접 사용
         cursor.execute("""
             SELECT c.course_id, c.course_code, c.course_name,
                    c.classification, c.credits, c.professor, c.capacity,
-                   c.organization,
-                   GROUP_CONCAT(cm.major_id) AS major_ids
+                   c.organization, c.major_id
             FROM COURSES c
-            LEFT JOIN COURSE_MAJORS cm ON c.course_id = cm.course_id
-            GROUP BY c.course_id
         """)
         courses = cursor.fetchall()
 
-        # major_ids 문자열을 리스트로 변환
         for course in courses:
-            if course["major_ids"]:
-                course["major_ids"] = [
-                    int(mid) for mid in course["major_ids"].split(",")
-                ]
-            else:
-                course["major_ids"] = []
-            
+            # major_id를 리스트로 변환 (기존 코드와 호환)
+            mid = course.get("major_id")
+            course["major_ids"] = [mid] if mid else []
+
             course["grades"] = extract_grades_from_organization(
                 course["organization"]
             )
