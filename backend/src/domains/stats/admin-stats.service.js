@@ -298,7 +298,6 @@ const getFreeDayDistribution = async () => {
 // ────────────────────────────────────────────────────────────
 const getDeptDistribution = async () => {
   const users = await prisma.users.findMany({
-    where:  { major_id: { not: null } },
     select: { majors: { select: { major_name: true } } },
   });
 
