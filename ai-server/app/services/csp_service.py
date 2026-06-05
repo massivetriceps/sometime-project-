@@ -340,18 +340,22 @@ def _check_morning_pref_vs_cart(cart_courses: list, request: CSPRequest) -> list
     if request.preferred_time != "MORNING":
         return conflicts
 
-    afternoon_only_courses = []
-    for course in cart_courses:
-        # 모든 스케줄이 오후(5교시 이상)인 경우
-        if course["schedules"] and all(s["start_period"] >= 5 for s in course["schedules"]):
-            afternoon_only_courses.append(course["course_name"].strip())
+    afternoon_only_courses = [
+        course for course in cart_courses
+        if course["schedules"] and all(s["start_period"] >= 5 for s in course["schedules"])
+    ]
 
-    if afternoon_only_courses:
-        names_str = ", ".join(afternoon_only_courses)
+    # 오후 강의 학점 합이 목표 학점 이상일 때만 경고
+    intensity_min = {"RELAXED": 12, "NORMAL": 15, "INTENSIVE": 19}
+    target_credits = intensity_min.get(request.credit_intensity, 15)
+    afternoon_credits = sum(c["credits"] for c in afternoon_only_courses)
+
+    if afternoon_credits >= target_credits:
+        names_str = ", ".join(c["course_name"].strip() for c in afternoon_only_courses)
         conflicts.append(ConflictInfo(
             conflict_type="WARN_MORNING_CART_CONFLICT",
-            message=f"오전 수업을 선호하지만 장바구니의 '{names_str}'은(는) 오후에만 수업이 있어요.",
-            suggestion="해당 강의를 장바구니에서 제거하거나, 선호 시간대를 '무관'으로 변경하세요."
+            message=f"오전 수업을 선호하지만 장바구니 오후 강의({names_str})가 목표 학점을 채워 오전 강의를 넣기 어려워요.",
+            suggestion="장바구니 강의를 줄이거나, 선호 시간대를 '무관'으로 변경하세요."
         ))
 
     return conflicts
@@ -408,17 +412,21 @@ def _check_online_pref_vs_cart(cart_courses: list, request: CSPRequest) -> list[
         return conflicts
 
     offline_courses = [
-        course["course_name"].strip()
-        for course in cart_courses
+        course for course in cart_courses
         if not all(s.get("building_id") is None for s in course["schedules"])
     ]
 
-    if len(offline_courses) == len(cart_courses) and offline_courses:
-        names_str = ", ".join(offline_courses)
+    # 장바구니 오프라인 학점 합이 목표 학점 이상일 때만 경고 (온라인 끼울 자리가 없는 경우)
+    intensity_max = {"RELAXED": 16, "NORMAL": 21, "INTENSIVE": 23}
+    target_credits = intensity_max.get(request.credit_intensity, 21)
+    offline_credits = sum(c["credits"] for c in offline_courses)
+
+    if offline_credits >= target_credits:
+        names_str = ", ".join(c["course_name"].strip() for c in offline_courses)
         conflicts.append(ConflictInfo(
             conflict_type="WARN_ONLINE_CART_CONFLICT",
-            message=f"온라인 강의를 선호하지만 장바구니의 모든 강의({names_str})가 오프라인이에요.",
-            suggestion="장바구니에 온라인 강의를 추가하거나, 온라인 선호 설정을 해제하세요."
+            message=f"온라인 강의를 선호하지만 장바구니 오프라인 강의({names_str})가 목표 학점을 모두 채워 온라인을 넣기 어려워요.",
+            suggestion="장바구니 강의를 줄이거나, 온라인 선호 설정을 해제하세요."
         ))
 
     return conflicts
@@ -946,20 +954,30 @@ def solve_single_plan(
     request: CSPRequest,
     distance_map: dict,
     weights: dict,
+    excluded_keys: list[frozenset] = None,
 ) -> dict | None:
     """
     가중치 1세트로 1개 해를 풀어 반환.
-    
+    excluded_keys: 이미 나온 해의 course_id 집합 목록 (no-good cut)
+
     Returns:
         {"selected_courses": [...], "score": 42} 또는 None
     """
     model, variables = build_base_model(candidates, request, distance_map)
     build_objective(model, variables, candidates, distance_map, request, weights)
 
+    # no-good cut: 이전 해와 완전히 동일한 조합 금지
+    if excluded_keys:
+        for prev_key in excluded_keys:
+            prev_vars = [variables[cid] for cid in prev_key if cid in variables]
+            rest_vars = [variables[c["course_id"]] for c in candidates if c["course_id"] not in prev_key and c["course_id"] in variables]
+            if prev_vars:
+                # 이전 해에서 선택된 강의 중 하나 이상이 달라야 함
+                model.Add(sum(prev_vars) <= len(prev_vars) - 1)
+
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = 10.0
-    # 단일 해만 필요하므로 enumerate 비활성화 → 빠름
-    
+
     status = solver.Solve(model)
 
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -1012,11 +1030,14 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
 
     # 사전 모순 검증
     conflicts = validate_request(candidates, request, distance_map)
-    if conflicts:
+    hard_conflicts = [c for c in conflicts if not c.conflict_type.startswith("WARN_")]
+    warn_conflicts = [c for c in conflicts if c.conflict_type.startswith("WARN_")]
+
+    if hard_conflicts:
         return CSPResponse(
             result_code="NO_SOLUTION",
             found_count=0,
-            conflict_info=conflicts,
+            conflict_info=hard_conflicts,
         )
 
     # 3) Plan profile 생성
@@ -1025,14 +1046,16 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
     # 4) Plan A/B/C 각각 풀이
     plans = []
     seen_keys = set()
-    
+
     for plan_type in ["A", "B", "C"]:
         profile = profiles[plan_type]
         solution = solve_single_plan(
-            candidates, request, distance_map, profile["weights"]
+            candidates, request, distance_map, profile["weights"],
+            excluded_keys=list(seen_keys),
         )
-        
+
         if solution is None:
+            print(f"[CSP] Plan {plan_type} → 해 없음 (weights={profile['weights']})")
             continue
         
         key = frozenset(c["course_id"] for c in solution["selected_courses"])
@@ -1065,7 +1088,7 @@ def solve_timetable(request: CSPRequest) -> CSPResponse:
         plan_a=plan_dict.get("A"),
         plan_b=plan_dict.get("B"),
         plan_c=plan_dict.get("C"),
-        conflict_info=[],
+        conflict_info=warn_conflicts,
     )
 
 # ==========================================================

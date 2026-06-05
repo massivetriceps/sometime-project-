@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, LayoutDashboard, Trash2, Check, X, MessageSquare, Loader, Plus, Search } from 'lucide-react';
 import api from '../../../api/axios';
 
@@ -100,6 +100,7 @@ function TimetableGrid({ courses }) {
 }
 
 export default function TimetableManage() {
+  const location = useLocation();
   const [timetables, setTimetables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -115,7 +116,8 @@ export default function TimetableManage() {
   const [addingCourseId, setAddingCourseId] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [toast, setToast] = useState(null); // { msg, type: 'success'|'error' }
-  const [selectedSemesterKey, setSelectedSemesterKey] = useState(null);
+  const [selectedSemesterKey, setSelectedSemesterKey] = useState(location.state?.semesterKey ?? null);
+  const [deleteSemesterConfirm, setDeleteSemesterConfirm] = useState(false);
   const searchRef = useRef(null);
   const searchPanelRef = useRef(null);
   const searchDebounceRef = useRef(null);
@@ -178,6 +180,23 @@ export default function TimetableManage() {
       setSelectedId(updated[0]?.timetable_id ?? null);
       setDeleteConfirm(false);
       setAiComment('');
+    } catch (err) {
+      const reason = err.response?.data?.error?.reason;
+      showToast('error', reason || '삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDeleteSemester = async () => {
+    const targets = timetables.filter(t => `${t.grade}-${t.semester}` === activeSemesterKey);
+    try {
+      await Promise.all(targets.map(t => api.delete(`/api/users/me/timetables/${t.timetable_id}`)));
+      const updated = timetables.filter(t => `${t.grade}-${t.semester}` !== activeSemesterKey);
+      setTimetables(updated);
+      setSelectedSemesterKey(null);
+      setSelectedId(null);
+      setDeleteConfirm(false);
+      setAiComment('');
+      showToast('success', '학기 시간표가 모두 삭제됐어요.');
     } catch (err) {
       const reason = err.response?.data?.error?.reason;
       showToast('error', reason || '삭제 중 오류가 발생했습니다.');
@@ -345,17 +364,37 @@ export default function TimetableManage() {
           <>
             {/* 학년/학기 탭 */}
             {semesterGroups.length > 0 && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                 {semesterGroups.map(({ key, grade: g, semester: sm }) => {
                   const isActive = activeSemesterKey === key;
                   return (
                     <button key={key}
-                      onClick={() => handleSemesterChange(key)}
+                      onClick={() => { handleSemesterChange(key); setDeleteSemesterConfirm(false); }}
                       style={{ padding: '8px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700, border: isActive ? 'none' : '1px solid #E8F0FF', background: isActive ? '#1F2937' : 'white', color: isActive ? 'white' : '#6B7280', cursor: 'pointer', ...s }}>
                       {g}학년 {sm}학기
                     </button>
                   );
                 })}
+                <div style={{ marginLeft: 'auto' }}>
+                  {deleteSemesterConfirm ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 500 }}>이 학기 전체 삭제할까요?</span>
+                      <button onClick={handleDeleteSemester}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, background: '#ef4444', padding: '6px 12px', fontSize: 12, fontWeight: 600, color: 'white', border: 'none', cursor: 'pointer', ...s }}>
+                        <Check size={12} /> 확인
+                      </button>
+                      <button onClick={() => setDeleteSemesterConfirm(false)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, border: '1px solid #E8F0FF', padding: '6px 12px', fontSize: 12, color: '#6B7280', background: 'white', cursor: 'pointer', ...s }}>
+                        <X size={12} /> 취소
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteSemesterConfirm(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 10, border: '1px solid #fecaca', padding: '7px 14px', fontSize: 12, color: '#ef4444', background: 'white', cursor: 'pointer', ...s }}>
+                      <Trash2 size={12} /> 학기 전체 삭제
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

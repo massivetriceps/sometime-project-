@@ -109,7 +109,7 @@ const callCSPEngine = async (payload) => {
   ];
 
   try {
-    const { userId, constraints } = payload;
+    const { userId, constraints, applyYear, semester, majorName } = payload;
     const {
       dept, grade, free_day_mask, avoid_uphill, prefer_online, min_online_count = 0,
       cartCourseIds, targetCredits, takenCourseCodes = [],
@@ -282,6 +282,9 @@ const createTimetable = async (userId, body) => {
 
   const plans = await callCSPEngine({
     userId,
+    applyYear,
+    semester,
+    majorName,
     constraints: {
       dept: majorId, grade, dormitory,
       free_day_mask,

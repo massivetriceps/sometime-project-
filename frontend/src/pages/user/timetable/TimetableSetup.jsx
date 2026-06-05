@@ -152,22 +152,6 @@ export default function TimetableSetup() {
       });
     }
 
-    // 6. 오전 선호인데 오후 전용 강의 고정
-    const avoidMorning = answers.morning === '절대 불가 (10시 이후 시작)';
-    if (avoidMorning) {
-      cartCourses.forEach(c => {
-        const isAfternoonOnly = c.schedules?.length > 0 && c.schedules.every(s => s.start_period >= 5);
-        // 이미 hasFirstPeriod가 1교시를 커버하므로, 오후 전용만 추가 경고
-        if (isAfternoonOnly) {
-          warns.push({
-            type: 'WARN_MORNING_CART_CONFLICT',
-            color: '#F59E0B',
-            msg: `⚠️ 오전 회피 충돌 — '${c.course_name}'은(는) 오후에만 수업이 있어 오전 회피가 제한돼요.`,
-            sub: '시간표는 생성되지만 오전 회피 최적화가 제한될 수 있어요.',
-          });
-        }
-      });
-    }
 
     // 7. 오르막 회피인데 장바구니에 오르막 연속 강의
     const avoidUphill = answers.hills === '무조건 평지 건물 위주로';
@@ -201,13 +185,14 @@ export default function TimetableSetup() {
  // 8. 온라인 선호인데 장바구니 전부 오프라인
     const preferOnline = answers.online === '1개 정도는 싸강으로 듣고 싶어' || answers.online === '2개는 싸강으로 들을래' || answers.online === '3개 이상 싸강으로 들을래';
     if (preferOnline) {
-      const allOffline = cartCourses.every(c => c.schedules?.some(s => s.building_id !== null));
-      if (allOffline) {
+      const offlineCourses = cartCourses.filter(c => c.schedules?.some(s => s.building_id !== null));
+      const offlineCredits = offlineCourses.reduce((sum, c) => sum + (c.credits ?? 0), 0);
+      if (offlineCredits >= targetCredits) {
         warns.push({
           type: 'WARN_ONLINE_CART_CONFLICT',
           color: '#F59E0B',
-          msg: `⚠️ 온라인 선호 충돌 — 장바구니의 모든 강의가 오프라인이에요.`,
-          sub: '시간표는 생성되지만 온라인 선호 최적화가 제한될 수 있어요.',
+          msg: `⚠️ 온라인 선호 충돌 — 장바구니 오프라인 강의가 목표 학점을 채워 온라인을 넣기 어려워요.`,
+          sub: '장바구니 강의를 줄이거나, 온라인 선호 설정을 해제하세요.',
         });
       }
     }
@@ -806,7 +791,7 @@ export default function TimetableSetup() {
           preferred_time,
         });
 
-        navigate('/timetable/manage');
+        navigate('/timetable/manage', { state: { semesterKey: `${grade}-${semester}` } });
       } catch (err) {
         const reason = err.response?.data?.error?.reason;
         setGenError(reason || '시간표 생성 중 오류가 발생했습니다.');
